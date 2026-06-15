@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hayverse — плеер фильм/игра (v2)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --color-background-primary:#ffffff;--color-background-secondary:#f3f1ea;--color-background-tertiary:#faf8f3;
+  --color-background-info:#E6F1FB;--color-background-success:#E1F5EE;--color-background-warning:#FAEEDA;--color-background-danger:#FCEBEB;
+  --color-text-primary:#1c1b19;--color-text-secondary:#5F5E5A;--color-text-tertiary:#888780;
+  --color-text-info:#185FA5;--color-text-success:#0F6E56;--color-text-warning:#854F0B;--color-text-danger:#A32D2D;
+  --color-border-tertiary:rgba(0,0,0,.13);--color-border-secondary:rgba(0,0,0,.24);--color-border-primary:rgba(0,0,0,.34);
+  --color-border-info:#378ADD;--color-border-success:#1D9E75;--color-border-warning:#BA7517;
+  --border-radius-md:8px;--border-radius-lg:12px;--border-radius-xl:16px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+[data-theme="dark"]{
+  --color-background-primary:#26241f;--color-background-secondary:#211f1b;--color-background-tertiary:#1b1a16;
+  --color-background-info:#0C447C;--color-background-success:#0F6E56;--color-background-warning:#633806;--color-background-danger:#791F1F;
+  --color-text-primary:#f1efe8;--color-text-secondary:#b4b2a9;--color-text-tertiary:#888780;
+  --color-text-info:#B5D4F4;--color-text-success:#9FE1CB;--color-text-warning:#FAC775;--color-text-danger:#F7C1C1;
+  --color-border-tertiary:rgba(255,255,255,.15);--color-border-secondary:rgba(255,255,255,.28);--color-border-primary:rgba(255,255,255,.4);
+  --color-border-info:#378ADD;--color-border-success:#1D9E75;--color-border-warning:#BA7517;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--color-background-tertiary);color:var(--color-text-primary);font-family:var(--font-sans);line-height:1.6}
+.page{max-width:760px;margin:0 auto;padding:22px 20px 60px}
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.topbar h1{font-size:20px;font-weight:500;margin:0;display:flex;align-items:center;gap:8px}
+.topbar .sub{font-size:13px;color:var(--color-text-secondary)}
+.themebtn{margin-left:auto;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);border-radius:var(--border-radius-md);padding:7px 12px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+button{font-family:inherit}
+select{font-family:inherit;font-size:13px;padding:5px 8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+input[type=range]{-webkit-appearance:none;appearance:none;height:4px;background:var(--color-border-secondary);border-radius:4px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--color-text-primary);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:var(--color-text-primary);cursor:pointer}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--color-text-primary);color:var(--color-background-primary);font-size:13px;padding:10px 16px;border-radius:var(--border-radius-md);max-width:88%;transition:transform .25s;z-index:50}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <h1><i class="ti ti-affiliate"></i> Hayverse</h1>
+    <span class="sub">прототип 2 · плеер «фильм ↔ игра» с живыми регуляторами</span>
+    <button class="themebtn" id="themeBtn"><i class="ti ti-moon"></i> тема</button>
+  </div>
+
+<h2 class="sr-only">Генеративный плеер киновселенной: просмотр фильма с живыми регуляторами темпа, камеры, палитры и диалогов, а также режим игры — на любом таймкоде можно войти в игру и управлять персонажем, затем вернуться в фильм с того же места.</h2>
+
+<style>
+.pl-wrap{font-family:var(--font-sans);color:var(--color-text-primary)}
+.pl-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.pl-seg{display:inline-flex;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);overflow:hidden}
+.pl-seg button{border:none;border-radius:0;background:transparent;font-size:13px;padding:7px 13px;cursor:pointer;color:var(--color-text-secondary);display:inline-flex;align-items:center;gap:6px}
+.pl-seg button.on{background:var(--color-background-secondary);color:var(--color-text-primary);font-weight:500}
+.pl-gen{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-tertiary)}
+.pl-dot{width:7px;height:7px;border-radius:50%;background:var(--color-text-success);animation:plpulse 1.4s infinite}
+@keyframes plpulse{0%,100%{opacity:.35}50%{opacity:1}}
+.pl-view{position:relative;border-radius:var(--border-radius-lg);overflow:hidden;border:0.5px solid var(--color-border-tertiary);line-height:0}
+.pl-ov{position:absolute;font-family:var(--font-mono);font-size:11px;color:#fff;background:rgba(18,18,20,.6);padding:3px 8px;border-radius:6px;line-height:1.3}
+.pl-tc{top:10px;left:10px}
+.pl-sc{top:10px;right:10px;font-family:var(--font-sans)}
+.pl-badge{top:40px;left:10px;display:none;align-items:center;gap:5px}
+.pl-sub{left:50%;transform:translateX(-50%);bottom:14px;font-family:var(--font-sans);font-size:13px;max-width:80%;text-align:center}
+.pl-hud{position:absolute;inset:0;display:none}
+.pl-obj{position:absolute;top:10px;left:10px;background:rgba(18,18,20,.6);color:#fff;font-size:12px;padding:5px 9px;border-radius:6px;max-width:60%}
+.pl-energy{position:absolute;top:10px;right:10px;width:120px}
+.pl-energy .lab{font-size:10px;color:#fff;background:rgba(18,18,20,.6);padding:2px 6px;border-radius:5px;display:inline-block;margin-bottom:4px}
+.pl-bar{height:7px;background:rgba(255,255,255,.25);border-radius:4px;overflow:hidden}
+.pl-bar i{display:block;height:100%;width:78%;background:#5DCAA5}
+.pl-hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(18,18,20,.72);color:#fff;font-size:12px;padding:5px 10px;border-radius:6px;display:none}
+.pl-hint b{background:#fff;color:#18181a;border-radius:4px;padding:0 5px;margin-right:4px}
+.pl-dpad{position:absolute;bottom:14px;right:14px;display:grid;grid-template-columns:repeat(3,30px);grid-template-rows:repeat(3,30px);gap:3px}
+.pl-dpad button{border:none;background:rgba(18,18,20,.55);color:#fff;border-radius:6px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pl-dpad button:active{background:rgba(93,202,165,.7)}
+.pl-trans{display:flex;align-items:center;gap:10px;margin-top:10px}
+.pl-ic{width:36px;height:36px;border:0.5px solid var(--color-border-secondary);background:transparent;border-radius:var(--border-radius-md);cursor:pointer;color:var(--color-text-primary);display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
+.pl-ic.pri{background:var(--color-background-info);border-color:var(--color-border-info);color:var(--color-text-info)}
+.pl-scrub{flex:1}
+.pl-ctrls{margin-top:12px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px}
+.pl-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+.pl-row{display:flex;align-items:center;gap:10px}
+.pl-row label{font-size:12px;color:var(--color-text-secondary);min-width:62px}
+.pl-row output{font-size:12px;font-weight:500;min-width:78px;text-align:right}
+.pl-camseg{display:inline-flex;flex-wrap:wrap;gap:4px}
+.pl-camseg button{border:0.5px solid var(--color-border-tertiary);background:transparent;border-radius:var(--border-radius-md);font-size:11px;padding:5px 8px;cursor:pointer;color:var(--color-text-secondary);display:inline-flex;align-items:center;gap:4px}
+.pl-camseg button.on{border-color:var(--color-border-info);background:var(--color-background-info);color:var(--color-text-info);font-weight:500}
+.pl-action{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.pl-btn{border:0.5px solid var(--color-border-secondary);background:transparent;border-radius:var(--border-radius-md);font-size:12px;padding:7px 12px;cursor:pointer;color:var(--color-text-primary);display:inline-flex;align-items:center;gap:6px}
+.pl-btn.go{background:var(--color-background-success);border-color:var(--color-border-success);color:var(--color-text-success);font-weight:500}
+.pl-btn.back{background:var(--color-background-info);border-color:var(--color-border-info);color:var(--color-text-info);font-weight:500}
+.sec-g{display:none}
+</style>
+
+<div class="pl-wrap">
+  <div class="pl-top">
+    <div class="pl-seg" id="plMode">
+      <button class="on" data-m="film"><i class="ti ti-movie" aria-hidden="true"></i> Фильм</button>
+      <button data-m="game"><i class="ti ti-device-gamepad-2" aria-hidden="true"></i> Игра</button>
+    </div>
+    <span class="pl-gen"><span class="pl-dot"></span><span id="plGenLbl">генерируется в реальном времени</span></span>
+    <span class="pl-gen" style="margin-left:auto" id="plBranch"><i class="ti ti-git-branch" aria-hidden="true"></i> main · v4</span>
+  </div>
+
+  <div class="pl-view" id="plView">
+    <svg id="plSvg" width="100%" height="300" viewBox="0 0 640 300" preserveAspectRatio="xMidYMid slice"></svg>
+    <div class="pl-ov pl-tc" id="plTC">00:00</div>
+    <div class="pl-ov pl-sc" id="plSC">04 · Утро в Конде</div>
+    <div class="pl-ov pl-badge" id="plBadge"></div>
+    <div class="pl-ov pl-sub" id="plSub"></div>
+    <div class="pl-hud" id="plHud">
+      <div class="pl-obj" id="plObj"><i class="ti ti-target" aria-hidden="true"></i> Задача: дойти до картины Минаса и осмотреть двор</div>
+      <div class="pl-energy"><span class="lab">энергия</span><div class="pl-bar"><i></i></div></div>
+      <div class="pl-hint" id="plHint"><b>E</b> осмотреть «Минас Аветисян»</div>
+      <div class="pl-dpad">
+        <span></span><button data-d="up" aria-label="вверх"><i class="ti ti-chevron-up"></i></button><span></span>
+        <button data-d="left" aria-label="влево"><i class="ti ti-chevron-left"></i></button>
+        <button data-d="act" aria-label="действие" style="background:rgba(93,202,165,.55)"><i class="ti ti-hand-finger"></i></button>
+        <button data-d="right" aria-label="вправо"><i class="ti ti-chevron-right"></i></button>
+        <span></span><button data-d="down" aria-label="вниз"><i class="ti ti-chevron-down"></i></button><span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pl-trans" id="plTrans">
+    <button class="pl-ic pri" id="plPlay" aria-label="play"><i class="ti ti-player-play" id="plPlayIc"></i></button>
+    <input type="range" class="pl-scrub" id="plScrub" min="0" max="872" value="330" step="1">
+    <span class="pl-ov" style="position:static;background:var(--color-background-secondary);color:var(--color-text-secondary)" id="plDur">05:30 / 14:32</span>
+  </div>
+
+  <div class="pl-ctrls">
+    <div class="pl-grid">
+      <div class="pl-row">
+        <label>Темп</label>
+        <input type="range" id="plTempo" min="0" max="100" step="1" value="32" style="flex:1">
+        <output id="plTempoOut">спокойный</output>
+      </div>
+      <div class="pl-row">
+        <label>Диалоги</label>
+        <div class="pl-seg" id="plDlg" style="flex:1">
+          <button class="on" data-dlg="1" style="flex:1">есть</button>
+          <button data-dlg="0" style="flex:1">без слов</button>
+        </div>
+      </div>
+      <div class="pl-row" style="grid-column:1 / -1">
+        <label>Камера</label>
+        <div class="pl-camseg" id="plCam">
+          <button class="on" data-c="classic"><i class="ti ti-video" aria-hidden="true"></i> классика</button>
+          <button data-c="top"><i class="ti ti-grid-dots" aria-hidden="true"></i> вид сверху</button>
+          <button data-c="side"><i class="ti ti-layout-align-left" aria-hidden="true"></i> сбоку</button>
+          <button data-c="one"><i class="ti ti-track" aria-hidden="true"></i> один кадр</button>
+        </div>
+      </div>
+      <div class="pl-row" style="grid-column:1 / -1">
+        <label>Палитра</label>
+        <div class="pl-camseg" id="plPal">
+          <button class="on" data-p="0"><i class="ti ti-sun" aria-hidden="true"></i> тёплое утро</button>
+          <button data-p="1"><i class="ti ti-mist" aria-hidden="true"></i> холодный туман</button>
+          <button data-p="2"><i class="ti ti-moon" aria-hidden="true"></i> ночь</button>
+          <button data-p="3"><i class="ti ti-contrast" aria-hidden="true"></i> ч/б</button>
+        </div>
+      </div>
+    </div>
+    <div class="pl-action">
+      <button class="pl-btn go sec-f" id="plEnter"><i class="ti ti-device-gamepad-2" aria-hidden="true"></i> Войти в игру здесь</button>
+      <button class="pl-btn back sec-g" id="plBack"><i class="ti ti-arrow-back-up" aria-hidden="true"></i> Вернуться в фильм</button>
+      <button class="pl-btn sec-f" id="plReshoot"><i class="ti ti-refresh" aria-hidden="true"></i> Переснять момент</button>
+      <button class="pl-btn sec-g" id="plFork"><i class="ti ti-git-fork" aria-hidden="true"></i> Сохранить геймплей как форк</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function sendPrompt(t){var el=document.getElementById('toast');el.textContent='Промпт: '+t;el.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(function(){el.classList.remove('show');},4200);}
+(function(){
+  var b=document.getElementById('themeBtn'),saved=localStorage.getItem('hv-theme');
+  if(saved==='dark'||(!saved&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.setAttribute('data-theme','dark');
+  b.onclick=function(){var d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'light':'dark');localStorage.setItem('hv-theme',d?'light':'dark');};
+})();
+(function(){
+  var PALS=[
+    {sky:'#FAEEDA',orb:'#EF9F27',ground:'#C0DD97',wall:'#F0997B',brick:'#D85A30',frame:'#633806',fig:'#534AB7',art:'#0F6E56',sofa:'#BA7517'},
+    {sky:'#E6F1FB',orb:'#B5D4F4',ground:'#D3D1C7',wall:'#85B7EB',brick:'#378ADD',frame:'#0C447C',fig:'#185FA5',art:'#1D9E75',sofa:'#888780'},
+    {sky:'#26215C',orb:'#CECBF6',ground:'#1c1c2e',wall:'#3C3489',brick:'#534AB7',frame:'#AFA9EC',fig:'#F0997B',art:'#5DCAA5',sofa:'#7F77DD'},
+    {sky:'#D3D1C7',orb:'#F1EFE8',ground:'#B4B2A9',wall:'#888780',brick:'#5F5E5A',frame:'#2C2C2A',fig:'#2C2C2A',art:'#444441',sofa:'#5F5E5A'}
+  ];
+  var SCENES=[[0,'01 · Пролог · Севан','— Море помнит больше, чем мы.'],[110,'02 · Дорога','— Куда ведёт эта тропа? — Домой.'],[220,'03 · Вернисаж','— Эту вещь делал мой дед.'],[330,'04 · Утро в Конде','— В Конде солнце приходит позже всех.'],[470,'05 · Мастерская','— Краска ещё живая, не трогай.'],[600,'06 · Закат · Каскад','— Город горит, но не сгорает.'],[720,'07 · Двор','— Здесь все друг другу родня.'],[820,'08 · Финал','— Мы остаёмся. Всегда остаёмся.']];
+  var TOTAL=872;
+  var st={mode:'film',cam:'classic',pal:0,tempo:32,dlg:true,playing:false,t:330,savedT:330,av:{x:300,y:235},near:false};
+  var svg=document.getElementById('plSvg');
+  var ART={x:470,y:150};
+
+  function fmt(s){s=Math.max(0,Math.round(s));return (Math.floor(s/60)+'').padStart(2,'0')+':'+((s%60)+'').padStart(2,'0');}
+  function sceneAt(t){var r=SCENES[0];for(var i=0;i<SCENES.length;i++){if(t>=SCENES[i][0])r=SCENES[i];}return r;}
+  function fig(x,feetY,c,sc){sc=sc||1;var h=38*sc;return '<g><line x1="'+x+'" y1="'+(feetY-h)+'" x2="'+x+'" y2="'+(feetY-h*0.45)+'" stroke="'+c+'" stroke-width="'+(7*sc)+'" stroke-linecap="round"/>'+
+    '<circle cx="'+x+'" cy="'+(feetY-h-5*sc)+'" r="'+(7*sc)+'" fill="'+c+'"/>'+
+    '<line x1="'+x+'" y1="'+(feetY-h*0.45)+'" x2="'+(x-9*sc)+'" y2="'+feetY+'" stroke="'+c+'" stroke-width="'+(5*sc)+'" stroke-linecap="round"/>'+
+    '<line x1="'+x+'" y1="'+(feetY-h*0.45)+'" x2="'+(x+9*sc)+'" y2="'+feetY+'" stroke="'+c+'" stroke-width="'+(5*sc)+'" stroke-linecap="round"/></g>';}
+
+  function eyeLevel(p,mirror,one){
+    var g='';
+    g+='<rect x="0" y="0" width="640" height="300" fill="'+p.sky+'"/>';
+    g+='<circle cx="'+(mirror?110:540)+'" cy="64" r="26" fill="'+p.orb+'" opacity="0.9"/>';
+    g+='<rect x="0" y="208" width="640" height="92" fill="'+p.ground+'"/>';
+    var bx=mirror?40:360;
+    g+='<rect x="'+bx+'" y="70" width="240" height="138" fill="'+p.wall+'"/>';
+    g+='<rect x="'+bx+'" y="62" width="240" height="12" fill="'+p.brick+'"/>';
+    var wx=bx+150;
+    g+='<rect x="'+wx+'" y="96" width="60" height="74" fill="'+p.sky+'" stroke="'+p.frame+'" stroke-width="4"/>';
+    g+='<path d="M'+wx+' 96 q30 -26 60 0" fill="none" stroke="'+p.frame+'" stroke-width="4"/>';
+    var ax=bx+34;
+    g+='<rect x="'+ax+'" y="104" width="50" height="40" fill="'+p.art+'" stroke="'+p.frame+'" stroke-width="3"/>';
+    g+='<path d="M'+ax+' 138 l14 -20 l10 12 l12 -16 l14 24 z" fill="'+p.sky+'" opacity="0.55"/>';
+    g+='<rect x="120" y="190" width="150" height="22" rx="6" fill="'+p.sofa+'"/>';
+    g+='<rect x="120" y="180" width="150" height="12" rx="5" fill="'+p.frame+'" opacity="0.5"/>';
+    var fx=st.mode==='game'?st.av.x:300, fy=st.mode==='game'?Math.max(212,Math.min(286,st.av.y)):238;
+    g+=fig(fx,fy,p.fig,1);
+    return g;
+  }
+  function topDown(p){
+    var g='';
+    g+='<rect x="0" y="0" width="640" height="300" fill="'+p.ground+'"/>';
+    g+='<rect x="90" y="34" width="460" height="232" fill="'+p.wall+'" opacity="0.45" stroke="'+p.frame+'" stroke-width="3"/>';
+    g+='<rect x="120" y="60" width="120" height="46" rx="6" fill="'+p.sofa+'"/>';
+    g+='<rect x="430" y="34" width="70" height="10" fill="'+p.art+'"/>';
+    g+='<rect x="300" y="256" width="60" height="10" fill="'+p.frame+'" opacity="0.4"/>';
+    g+='<circle cx="'+ART.x+'" cy="48" r="6" fill="'+p.art+'"/>';
+    var ax=st.mode==='game'?st.av.x:320, ay=st.mode==='game'?st.av.y:150;
+    ax=Math.max(104,Math.min(536,ax));ay=Math.max(48,Math.min(252,ay));
+    g+='<circle cx="'+ax+'" cy="'+ay+'" r="11" fill="'+p.fig+'"/>';
+    g+='<path d="M'+ax+' '+(ay-16)+' l6 9 l-12 0 z" fill="'+p.fig+'"/>';
+    return g;
+  }
+  function render(){
+    var p=PALS[st.pal];
+    svg.innerHTML = st.cam==='top'? topDown(p) : eyeLevel(p, st.cam==='side', st.cam==='one');
+    var sc=sceneAt(st.t);
+    document.getElementById('plTC').textContent=fmt(st.t);
+    document.getElementById('plSC').textContent=sc[1];
+    document.getElementById('plDur').textContent=fmt(st.t)+' / 14:32';
+    document.getElementById('plScrub').value=Math.round(st.t);
+    var sub=document.getElementById('plSub');
+    sub.style.display=(st.mode==='film'&&st.dlg)?'block':'none';
+    sub.textContent=sc[2];
+    var bd=document.getElementById('plBadge');
+    if(st.cam==='one'&&st.mode==='film'){bd.style.display='flex';bd.innerHTML='<span style="color:#E24B4A">●</span> REC · одним кадром';}
+    else if(st.cam==='top'){bd.style.display='flex';bd.innerHTML='<i class="ti ti-grid-dots"></i> top-down · как в игре';}
+    else bd.style.display='none';
+  }
+  function setMode(m){
+    st.mode=m;
+    document.querySelectorAll('#plMode button').forEach(function(b){b.classList.toggle('on',b.dataset.m===m)});
+    document.getElementById('plHud').style.display=m==='game'?'block':'none';
+    document.getElementById('plTrans').style.display=m==='game'?'none':'flex';
+    document.querySelectorAll('.sec-f').forEach(function(e){e.style.display=m==='film'?'':'none'});
+    document.querySelectorAll('.sec-g').forEach(function(e){e.style.display=m==='game'?'inline-flex':'none'});
+    document.getElementById('plGenLbl').textContent=m==='game'?'игровой движок · ввод активен':'генерируется в реальном времени';
+    if(m==='game'){st.playing=false;updatePlay();st.savedT=st.t;}
+    render();
+  }
+  function updatePlay(){document.getElementById('plPlayIc').className='ti '+(st.playing?'ti-player-pause':'ti-player-play');}
+
+  document.getElementById('plMode').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setMode(b.dataset.m);});
+  document.getElementById('plPlay').onclick=function(){st.playing=!st.playing;updatePlay();};
+  document.getElementById('plScrub').oninput=function(){st.t=+this.value;render();};
+  document.getElementById('plTempo').oninput=function(){st.tempo=+this.value;var o=document.getElementById('plTempoOut');o.textContent=st.tempo<25?'спокойный':st.tempo<55?'размеренный':st.tempo<80?'живой':'динамичный';};
+  document.getElementById('plDlg').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st.dlg=b.dataset.dlg==='1';document.querySelectorAll('#plDlg button').forEach(function(x){x.classList.toggle('on',x===b)});render();});
+  document.getElementById('plCam').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st.cam=b.dataset.c;document.querySelectorAll('#plCam button').forEach(function(x){x.classList.toggle('on',x===b)});render();});
+  document.getElementById('plPal').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st.pal=+b.dataset.p;document.querySelectorAll('#plPal button').forEach(function(x){x.classList.toggle('on',x===b)});render();});
+
+  document.getElementById('plEnter').onclick=function(){setMode('game');};
+  document.getElementById('plBack').onclick=function(){st.t=st.savedT;setMode('film');st.playing=true;updatePlay();};
+  document.getElementById('plReshoot').onclick=function(){var sc=sceneAt(st.t);sendPrompt('Переснять момент «'+sc[1]+'» ('+fmt(st.t)+') с параметрами: темп '+document.getElementById('plTempoOut').textContent+', камера '+st.cam+', палитра '+document.querySelector('#plPal button.on').textContent.trim()+', диалоги '+(st.dlg?'есть':'без слов')+'. Сгенерируй альтернативный дубль.');};
+  document.getElementById('plFork').onclick=function(){sendPrompt('Сохрани геймплейную сессию из сцены «'+sceneAt(st.savedT)[1]+'» (вход в '+fmt(st.savedT)+') как интерактивный форк-уровень и оформи pull-request на канонизацию.');};
+
+  function move(dx,dy){if(st.mode!=='game')return;st.av.x=Math.max(104,Math.min(536,st.av.x+dx));st.av.y=Math.max(48,Math.min(286,st.av.y+dy));var d=Math.hypot(st.av.x-ART.x,st.av.y-ART.y);st.near=d<70;document.getElementById('plHint').style.display=st.near?'block':'none';render();}
+  function act(){if(st.near){sendPrompt('Игрок осмотрел картину «Минас Аветисян» во дворе Конда. Покажи интерактивную карточку артефакта (история, автор, связи во вселенной) и продолжи игровую сцену.');}}
+  var hold=null;
+  function startMove(dir){stopMove();var step=function(){if(dir==='up')move(0,-9);else if(dir==='down')move(0,9);else if(dir==='left')move(-9,0);else if(dir==='right')move(9,0);};step();hold=setInterval(step,90);}
+  function stopMove(){if(hold){clearInterval(hold);hold=null;}}
+  document.querySelectorAll('.pl-dpad button').forEach(function(b){
+    var d=b.dataset.d;
+    if(d==='act'){b.onclick=act;return;}
+    b.addEventListener('pointerdown',function(e){e.preventDefault();startMove(d);});
+    b.addEventListener('pointerup',stopMove);b.addEventListener('pointerleave',stopMove);
+  });
+  document.addEventListener('keydown',function(e){
+    if(st.mode!=='game')return;var k=e.key.toLowerCase();
+    if(['arrowup','w'].includes(k)){move(0,-12);e.preventDefault();}
+    else if(['arrowdown','s'].includes(k)){move(0,12);e.preventDefault();}
+    else if(['arrowleft','a'].includes(k)){move(-12,0);e.preventDefault();}
+    else if(['arrowright','d'].includes(k)){move(12,0);e.preventDefault();}
+    else if(k==='e'){act();}
+  });
+
+  setInterval(function(){
+    if(st.playing&&st.mode==='film'){
+      var mult=0.6+st.tempo/55;
+      st.t+=0.12*mult;
+      if(st.t>=TOTAL){st.t=0;}
+      render();
+    }
+  },100);
+
+  setMode('film');render();
+})();
+</script>
+</div>
+</body>
+</html>

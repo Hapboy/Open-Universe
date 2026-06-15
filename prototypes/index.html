@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hayverse — граф → плеер (живой кадр)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --color-background-primary:#ffffff;--color-background-secondary:#f3f1ea;--color-background-tertiary:#faf8f3;
+  --color-background-info:#E6F1FB;--color-background-success:#E1F5EE;--color-background-warning:#FAEEDA;--color-background-danger:#FCEBEB;
+  --color-text-primary:#1c1b19;--color-text-secondary:#5F5E5A;--color-text-tertiary:#888780;
+  --color-text-info:#185FA5;--color-text-success:#0F6E56;--color-text-warning:#854F0B;--color-text-danger:#A32D2D;
+  --color-border-tertiary:rgba(0,0,0,.13);--color-border-secondary:rgba(0,0,0,.24);--color-border-primary:rgba(0,0,0,.34);
+  --color-border-info:#378ADD;--color-border-success:#1D9E75;--color-border-warning:#BA7517;
+  --border-radius-md:8px;--border-radius-lg:12px;--border-radius-xl:16px;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+[data-theme="dark"]{
+  --color-background-primary:#26241f;--color-background-secondary:#211f1b;--color-background-tertiary:#1b1a16;
+  --color-background-info:#0C447C;--color-background-success:#0F6E56;--color-background-warning:#633806;--color-background-danger:#791F1F;
+  --color-text-primary:#f1efe8;--color-text-secondary:#b4b2a9;--color-text-tertiary:#888780;
+  --color-text-info:#B5D4F4;--color-text-success:#9FE1CB;--color-text-warning:#FAC775;--color-text-danger:#F7C1C1;
+  --color-border-tertiary:rgba(255,255,255,.15);--color-border-secondary:rgba(255,255,255,.28);--color-border-primary:rgba(255,255,255,.4);
+  --color-border-info:#378ADD;--color-border-success:#1D9E75;--color-border-warning:#BA7517;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--color-background-tertiary);color:var(--color-text-primary);font-family:var(--font-sans);line-height:1.6}
+.page{max-width:760px;margin:0 auto;padding:22px 20px 60px}
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.topbar h1{font-size:20px;font-weight:500;margin:0;display:flex;align-items:center;gap:8px}
+.topbar .sub{font-size:13px;color:var(--color-text-secondary)}
+.themebtn{margin-left:auto;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);border-radius:var(--border-radius-md);padding:7px 12px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+input[type=range]{-webkit-appearance:none;appearance:none;height:4px;background:var(--color-border-secondary);border-radius:4px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--color-text-primary);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:var(--color-text-primary);cursor:pointer}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--color-text-primary);color:var(--color-background-primary);font-size:13px;padding:10px 16px;border-radius:var(--border-radius-md);max-width:88%;transition:transform .25s;z-index:50}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <h1><i class="ti ti-affiliate"></i> Hayverse</h1>
+    <span class="sub">граф → плеер · живой кадр</span>
+    <button class="themebtn" id="themeBtn"><i class="ti ti-moon"></i> тема</button>
+  </div>
+
+<h2 class="sr-only">Единый экран нодового редактора киновселенной: слева граф узлов-объектов с инспектором, справа генеративный плеер. Изменение любого узла мгновенно перерисовывает кадр в плеере.</h2>
+
+<style>
+.gx{font-family:var(--font-sans);color:var(--color-text-primary)}
+.gx-cols{display:grid;grid-template-columns:298px 1fr;gap:14px}
+.gx-graph{position:relative;height:178px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.gx-node{position:absolute;width:90px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-left:3px solid var(--nc);border-radius:var(--border-radius-md);padding:5px 7px;cursor:pointer;user-select:none}
+.gx-node.sel{border-color:var(--color-border-info);box-shadow:0 0 0 2px var(--color-border-info)}
+.gx-node .h{display:flex;align-items:center;gap:5px}
+.gx-ico{width:17px;height:17px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex:0 0 auto}
+.gx-tt{font-size:9px;letter-spacing:.03em;color:var(--color-text-tertiary);text-transform:uppercase}
+.gx-vv{font-size:10px;font-weight:500;line-height:1.2;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gx-off{opacity:.4}
+.gx-insp{margin-top:10px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:11px 13px}
+.gx-ih{font-size:12px;color:var(--color-text-secondary);margin:0 0 9px;display:flex;align-items:center;gap:6px}
+.gx-fld{margin:9px 0}
+.gx-fld>span{display:block;font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px}
+.gx-seg{display:inline-flex;flex-wrap:wrap;gap:4px}
+.gx-seg button{border:0.5px solid var(--color-border-tertiary);background:transparent;border-radius:var(--border-radius-md);font-size:11px;padding:4px 8px;cursor:pointer;color:var(--color-text-secondary);font-family:inherit}
+.gx-seg button.on{border-color:var(--color-border-info);background:var(--color-background-info);color:var(--color-text-info);font-weight:500}
+.gx-tog{display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--color-text-secondary)}
+.gx-sw{width:34px;height:19px;border-radius:10px;background:var(--color-border-secondary);position:relative;transition:background .15s}
+.gx-sw i{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .15s}
+.gx-tog.on .gx-sw{background:var(--color-text-success)}
+.gx-tog.on .gx-sw i{left:17px}
+.gx-view{position:relative;border-radius:var(--border-radius-lg);overflow:hidden;border:0.5px solid var(--color-border-tertiary);line-height:0}
+.gx-ov{position:absolute;font-family:var(--font-mono);font-size:10px;color:#fff;background:rgba(18,18,20,.6);padding:2px 7px;border-radius:5px;line-height:1.3}
+.gx-flash{position:absolute;top:8px;left:8px;font-family:var(--font-sans);background:rgba(29,158,117,.85);display:none}
+.gx-rc{margin-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gx-ic{width:32px;height:32px;border:0.5px solid var(--color-border-secondary);background:transparent;border-radius:var(--border-radius-md);cursor:pointer;color:var(--color-text-primary);display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto}
+.gx-ic.pri{background:var(--color-background-info);border-color:var(--color-border-info);color:var(--color-text-info)}
+.gx-btn{border:0.5px solid var(--color-border-secondary);background:transparent;border-radius:var(--border-radius-md);font-size:12px;padding:6px 11px;cursor:pointer;color:var(--color-text-primary);display:inline-flex;align-items:center;gap:5px;font-family:inherit}
+</style>
+
+<div class="gx">
+  <div class="gx-cols">
+    <div>
+      <div class="gx-graph" id="gxGraph">
+        <svg id="gxWires" width="100%" height="178" style="position:absolute;inset:0;pointer-events:none"></svg>
+      </div>
+      <div class="gx-insp" id="gxInsp"></div>
+    </div>
+
+    <div>
+      <div class="gx-view" id="gxView">
+        <svg id="gxSvg" width="100%" height="240" viewBox="0 0 360 240" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="gx-ov" style="top:8px;left:8px" id="gxTC">05:30</div>
+        <div class="gx-ov" style="top:8px;right:8px" id="gxSC">04 · Утро в Конде</div>
+        <div class="gx-ov" style="bottom:10px;left:50%;transform:translateX(-50%);font-family:var(--font-sans)" id="gxSub"></div>
+        <div class="gx-ov gx-flash" id="gxFlash"></div>
+        <div class="gx-ov" id="gxCamB" style="display:none;top:32px;left:8px"></div>
+      </div>
+      <div class="gx-rc">
+        <button class="gx-ic pri" id="gxPlay" aria-label="play"><i class="ti ti-player-play" id="gxPlayIc"></i></button>
+        <input type="range" id="gxScrub" min="0" max="872" value="330" step="1" style="flex:1">
+        <span class="gx-ov" style="position:static;background:var(--color-background-secondary);color:var(--color-text-secondary)" id="gxDur">05:30 / 14:32</span>
+      </div>
+      <div class="gx-rc">
+        <div class="gx-seg" id="gxCam">
+          <button class="on" data-c="classic"><i class="ti ti-video"></i> классика</button>
+          <button data-c="top"><i class="ti ti-grid-dots"></i> сверху</button>
+          <button data-c="side"><i class="ti ti-layout-align-left"></i> сбоку</button>
+          <button data-c="one"><i class="ti ti-track"></i> один кадр</button>
+        </div>
+      </div>
+      <div class="gx-rc">
+        <button class="gx-btn" id="gxClip"><i class="ti ti-movie"></i> Снять ролик ↗</button>
+        <button class="gx-btn" id="gxPlayG"><i class="ti ti-device-gamepad-2"></i> Играть отсюда ↗</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function sendPrompt(t){var el=document.getElementById('toast');el.textContent='Промпт: '+t;el.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(function(){el.classList.remove('show');},4200);}
+(function(){
+  var b=document.getElementById('themeBtn'),saved=localStorage.getItem('hv-theme');
+  if(saved==='dark'||(!saved&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.setAttribute('data-theme','dark');
+  b.onclick=function(){var d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'light':'dark');localStorage.setItem('hv-theme',d?'light':'dark');};
+})();
+(function(){
+  var OPT={
+    char:{label:'Персонаж',icon:'ti-user',nc:'#7F77DD',bg:'#EEEDFE',fg:'#3C3489',items:['Ара Гехецик','Анаит','Вардан','Цовинар'],heads:['#E8B07A','#E6A878','#D8995F','#EBB98C'],canHide:1},
+    cloth:{label:'Одежда',icon:'ti-shirt',nc:'#D4537E',bg:'#FBEAF0',fg:'#72243E',items:['Tigran Avetisyan','Anna K','Taraz (нац.)','Loom'],colors:['#534AB7','#D4537E','#993C1D','#0F6E56']},
+    art:{label:'Искусство',icon:'ti-palette',nc:'#639922',bg:'#EAF3DE',fg:'#27500A',items:['Минас Аветисян','Сарьян','Хачкар','Параджанов'],colors:['#1D9E75','#EF9F27','#888780','#D4537E'],canHide:1},
+    loc:{label:'Локация',icon:'ti-map-pin',nc:'#1D9E75',bg:'#E1F5EE',fg:'#085041',items:['Старый Конд','Каскад','Гарни','Севан']},
+    bld:{label:'Здание',icon:'ti-building-arch',nc:'#378ADD',bg:'#E6F1FB',fg:'#0C447C',items:['Дом с эркером','Чайхана','Мастерская','Двор-арка'],canHide:1},
+    furn:{label:'Мебель',icon:'ti-armchair',nc:'#BA7517',bg:'#FAEEDA',fg:'#633806',items:['Тахта + ковёр','Резной буфет','Тонет','Минимал'],colors:['#BA7517','#993C1D','#444441','#9FE1CB'],canHide:1}
+  };
+  var TIME=[{k:'рассвет',sky:'#FAEEDA',orb:'#EF9F27',ground:'#C0DD97'},{k:'день',sky:'#CFE8FB',orb:'#FAC775',ground:'#97C459'},{k:'закат',sky:'#F5C4B3',orb:'#D85A30',ground:'#5DCAA5'},{k:'ночь',sky:'#272252',orb:'#CECBF6',ground:'#23233a'}];
+  var WEATHER=['ясно','туман','дождь','снег'];
+  var SCENES=[[0,'01 · Пролог · Севан','— Море помнит больше нас.'],[110,'02 · Дорога','— Куда ведёт тропа? — Домой.'],[220,'03 · Вернисаж','— Эту вещь делал мой дед.'],[330,'04 · Утро в Конде','— В Конде солнце приходит позже.'],[470,'05 · Мастерская','— Краска ещё живая.'],[600,'06 · Закат · Каскад','— Город горит, но не сгорает.'],[720,'07 · Двор','— Здесь все друг другу родня.'],[820,'08 · Финал','— Мы остаёмся. Всегда.']];
+  var TOTAL=872;
+  var st={char:{sel:0,on:true},cloth:{sel:0},art:{sel:0,on:true},loc:{sel:0,time:0,weather:1},bld:{sel:0,on:true},furn:{sel:0,on:true},cam:'classic',t:330,playing:false,selNode:'char'};
+
+  var POS={char:[6,8],cloth:[6,66],art:[6,124],loc:[110,8],bld:[110,66],furn:[110,124],scene:[214,58]};
+  var EDGES=[['cloth','char'],['art','bld'],['furn','bld'],['bld','loc'],['char','scene'],['loc','scene']];
+  var graph=document.getElementById('gxGraph'),wires=document.getElementById('gxWires');
+  var NW=90,NH=44,SW=90,SH=58;
+
+  function valOf(id){var o=OPT[id];if(!o)return '';var off=st[id].on===false;return off?'нет в кадре':o.items[st[id].sel];}
+  function buildGraph(){
+    Object.keys(OPT).forEach(function(id){
+      var o=OPT[id],p=POS[id],el=document.createElement('div');
+      el.className='gx-node'+(id===st.selNode?' sel':'')+(st[id].on===false?' gx-off':'');el.id='gn-'+id;
+      el.style.left=p[0]+'px';el.style.top=p[1]+'px';el.style.setProperty('--nc',o.nc);
+      el.innerHTML='<div class="h"><span class="gx-ico" style="background:'+o.bg+';color:'+o.fg+'"><i class="ti '+o.icon+'"></i></span><span class="gx-tt">'+o.label+'</span></div><div class="gx-vv">'+valOf(id)+'</div>';
+      el.onclick=function(){st.selNode=id;syncGraph();renderInsp();};
+      graph.appendChild(el);
+    });
+    var sc=document.createElement('div');sc.className='gx-node';sc.id='gn-scene';sc.style.left=POS.scene[0]+'px';sc.style.top=POS.scene[1]+'px';sc.style.width=SW+'px';sc.style.setProperty('--nc','#5F5E5A');
+    sc.innerHTML='<div class="h"><span class="gx-ico" style="background:#F1EFE8;color:#2C2C2A"><i class="ti ti-movie"></i></span><span class="gx-tt">Сцена</span></div><div class="gx-vv">main · v4 →</div>';
+    graph.appendChild(sc);
+    drawWires();
+  }
+  function box(id){var p=POS[id],w=id==='scene'?SW:NW,h=id==='scene'?SH:NH;return {cx:p[0]+w/2,cy:p[1]+h/2,w:w,h:h,x:p[0],y:p[1]};}
+  function drawWires(){
+    var s='';
+    EDGES.forEach(function(e){
+      var a=box(e[0]),b=box(e[1]),d;
+      if(Math.abs(b.cx-a.cx)>=Math.abs(b.cy-a.cy)){
+        var sx=b.cx>a.cx?a.x+a.w:a.x,tx=b.cx>a.cx?b.x:b.x+b.w,sy=a.cy,ty=b.cy,mx=(sx+tx)/2;
+        d='M'+sx+','+sy+' C'+mx+','+sy+' '+mx+','+ty+' '+tx+','+ty;var tX=tx,tY=ty;
+        s+='<path d="'+d+'" fill="none" stroke="var(--color-text-tertiary)" stroke-width="1.4" opacity="0.5"/><circle cx="'+tX+'" cy="'+tY+'" r="2.3" fill="var(--color-text-tertiary)"/>';
+      }else{
+        var sy2=b.cy>a.cy?a.y+a.h:a.y,ty2=b.cy>a.cy?b.y:b.y+b.h,sx2=a.cx,tx2=b.cx,my=(sy2+ty2)/2;
+        d='M'+sx2+','+sy2+' C'+sx2+','+my+' '+tx2+','+my+' '+tx2+','+ty2;
+        s+='<path d="'+d+'" fill="none" stroke="var(--color-text-tertiary)" stroke-width="1.4" opacity="0.5"/><circle cx="'+tx2+'" cy="'+ty2+'" r="2.3" fill="var(--color-text-tertiary)"/>';
+      }
+    });
+    wires.innerHTML=s;
+  }
+  function syncGraph(){
+    Object.keys(OPT).forEach(function(id){
+      var el=document.getElementById('gn-'+id);
+      el.classList.toggle('sel',id===st.selNode);
+      el.classList.toggle('gx-off',st[id].on===false);
+      el.querySelector('.gx-vv').textContent=valOf(id);
+    });
+  }
+
+  function renderInsp(){
+    var id=st.selNode,o=OPT[id],box=document.getElementById('gxInsp');
+    var h='<p class="gx-ih"><span class="gx-ico" style="background:'+o.bg+';color:'+o.fg+';width:16px;height:16px;font-size:11px"><i class="ti '+o.icon+'"></i></span> '+o.label+' · инспектор</p>';
+    h+='<div class="gx-fld"><span>выбор из базы</span><div class="gx-seg" data-grp="sel">'+o.items.map(function(it,i){return '<button class="'+(st[id].sel===i?'on':'')+'" data-i="'+i+'">'+it+'</button>'}).join('')+'</div></div>';
+    if(id==='loc'){
+      h+='<div class="gx-fld"><span>время суток</span><div class="gx-seg" data-grp="time">'+TIME.map(function(t,i){return '<button class="'+(st.loc.time===i?'on':'')+'" data-i="'+i+'">'+t.k+'</button>'}).join('')+'</div></div>';
+      h+='<div class="gx-fld"><span>погода</span><div class="gx-seg" data-grp="weather">'+WEATHER.map(function(w,i){return '<button class="'+(st.loc.weather===i?'on':'')+'" data-i="'+i+'">'+w+'</button>'}).join('')+'</div></div>';
+    }
+    if(o.canHide){h+='<div class="gx-fld"><label class="gx-tog'+(st[id].on?' on':'')+'" id="gxTog"><span class="gx-sw"><i></i></span> в кадре</label></div>';}
+    box.innerHTML=h;
+    box.querySelectorAll('.gx-seg[data-grp]').forEach(function(g){
+      g.querySelectorAll('button').forEach(function(b){b.onclick=function(){
+        var grp=g.dataset.grp,i=+b.dataset.i;
+        if(grp==='sel')st[id].sel=i;else st.loc[grp]=i;
+        g.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});
+        syncGraph();apply(id);
+      };});
+    });
+    var tg=document.getElementById('gxTog');
+    if(tg)tg.onclick=function(){st[id].on=!st[id].on;tg.classList.toggle('on',st[id].on);syncGraph();apply(id);};
+  }
+
+  var svg=document.getElementById('gxSvg');
+  function fig(x,fy,body,head){var H=46;return '<g><line x1="'+x+'" y1="'+(fy-H)+'" x2="'+x+'" y2="'+(fy-H*0.42)+'" stroke="'+body+'" stroke-width="9" stroke-linecap="round"/>'+
+    '<circle cx="'+x+'" cy="'+(fy-H-6)+'" r="8" fill="'+head+'"/>'+
+    '<line x1="'+x+'" y1="'+(fy-H*0.5)+'" x2="'+(x-11)+'" y2="'+fy+'" stroke="'+body+'" stroke-width="6" stroke-linecap="round"/>'+
+    '<line x1="'+x+'" y1="'+(fy-H*0.5)+'" x2="'+(x+11)+'" y2="'+fy+'" stroke="'+body+'" stroke-width="6" stroke-linecap="round"/></g>';}
+  function weather(w){
+    if(w===1)return '<rect x="0" y="0" width="360" height="240" fill="#ffffff" opacity="0.34"/>';
+    if(w===2){var s='';for(var i=0;i<26;i++){var x=(i*31)%360,y=(i*53)%200;s+='<line x1="'+x+'" y1="'+y+'" x2="'+(x-7)+'" y2="'+(y+16)+'" stroke="#9FB7D4" stroke-width="1.4" opacity="0.6"/>';}return s;}
+    if(w===3){var s2='';for(var j=0;j<30;j++){var x2=(j*47)%360,y2=(j*37)%210;s2+='<circle cx="'+x2+'" cy="'+y2+'" r="2" fill="#ffffff" opacity="0.85"/>';}return s2;}
+    return '';
+  }
+  function eyeLevel(mirror){
+    var T=TIME[st.loc.time],g='';
+    g+='<rect x="0" y="0" width="360" height="240" fill="'+T.sky+'"/>';
+    g+='<circle cx="'+(mirror?64:300)+'" cy="44" r="20" fill="'+T.orb+'" opacity="0.92"/>';
+    g+='<rect x="0" y="166" width="360" height="74" fill="'+T.ground+'"/>';
+    var night=st.loc.time===3;var wall=night?'#473F7A':'#E7CAA4',brick=night?'#5A4FA0':'#C98A4E',frame=night?'#CECBF6':'#5F4824';
+    var bx=mirror?28:208;
+    if(st.bld.on){
+      g+='<rect x="'+bx+'" y="64" width="124" height="102" fill="'+wall+'"/>';
+      g+='<rect x="'+bx+'" y="57" width="124" height="9" fill="'+brick+'"/>';
+      var wx=bx+78;
+      g+='<rect x="'+wx+'" y="92" width="34" height="50" fill="'+T.sky+'" stroke="'+frame+'" stroke-width="3"/>';
+      g+='<path d="M'+wx+' 92 q17 -15 34 0" fill="none" stroke="'+frame+'" stroke-width="3"/>';
+      if(st.art.on){var ac=OPT.art.colors[st.art.sel],ax=bx+18;
+        g+='<rect x="'+ax+'" y="92" width="38" height="30" fill="'+ac+'" stroke="'+frame+'" stroke-width="2.5"/>';
+        g+='<path d="M'+ax+' 118 l10 -14 l8 9 l9 -12 l11 17 z" fill="'+T.sky+'" opacity="0.5"/>';
+      }
+    }
+    if(st.furn.on){var fc=OPT.furn.colors[st.furn.sel];g+='<rect x="46" y="150" width="98" height="16" rx="5" fill="'+fc+'"/><rect x="46" y="142" width="98" height="9" rx="4" fill="'+frame+'" opacity="0.45"/>';}
+    if(st.char.on){g+=fig(108,166,OPT.cloth.colors[st.cloth.sel],OPT.char.heads[st.char.sel]);}
+    g+=weather(st.loc.weather);
+    return g;
+  }
+  function topDown(){
+    var T=TIME[st.loc.time],g='';
+    g+='<rect x="0" y="0" width="360" height="240" fill="'+T.ground+'"/>';
+    if(st.bld.on)g+='<rect x="60" y="30" width="240" height="180" fill="#ffffff" opacity="0.4" stroke="#5F4824" stroke-width="2.5"/>';
+    if(st.furn.on)g+='<rect x="84" y="56" width="96" height="40" rx="6" fill="'+OPT.furn.colors[st.furn.sel]+'"/>';
+    if(st.art.on)g+='<rect x="220" y="30" width="60" height="9" fill="'+OPT.art.colors[st.art.sel]+'"/>';
+    if(st.char.on){g+='<circle cx="180" cy="140" r="11" fill="'+OPT.cloth.colors[st.cloth.sel]+'"/><circle cx="180" cy="140" r="5" fill="'+OPT.char.heads[st.char.sel]+'"/>';}
+    g+=weather(st.loc.weather);
+    return g;
+  }
+  function focusRing(){
+    if(st.cam==='top'||st.cam==='side')return '';
+    var id=st.selNode,b;
+    if(id==='char'||id==='cloth')b={x:90,y:104,w:38,h:64};
+    else if(id==='bld')b={x:206,y:55,w:128,h:111};
+    else if(id==='furn')b={x:44,y:140,w:102,h:28};
+    else if(id==='art')b={x:224,y:88,w:44,h:36};
+    else if(id==='loc')b={x:3,y:3,w:354,h:60};
+    else return '';
+    var on=(id==='loc')||st[id]&&st[id].on!==false;if(!on)return '';
+    return '<rect x="'+b.x+'" y="'+b.y+'" width="'+b.w+'" height="'+b.h+'" fill="none" stroke="#185FA5" stroke-width="2" stroke-dasharray="5 4" rx="4"/>';
+  }
+  function sceneAt(t){var r=SCENES[0];for(var i=0;i<SCENES.length;i++)if(t>=SCENES[i][0])r=SCENES[i];return r;}
+  function fmt(s){s=Math.max(0,Math.round(s));return (Math.floor(s/60)+'').padStart(2,'0')+':'+((s%60)+'').padStart(2,'0');}
+
+  function render(){
+    svg.innerHTML=(st.cam==='top'?topDown():eyeLevel(st.cam==='side'))+focusRing();
+    var sc=sceneAt(st.t);
+    document.getElementById('gxTC').textContent=fmt(st.t);
+    document.getElementById('gxSC').textContent=sc[1];
+    document.getElementById('gxDur').textContent=fmt(st.t)+' / 14:32';
+    document.getElementById('gxScrub').value=Math.round(st.t);
+    document.getElementById('gxSub').textContent=sc[2];
+    var cb=document.getElementById('gxCamB');
+    if(st.cam==='one'){cb.style.display='block';cb.innerHTML='<span style="color:#E24B4A">●</span> REC · одним кадром';}
+    else if(st.cam==='top'){cb.style.display='block';cb.textContent='top-down · как в игре';}
+    else cb.style.display='none';
+  }
+  function apply(changedId){
+    render();
+    if(changedId){var o=OPT[changedId];var f=document.getElementById('gxFlash');f.textContent='обновлено: '+o.label;f.style.display='block';clearTimeout(window._gxf);window._gxf=setTimeout(function(){f.style.display='none';},900);}
+  }
+
+  document.getElementById('gxCam').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st.cam=b.dataset.c;document.querySelectorAll('#gxCam button').forEach(function(x){x.classList.toggle('on',x===b)});render();});
+  document.getElementById('gxScrub').oninput=function(){st.t=+this.value;render();};
+  document.getElementById('gxPlay').onclick=function(){st.playing=!st.playing;document.getElementById('gxPlayIc').className='ti '+(st.playing?'ti-player-pause':'ti-player-play');};
+  document.getElementById('gxClip').onclick=function(){var sc=sceneAt(st.t);sendPrompt('Собери ролик из текущего графа узлов: персонаж '+OPT.char.items[st.char.sel]+' в одежде '+OPT.cloth.items[st.cloth.sel]+', локация '+OPT.loc.items[st.loc.sel]+' ('+TIME[st.loc.time].k+', '+WEATHER[st.loc.weather]+')'+(st.bld.on?', здание '+OPT.bld.items[st.bld.sel]:'')+(st.furn.on?', мебель '+OPT.furn.items[st.furn.sel]:'')+(st.art.on?', искусство '+OPT.art.items[st.art.sel]:'')+'. Камера '+st.cam+', сцена «'+sc[1]+'».');};
+  document.getElementById('gxPlayG').onclick=function(){sendPrompt('Переключи текущий кадр ('+fmt(st.t)+', «'+sceneAt(st.t)[1]+'») в игровой режим из этого же графа узлов и дай поиграть персонажем '+OPT.char.items[st.char.sel]+' с этой точки.');};
+
+  setInterval(function(){if(st.playing){st.t+=0.18;if(st.t>=TOTAL)st.t=0;render();}},100);
+
+  buildGraph();renderInsp();render();
+})();
+</script>
+</div>
+</body>
+</html>

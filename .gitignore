@@ -1,0 +1,15 @@
+# Machine-local Claude Code settings (permissions differ per machine)
+.claude/settings.local.json
+
+# Scratch / verification artifacts
+.shots/
+*.b64
+
+# OS / editor cruft
+Thumbs.db
+desktop.ini
+.DS_Store
+*.swp
+
+# Node (in case tooling is added later)
+node_modules/
