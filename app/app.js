@@ -203,7 +203,12 @@ const SCENES = [
 // 4. API Mock & Live Services
 const PinterestService = {
   async fetchBoards(token) {
-    if (!token) return [];
+    const MOCK = [
+      { id: 'board_art', name: 'Армянский Авангард' },
+      { id: 'board_kond', name: 'Конд Архитектура' },
+      { id: 'board_taraz', name: 'Тараз & Одежда' }
+    ];
+    if (!token) return MOCK;
     try {
       showToast('Загрузка досок Pinterest...');
       const response = await fetch('https://api.pinterest.com/v5/boards', {
