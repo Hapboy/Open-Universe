@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7F77DD" />
+      <stop offset="50%" stop-color="#D4537E" />
+      <stop offset="100%" stop-color="#BA7517" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="#1b1a16" />
+  <g transform="translate(96, 96)" fill="none" stroke="url(#grad)" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Connecting node connections -->
+    <path d="M 160 60 L 60 160 M 160 260 L 60 160 M 160 160 L 260 160" stroke-dasharray="2 2" stroke-width="14" opacity="0.5"/>
+    
+    <!-- Central Node -->
+    <circle cx="60" cy="160" r="32" fill="#1b1a16" stroke="url(#grad)" stroke-width="24" />
+    
+    <!-- Sub Nodes -->
+    <circle cx="160" cy="60" r="24" fill="#7F77DD" />
+    <circle cx="160" cy="160" r="24" fill="#D4537E" />
+    <circle cx="160" cy="260" r="24" fill="#BA7517" />
+    
+    <!-- Output Node -->
+    <circle cx="260" cy="160" r="32" fill="#1b1a16" stroke="url(#grad)" stroke-width="24" />
+  </g>
+</svg>

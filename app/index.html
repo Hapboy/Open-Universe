@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1a16">
+<title>Open Universe — нодовая студия</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><i class="ti ti-affiliate"></i><span>Open Universe</span><em id="branchTag">main · канон</em></div>
+    <div class="spacer"></div>
+    <button class="tb" id="btnRun"><i class="ti ti-player-play"></i><span>Прогнать граф</span></button>
+    <button class="tb" id="btnTeam"><i class="ti ti-users-group"></i><span>Команда</span><b id="teamCount">1</b></button>
+    <button class="tb" id="btnSettings" aria-label="Настройки"><i class="ti ti-settings"></i></button>
+    <button class="tb" id="btnInstall" hidden><i class="ti ti-download"></i><span>Установить</span></button>
+    <button class="tb" id="btnTheme" aria-label="Тема"><i class="ti ti-moon"></i></button>
+  </header>
+
+  <div class="body">
+    <aside class="palette" id="palette"></aside>
+
+    <main class="stage">
+      <div class="canvas-wrap" id="canvasWrap">
+        <div class="canvas" id="canvas">
+          <svg class="wires" id="wires"></svg>
+        </div>
+      </div>
+      <div class="hint" id="hint">Перетащи ноду из палитры слева. Соедини выход одной ноды со совместимым входом другой — тянем от правого порта к левому.</div>
+    </main>
+
+    <aside class="inspector" id="inspector">
+      <div class="insp-empty">Выбери ноду, чтобы настроить её и запустить.</div>
+    </aside>
+  </div>
+
+  <footer class="statusbar">
+    <span id="statJobs">очередь: 0</span>
+    <span id="statMode" class="muted">Higgsfield: mock · Pinterest: mock</span>
+    <span class="spacer"></span>
+    <span id="statSel" class="muted">—</span>
+  </footer>
+</div>
+
+<div class="modal" id="onboard" hidden>
+  <div class="sheet">
+    <h2>Войти в разработку</h2>
+    <p class="sub">Каждый разработчик создаёт своего персонажа, выбирает сторону и роль по текущему сценарию. Твой персонаж попадёт в финальный фильм вместе с вымышленными.</p>
+    <div id="onboardForm"></div>
+  </div>
+</div>
+
+<div class="modal" id="settings" hidden>
+  <div class="sheet">
+    <div class="sheet-h"><h2>Настройки · API</h2><button class="x" data-close="settings"><i class="ti ti-x"></i></button></div>
+    <div id="settingsForm"></div>
+  </div>
+</div>
+
+<div class="modal" id="team" hidden>
+  <div class="sheet">
+    <div class="sheet-h"><h2>Команда разработки</h2><button class="x" data-close="team"><i class="ti ti-x"></i></button></div>
+    <div id="teamBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
