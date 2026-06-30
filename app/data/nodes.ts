@@ -1,21 +1,21 @@
-import { DEFAULT_PINS } from './presets.ts';
-import type { Port, PortType } from '../types.ts';
+import { DEFAULT_PINS } from './presets.ts'
+import type { Port, PortType } from '../types.ts'
 
-export const PORT_TYPES = {
+const PORT_TYPES = {
   IMAGE: 'Image' as PortType,
   VIDEO: 'Video' as PortType,
   AUDIO: 'Audio' as PortType,
-  TEXT:  'Text'  as PortType,
-};
+  TEXT: 'Text' as PortType,
+}
 
 export interface NodeTemplate {
-  type: string;
-  label: string;
-  icon: string;
-  color: string;
-  inputs: Omit<Port, 'id'>[];
-  outputs: Omit<Port, 'id'>[];
-  params: Record<string, unknown>;
+  type: string
+  label: string
+  icon: string
+  color: string
+  inputs: Omit<Port, 'id'>[]
+  outputs: Omit<Port, 'id'>[]
+  params: Record<string, unknown>
 }
 
 export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
@@ -31,8 +31,8 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       boardName: 'Выберите доску...',
       selectedPin: DEFAULT_PINS[0].image,
       pins: DEFAULT_PINS,
-      boards: []
-    }
+      boards: [],
+    },
   },
 
   higgsfield_soul: {
@@ -41,15 +41,15 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     icon: 'ti-sparkles',
     color: 'var(--color-node-higgsfield)',
     inputs: [
-      { name: 'Face Ref',     type: PORT_TYPES.IMAGE },
-      { name: 'Style Prompt', type: PORT_TYPES.TEXT  }
+      { name: 'Face Ref', type: PORT_TYPES.IMAGE },
+      { name: 'Style Prompt', type: PORT_TYPES.TEXT },
     ],
     outputs: [{ name: 'Generated Frame', type: PORT_TYPES.IMAGE }],
     params: {
       prompt: 'Эстетичный кадр, армянский авангард, свет Сарьяна',
       faceWeight: 0.8,
-      seed: 42
-    }
+      seed: 42,
+    },
   },
 
   higgsfield_camera: {
@@ -57,9 +57,9 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     label: 'Higgsfield Motion',
     icon: 'ti-video',
     color: 'var(--color-node-higgsfield)',
-    inputs:  [{ name: 'Frame Input',  type: PORT_TYPES.IMAGE }],
+    inputs: [{ name: 'Frame Input', type: PORT_TYPES.IMAGE }],
     outputs: [{ name: 'Camera Video', type: PORT_TYPES.VIDEO }],
-    params: { motionPreset: 'Орбита (360°)', speed: 1.2 }
+    params: { motionPreset: 'Орбита (360°)', speed: 1.2 },
   },
 
   higgsfield_speak: {
@@ -69,10 +69,43 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     color: 'var(--color-node-higgsfield)',
     inputs: [
       { name: 'Avatar Frame', type: PORT_TYPES.IMAGE },
-      { name: 'Audio Voice',  type: PORT_TYPES.AUDIO }
+      { name: 'Audio Voice', type: PORT_TYPES.AUDIO },
     ],
     outputs: [{ name: 'Lipsync Video', type: PORT_TYPES.VIDEO }],
-    params: { expression: 'Эмоциональный диалог', language: 'Армянский' }
+    params: { expression: 'Эмоциональный диалог', language: 'Армянский' },
+  },
+
+  gemini_text: {
+    type: 'gemini_text',
+    label: 'Gemini Text',
+    icon: 'ti-sparkles',
+    color: '#4285F4',
+    inputs: [{ name: 'Prompt', type: PORT_TYPES.TEXT }],
+    outputs: [{ name: 'Generated Text', type: PORT_TYPES.TEXT }],
+    params: { prompt: '', model: 'gemini-2.0-flash' },
+  },
+
+  gemini_vision: {
+    type: 'gemini_vision',
+    label: 'Gemini Vision',
+    icon: 'ti-eye-spark',
+    color: '#4285F4',
+    inputs: [
+      { name: 'Image', type: PORT_TYPES.IMAGE },
+      { name: 'Query', type: PORT_TYPES.TEXT },
+    ],
+    outputs: [{ name: 'Description', type: PORT_TYPES.TEXT }],
+    params: { query: 'Describe this scene for a film', model: 'gemini-2.0-flash' },
+  },
+
+  gemini_imagen: {
+    type: 'gemini_imagen',
+    label: 'Imagen 4',
+    icon: 'ti-photo-ai',
+    color: '#4285F4',
+    inputs: [{ name: 'Style Prompt', type: PORT_TYPES.TEXT }],
+    outputs: [{ name: 'Generated Image', type: PORT_TYPES.IMAGE }],
+    params: { prompt: '', aspectRatio: '16:9' },
   },
 
   output_scene: {
@@ -82,10 +115,10 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     color: 'var(--color-node-scene)',
     inputs: [
       { name: 'Visual Render', type: PORT_TYPES.IMAGE },
-      { name: 'Motion Render', type: PORT_TYPES.VIDEO }
+      { name: 'Motion Render', type: PORT_TYPES.VIDEO },
     ],
     outputs: [],
-    params: { renderingEngine: 'Hayverse Realtime Veo 3' }
+    params: { renderingEngine: 'Hayverse Realtime Veo 3' },
   },
 
   text_prompt: {
@@ -95,7 +128,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     color: 'var(--color-node-util)',
     inputs: [],
     outputs: [{ name: 'Text Out', type: PORT_TYPES.TEXT }],
-    params: { text: 'Винтажные тона, Кондский дворик в дымке' }
+    params: { text: 'Винтажные тона, Кондский дворик в дымке' },
   },
 
   character: {
@@ -115,7 +148,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       photos: [] as string[],
       photoIdx: 0,
       pinterestUrl: '',
-    }
+    },
   },
 
   location: {
@@ -130,7 +163,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       weather: 'туман',
       timeOfDay: 'рассвет',
       _db: ['Старый Конд', 'Каскад', 'Гарни', 'Севан'],
-    }
+    },
   },
 
   building: {
@@ -139,7 +172,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     icon: 'ti-building-arch',
     color: 'var(--color-node-character)',
     inputs: [
-      { name: 'Artwork',   type: 'any' as PortType },
+      { name: 'Artwork', type: 'any' as PortType },
       { name: 'Furniture', type: 'any' as PortType },
     ],
     outputs: [{ name: 'Building Out', type: 'any' as PortType }],
@@ -148,7 +181,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       inFrame: true,
       floor: 2,
       _db: ['Дом с эркером', 'Чайхана', 'Мастерская', 'Двор-колодец'],
-    }
+    },
   },
 
   clothing: {
@@ -163,7 +196,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       season: 'FW26',
       wear: 12,
       _db: ['Tigran Avetisyan', 'Anna K', 'Loom Weaving', 'Taraz (нац.)'],
-    }
+    },
   },
 
   artwork: {
@@ -178,7 +211,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       inFrame: true,
       scale: 120,
       _db: ['Минас Аветисян', 'Сарьян', 'Параджанов коллаж', 'Хачкар'],
-    }
+    },
   },
 
   furniture: {
@@ -193,7 +226,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       inFrame: true,
       density: 5,
       _db: ['Тахта + ковёр', 'Резной буфет', 'Тонет', 'Минимал'],
-    }
+    },
   },
 
   music: {
@@ -207,7 +240,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       selectedItem: 'Армянский дудук',
       mood: 'элегия',
       _db: ['Армянский дудук', 'Джаз-квартет', 'Электронный минимал', 'Тишина'],
-    }
+    },
   },
 
   script: {
@@ -221,7 +254,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       selectedItem: 'Сцена 04: Утро в Конде',
       tone: 'драма',
       _db: ['Сцена 04: Утро в Конде', 'Пролог · Севан', 'Вернисаж', 'Финал'],
-    }
+    },
   },
 
   storyboard: {
@@ -235,7 +268,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       selectedItem: 'Утро в Конде v4',
       shots: 6,
       _db: ['Утро в Конде v4', 'Вернисаж v2', 'Финал · одна сцена'],
-    }
+    },
   },
 
   transport: {
@@ -249,16 +282,20 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       selectedItem: 'Советский Москвич',
       inFrame: false,
       _db: ['Советский Москвич', 'Арба конная', 'Велосипед ретро', 'Маршрутка'],
-    }
+    },
   },
-};
+}
 
 // Ordered list for palette display
 export const PALETTE_GROUPS: { label: string; types: string[] }[] = [
-  { label: 'Сущности',     types: ['character', 'location', 'building', 'clothing', 'artwork', 'furniture'] },
-  { label: 'Нарратив',     types: ['music', 'script', 'storyboard', 'transport'] },
-  { label: 'Pinterest',    types: ['pinterest_board'] },
+  {
+    label: 'Сущности',
+    types: ['character', 'location', 'building', 'clothing', 'artwork', 'furniture'],
+  },
+  { label: 'Нарратив', types: ['music', 'script', 'storyboard', 'transport'] },
+  { label: 'Pinterest', types: ['pinterest_board'] },
   { label: 'Higgsfield AI', types: ['higgsfield_soul', 'higgsfield_camera', 'higgsfield_speak'] },
-  { label: 'Утилиты',      types: ['text_prompt'] },
-  { label: 'Вывод',        types: ['output_scene'] },
-];
+  { label: 'Gemini AI', types: ['gemini_text', 'gemini_vision', 'gemini_imagen'] },
+  { label: 'Утилиты', types: ['text_prompt'] },
+  { label: 'Вывод', types: ['output_scene'] },
+]

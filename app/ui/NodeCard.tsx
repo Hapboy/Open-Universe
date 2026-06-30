@@ -1,42 +1,62 @@
-import { memo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
-import type { NodeParams, PortType } from '../types.ts';
-import { useAppContext } from '../store/AppContext.tsx';
+import { memo } from 'react'
+import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
+import type { NodeParams, PortType } from '../types.ts'
+import { useAppContext } from '../store/AppContext.tsx'
 
 function portColor(type: PortType): string {
-  if (type === 'Image') return 'var(--color-node-scene)';
-  if (type === 'Video') return 'var(--color-node-higgsfield)';
-  if (type === 'Text')  return 'var(--color-node-pinterest)';
-  return 'var(--color-text-tertiary)';
+  if (type === 'Image') return 'var(--color-node-scene)'
+  if (type === 'Video') return 'var(--color-node-higgsfield)'
+  if (type === 'Text') return 'var(--color-node-pinterest)'
+  return 'var(--color-text-tertiary)'
 }
 
 function nodeDisplayValue(data: NodeParams): string {
-  const p = data.params;
+  const p = data.params
   switch (data.nodeType) {
-    case 'pinterest_board':   return (p.boardName as string) || '';
-    case 'higgsfield_soul':   return (p.prompt    as string) || '';
-    case 'higgsfield_camera': return (p.motionPreset as string) || '';
-    case 'higgsfield_speak':  return (p.expression  as string) || '';
-    case 'text_prompt':       return (p.text as string) || '';
-    case 'character':         return (p.selectedItem as string) || '';
-    case 'location':          return `${p.selectedItem} · ${p.timeOfDay}`;
-    case 'building':          return (p.selectedItem as string) || '';
-    case 'clothing':          return `${p.selectedItem} ${p.season}`;
-    case 'artwork':           return (p.selectedItem as string) || '';
-    case 'furniture':         return (p.selectedItem as string) || '';
-    case 'music':             return (p.selectedItem as string) || '';
-    case 'script':            return (p.selectedItem as string) || '';
-    case 'storyboard':        return (p.selectedItem as string) || '';
-    case 'transport':         return (p.selectedItem as string) || '';
-    default:                  return (p.renderingEngine as string) || 'Активен';
+    case 'pinterest_board':
+      return (p.boardName as string) || ''
+    case 'higgsfield_soul':
+      return (p.prompt as string) || ''
+    case 'higgsfield_camera':
+      return (p.motionPreset as string) || ''
+    case 'higgsfield_speak':
+      return (p.expression as string) || ''
+    case 'text_prompt':
+      return (p.text as string) || ''
+    case 'character':
+      return (p.selectedItem as string) || ''
+    case 'location':
+      return `${p.selectedItem} · ${p.timeOfDay}`
+    case 'building':
+      return (p.selectedItem as string) || ''
+    case 'clothing':
+      return `${p.selectedItem} ${p.season}`
+    case 'artwork':
+      return (p.selectedItem as string) || ''
+    case 'furniture':
+      return (p.selectedItem as string) || ''
+    case 'music':
+      return (p.selectedItem as string) || ''
+    case 'script':
+      return (p.selectedItem as string) || ''
+    case 'storyboard':
+      return (p.selectedItem as string) || ''
+    case 'transport':
+      return (p.selectedItem as string) || ''
+    default:
+      return (p.renderingEngine as string) || 'Активен'
   }
 }
 
-export const NodeCard = memo(function NodeCard({ id, data, selected }: NodeProps<NodeParams>) {
-  const { updateNodeParam } = useAppContext();
+export const NodeCard = memo(function NodeCard({
+  id,
+  data,
+  selected,
+}: NodeProps<Node<NodeParams>>) {
+  const { updateNodeParam } = useAppContext()
 
-  const photos = data.nodeType === 'character' ? (data.params.photos as string[]) || [] : [];
-  const photoIdx = (data.params.photoIdx as number) || 0;
+  const photos = data.nodeType === 'character' ? (data.params.photos as string[]) || [] : []
+  const photoIdx = (data.params.photoIdx as number) || 0
 
   return (
     <div
@@ -70,29 +90,37 @@ export const NodeCard = memo(function NodeCard({ id, data, selected }: NodeProps
             <>
               <button
                 className="node-photo-nav prev"
-                onMouseDown={e => e.stopPropagation()}
-                onClick={e => { e.stopPropagation(); updateNodeParam(id, 'photoIdx', (photoIdx - 1 + photos.length) % photos.length); }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  updateNodeParam(id, 'photoIdx', (photoIdx - 1 + photos.length) % photos.length)
+                }}
               >
                 <i className="ti ti-chevron-left" />
               </button>
               <button
                 className="node-photo-nav next"
-                onMouseDown={e => e.stopPropagation()}
-                onClick={e => { e.stopPropagation(); updateNodeParam(id, 'photoIdx', (photoIdx + 1) % photos.length); }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  updateNodeParam(id, 'photoIdx', (photoIdx + 1) % photos.length)
+                }}
               >
                 <i className="ti ti-chevron-right" />
               </button>
-              <span className="node-photo-count">{photoIdx + 1}/{photos.length}</span>
+              <span className="node-photo-count">
+                {photoIdx + 1}/{photos.length}
+              </span>
             </>
           )}
           <button
             className="node-photo-del"
-            onMouseDown={e => e.stopPropagation()}
-            onClick={e => {
-              e.stopPropagation();
-              const next = photos.filter((_, i) => i !== photoIdx);
-              updateNodeParam(id, 'photos', next);
-              updateNodeParam(id, 'photoIdx', Math.max(0, Math.min(photoIdx, next.length - 1)));
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+              const next = photos.filter((_, i) => i !== photoIdx)
+              updateNodeParam(id, 'photos', next)
+              updateNodeParam(id, 'photoIdx', Math.max(0, Math.min(photoIdx, next.length - 1)))
             }}
           >
             <i className="ti ti-trash" />
@@ -112,5 +140,5 @@ export const NodeCard = memo(function NodeCard({ id, data, selected }: NodeProps
         />
       ))}
     </div>
-  );
-});
+  )
+})
