@@ -4,18 +4,36 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,json,md}": "prettier --write"
   },
   "dependencies": {
+    "@xyflow/react": "^12.6.4",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "@xyflow/react": "^12.6.4"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "vite": "^6.3.5",
-    "@vitejs/plugin-react": "^4.5.2",
-    "typescript": "^5.8.3",
+    "@eslint/js": "^10.0.1",
     "@types/react": "^19.1.6",
-    "@types/react-dom": "^19.1.5"
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.2",
+    "eslint": "^10.6.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.4",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.62.1",
+    "vite": "^6.3.5"
   }
 }
