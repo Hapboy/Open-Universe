@@ -1,9 +1,13 @@
 # Machine-local Claude Code settings (permissions differ per machine)
 .claude/settings.local.json
 
+# Playwright MCP session artifacts
+.playwright-mcp/
+
 # Scratch / verification artifacts
 .shots/
 *.b64
+*.png
 
 # OS / editor cruft
 Thumbs.db
@@ -11,5 +15,9 @@ desktop.ini
 .DS_Store
 *.swp
 
-# Node (in case tooling is added later)
+# Env — never commit real keys
+.env*.local
+
+# Node
 node_modules/
+dist/

@@ -10,21 +10,34 @@
 git-подобным процессом (форк → PR → модерация → merge в `main`); непринятое
 живёт в мультивселенной. Это отдельный проект, **не** связан с PROUN-игрой.
 
-## Файлы
-- `prototypes/` — автономные кликабельные HTML-прототипы (без сборки, чистый
-  JS/SVG/HTML, иконки Tabler с CDN, светлая/тёмная тема):
-  - `index.html` — актуальный: граф → плеер, живая перерисовка кадра.
-  - `prototype-1-node-editor.html` — граф + git + таймлайн.
-  - `prototype-2-film-game-player.html` — плеер «фильм ↔ игра».
+## Стек приложения
+**React 18 + Vite + TypeScript**, `app/` — корень исходников.
+
+```
+app/
+├── core/        graph.ts, renderer.ts, services.ts (Pinterest & Higgsfield AI)
+├── data/        nodes.ts (NODE_TEMPLATES), presets.ts, scenes.ts
+├── store/       AppContext.tsx (React Context, глобальное состояние)
+├── ui/          App.tsx, NodeEditor.tsx, Inspector.tsx, NodeCard.tsx,
+│                Palette.tsx, PlayerPanel.tsx, CanonView.tsx,
+│                Topbar.tsx, Modals.tsx, Toast.tsx, game.ts
+├── style.css    единый CSS (CSS-переменные: --color-bg-*, --radius-*, ...)
+├── types.ts     TS-интерфейсы (NodeParams, PinItem, BoardItem, ...)
+└── main.tsx     точка входа React DOM
+```
+
+- `app/public/prototypes/` — **устаревшие** HTML-прототипы; игнорировать.
 - `docs/DESIGN.md` — концепция, план интеграции AI-провайдеров, каталог нод.
 - `.claude/launch.json` — конфиг превью (сервер `openuniverse`).
 
 ## Запуск / превью
-`python -m http.server 4174`, затем `http://localhost:4174/prototypes/index.html`.
-В Claude Code — preview-сервер `openuniverse`.
+`npm run dev` → `http://localhost:4174/` (Vite dev server).
+`npm run build` → `dist/`.
 
-## Соглашения
-- Прототипы — без зависимостей и сборки: один HTML-файл = один прототип.
-- Кнопки генерации в прототипах — заглушки (`sendPrompt` → тост); реальная
-  генерация пойдёт через capability-Gateway (см. план интеграции в DESIGN.md).
-- Бренд внутри прототипов — «Hayverse»; имя репозитория — `open-universe`.
+## Ключевые паттерны кода
+- Параметры ноды — `params: Record<string, unknown>` (гибко, без смены типов).
+- Обновление: `updateNodeParam(nodeId, key, value)` из `AppContext`.
+- Pinterest-паттерн (`.pinterest-pins-grid` / `.pinterest-pin-item`) уже в `style.css` — переиспользовать для медиа-сеток.
+- CSS-переменные: `--color-bg-primary/secondary/tertiary/card`, `--color-text-primary/secondary/tertiary`, `--color-border`, `--radius-sm/md/lg`.
+- Иконки — Tabler Icons (`ti-*`).
+- Бренд внутри UI — «Hayverse»; имя репозитория — `open-universe`.

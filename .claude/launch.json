@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "openuniverse",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "4174"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
       "port": 4174
     }
   ]
