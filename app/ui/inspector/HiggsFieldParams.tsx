@@ -1,20 +1,21 @@
+import { edgeInput } from '../../core/graph.ts'
 import { HIGGSFIELD_PRESETS } from '../../data/presets.ts'
-import type { EEP } from './shared.tsx'
+import { WirableTextField, type EEP } from './shared.tsx'
 import styles from '../../styles/shared.module.css'
 
-export function SoulParams({ node, params, updateNodeParam }: EEP) {
+export function SoulParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
+  const prompt = edgeInput(node.data, edges, resolved, 1)
   return (
     <>
-      <div className={styles.fld}>
-        <span>Промпт стилизации</span>
-        <input
-          type="text"
-          defaultValue={params.prompt as string}
-          onBlur={(e) => {
-            updateNodeParam(node.id, 'prompt', e.target.value)
-          }}
-        />
-      </div>
+      <WirableTextField
+        label="Промпт стилизации"
+        node={node}
+        paramKey="prompt"
+        params={params}
+        wired={prompt.wired}
+        liveValue={prompt.value}
+        updateNodeParam={updateNodeParam}
+      />
       <div className={styles.fld}>
         <span>Влияние лица (Face Weight)</span>
         <input

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { edgeInput } from '../../core/graph.ts'
 import { GeminiService, type GeminiModelInfo } from '../../core/services/gemini.ts'
-import type { EEP } from './shared.tsx'
+import { WirableTextField, type EEP } from './shared.tsx'
 import styles from '../../styles/shared.module.css'
 
 const FALLBACK_MODELS: GeminiModelInfo[] = [
@@ -28,20 +29,20 @@ function useGeminiModels(currentModel: string): GeminiModelInfo[] {
   return models
 }
 
-export function GeminiTextParams({ node, params, updateNodeParam }: EEP) {
+export function GeminiTextParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
   const MODELS = useGeminiModels(params.model as string)
+  const prompt = edgeInput(node.data, edges, resolved, 0)
   return (
     <>
-      <div className={styles.fld}>
-        <span>Промпт</span>
-        <input
-          type="text"
-          defaultValue={params.prompt as string}
-          onBlur={(e) => {
-            updateNodeParam(node.id, 'prompt', e.target.value)
-          }}
-        />
-      </div>
+      <WirableTextField
+        label="Промпт"
+        node={node}
+        paramKey="prompt"
+        params={params}
+        wired={prompt.wired}
+        liveValue={prompt.value}
+        updateNodeParam={updateNodeParam}
+      />
       <div className={styles.fld}>
         <span>Модель</span>
         <select
@@ -59,20 +60,20 @@ export function GeminiTextParams({ node, params, updateNodeParam }: EEP) {
   )
 }
 
-export function GeminiVisionParams({ node, params, updateNodeParam }: EEP) {
+export function GeminiVisionParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
   const MODELS = useGeminiModels(params.model as string)
+  const query = edgeInput(node.data, edges, resolved, 1)
   return (
     <>
-      <div className={styles.fld}>
-        <span>Запрос к изображению</span>
-        <input
-          type="text"
-          defaultValue={params.query as string}
-          onBlur={(e) => {
-            updateNodeParam(node.id, 'query', e.target.value)
-          }}
-        />
-      </div>
+      <WirableTextField
+        label="Запрос к изображению"
+        node={node}
+        paramKey="query"
+        params={params}
+        wired={query.wired}
+        liveValue={query.value}
+        updateNodeParam={updateNodeParam}
+      />
       <div className={styles.fld}>
         <span>Модель</span>
         <select
@@ -90,20 +91,20 @@ export function GeminiVisionParams({ node, params, updateNodeParam }: EEP) {
   )
 }
 
-export function GeminiImagenParams({ node, params, updateNodeParam }: EEP) {
+export function GeminiImagenParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
   const RATIOS = ['16:9', '1:1', '9:16', '4:3', '3:4']
+  const prompt = edgeInput(node.data, edges, resolved, 0)
   return (
     <>
-      <div className={styles.fld}>
-        <span>Промпт</span>
-        <input
-          type="text"
-          defaultValue={params.prompt as string}
-          onBlur={(e) => {
-            updateNodeParam(node.id, 'prompt', e.target.value)
-          }}
-        />
-      </div>
+      <WirableTextField
+        label="Промпт"
+        node={node}
+        paramKey="prompt"
+        params={params}
+        wired={prompt.wired}
+        liveValue={prompt.value}
+        updateNodeParam={updateNodeParam}
+      />
       <div className={styles.fld}>
         <span>Соотношение сторон</span>
         <select

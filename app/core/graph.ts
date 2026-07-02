@@ -24,7 +24,7 @@ const ENTITY_TYPES = [
 // undefined) — only fall back to the node's own param when nothing is wired
 // at all. This preserves the fixed-point pass's existing convergence
 // behavior in `runGraph`.
-function edgeInput(
+export function edgeInput(
   d: NodeParams,
   edges: Edge[],
   resolved: Resolved,
@@ -142,8 +142,57 @@ export async function runGraph(
   updateOutputScene(nodes, edges, resolved, setRenderImage, showToast)
 }
 
-// Recomputes a single node, then cascades forward through everything wired
-// downstream of it, reusing whatever is already in `resolved` for the rest.
+// Computes and caches a single node's output into `resolved`, first
+// resolving any of its unwired-from-cache ancestors so the node never runs
+// against stale/missing upstream values. `inFlight` guards against cycles.
+async function resolveNode(
+  id: string,
+  nodes: Node<NodeParams>[],
+  edges: Edge[],
+  resolved: Resolved,
+  showToast: ShowToast,
+  onNodeStart: ((nodeId: string) => void) | undefined,
+  onNodeDone: ((nodeId: string) => void) | undefined,
+  inFlight: Set<string>
+): Promise<void> {
+  if (inFlight.has(id)) return
+  inFlight.add(id)
+
+  const node = nodes.find((n) => n.id === id)
+  if (!node) return
+
+  for (const edge of edges) {
+    if (edge.target !== id) continue
+    const ancestorOutputId = nodes.find((n) => n.id === edge.source)?.data.outputs[0]?.id
+    if (ancestorOutputId && resolved[ancestorOutputId] !== undefined) continue
+    await resolveNode(
+      edge.source,
+      nodes,
+      edges,
+      resolved,
+      showToast,
+      onNodeStart,
+      onNodeDone,
+      inFlight
+    )
+  }
+
+  onNodeStart?.(id)
+  try {
+    const out = await computeNodeOutput(node, edges, resolved, showToast)
+    const outputId = node.data.outputs[0]?.id
+    if (outputId) {
+      if (out !== undefined) resolved[outputId] = out
+      else delete resolved[outputId]
+    }
+  } finally {
+    onNodeDone?.(id)
+  }
+}
+
+// Recomputes a single node (after first resolving any unresolved ancestors
+// feeding into it), then cascades forward through everything wired
+// downstream, reusing whatever is already in `resolved` for the rest.
 export async function runNodeCascade(
   startNodeId: string,
   nodes: Node<NodeParams>[],
@@ -162,20 +211,7 @@ export async function runNodeCascade(
     if (visited.has(id)) continue
     visited.add(id)
 
-    const node = nodes.find((n) => n.id === id)
-    if (!node) continue
-
-    onNodeStart?.(id)
-    try {
-      const out = await computeNodeOutput(node, edges, resolved, showToast)
-      const outputId = node.data.outputs[0]?.id
-      if (outputId) {
-        if (out !== undefined) resolved[outputId] = out
-        else delete resolved[outputId]
-      }
-    } finally {
-      onNodeDone?.(id)
-    }
+    await resolveNode(id, nodes, edges, resolved, showToast, onNodeStart, onNodeDone, new Set())
 
     for (const edge of edges) {
       if (edge.source === id) queue.push(edge.target)

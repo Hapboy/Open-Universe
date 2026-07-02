@@ -4,6 +4,7 @@ import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import type { NodeParams, PortType } from '../../types.ts'
 import { AI_MODEL_NODE_TYPES } from '../../data/nodes.ts'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
+import { CircleLoader } from '../CircleLoader/CircleLoader.tsx'
 import styles from './NodeCard.module.css'
 
 function portColor(type: PortType): string {
@@ -13,7 +14,7 @@ function portColor(type: PortType): string {
   return 'var(--color-text-tertiary)'
 }
 
-function nodeDisplayValue(data: NodeParams): string {
+function nodeDisplayValue(data: NodeParams, generatedText?: string): string {
   const p = data.params
   switch (data.nodeType) {
     case 'pinterest_board':
@@ -46,8 +47,10 @@ function nodeDisplayValue(data: NodeParams): string {
       return (p.selectedItem as string) || ''
     case 'transport':
       return (p.selectedItem as string) || ''
+    case 'gemini_text':
+      return generatedText || ''
     default:
-      return (p.renderingEngine as string) || 'Активен'
+      return (p.renderingEngine as string) || ''
   }
 }
 
@@ -56,12 +59,17 @@ export const NodeCard = memo(function NodeCard({
   data,
   selected,
 }: NodeProps<Node<NodeParams>>) {
-  const { updateNodeParam, runNode, runningNodeIds } = useGraphContext()
+  const { updateNodeParam, runNode, runningNodeIds, resolved } = useGraphContext()
 
   const photos = data.nodeType === 'character' ? (data.params.photos as string[]) || [] : []
   const photoIdx = (data.params.photoIdx as number) || 0
   const isAiModel = AI_MODEL_NODE_TYPES.includes(data.nodeType)
   const isRunning = runningNodeIds.has(id)
+  const outputId = data.outputs[0]?.id
+  const generatedText =
+    data.nodeType === 'gemini_text' && outputId
+      ? (resolved[outputId] as string | undefined)
+      : undefined
 
   return (
     <div
@@ -94,18 +102,23 @@ export const NodeCard = memo(function NodeCard({
               void runNode(id)
             }}
           >
-            <i
-              className={cn(
-                'ti',
-                isRunning ? 'ti-loader-2' : 'ti-player-play',
-                isRunning && styles.spin
-              )}
-            />
+            {isRunning ? (
+              <CircleLoader className={styles.runBtnLoader} />
+            ) : (
+              <i className="ti ti-player-play" />
+            )}
           </button>
         )}
       </div>
       <div className={styles.body}>
-        <div className={styles.titleVal}>{nodeDisplayValue(data)}</div>
+        <div
+          className={cn(
+            styles.titleVal,
+            generatedText && [styles.titleValFull, 'nodrag', 'nowheel']
+          )}
+        >
+          {nodeDisplayValue(data, generatedText)}
+        </div>
       </div>
 
       {photos.length > 0 && (

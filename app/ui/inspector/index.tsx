@@ -8,6 +8,8 @@ import styles from './index.module.css'
 export function Inspector() {
   const {
     nodes,
+    edges,
+    resolved,
     selectedNodeId,
     selectNode,
     deleteNode,
@@ -42,6 +44,8 @@ export function Inspector() {
       />
       <NodeParamsPanel
         node={node}
+        edges={edges}
+        resolved={resolved}
         updateNodeParam={updateNodeParam}
         loadPinterestBoards={loadPinterestBoards}
         loadPinterestPins={loadPinterestPins}

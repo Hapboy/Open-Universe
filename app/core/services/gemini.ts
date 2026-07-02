@@ -113,9 +113,8 @@ export const GeminiService = {
       })
       const bytes = res.generatedImages?.[0]?.image?.imageBytes
       if (!bytes) throw new Error('no image bytes')
-      const dataUrl = await GeminiService._bytesToDataUrl(bytes as Uint8Array)
       showToast('Imagen 4: изображение готово!')
-      return dataUrl
+      return `data:image/png;base64,${bytes}`
     } catch (e) {
       console.warn('Imagen 4 error:', e)
       showToast('Imagen 4: ошибка API')
@@ -130,14 +129,6 @@ export const GeminiService = {
       const reader = new FileReader()
       reader.onload = () => resolve((reader.result as string).split(',')[1])
       reader.readAsDataURL(new Blob([buf]))
-    })
-  },
-
-  _bytesToDataUrl(bytes: Uint8Array): Promise<string> {
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.readAsDataURL(new Blob([bytes], { type: 'image/png' }))
     })
   },
 }

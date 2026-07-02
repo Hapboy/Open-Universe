@@ -32,6 +32,8 @@ import styles from './NodeParams.module.css'
 
 export function NodeParamsPanel({
   node,
+  edges,
+  resolved,
   updateNodeParam,
   loadPinterestBoards,
   loadPinterestPins,
@@ -63,6 +65,8 @@ export function NodeParamsPanel({
         <SoulParams
           node={node}
           params={params}
+          edges={edges}
+          resolved={resolved}
           updateNodeParam={updateNodeParam}
           executeGraph={executeGraph}
         />
@@ -71,6 +75,8 @@ export function NodeParamsPanel({
         <CameraParams
           node={node}
           params={params}
+          edges={edges}
+          resolved={resolved}
           updateNodeParam={updateNodeParam}
           executeGraph={executeGraph}
         />
@@ -79,6 +85,8 @@ export function NodeParamsPanel({
         <SpeakParams
           node={node}
           params={params}
+          edges={edges}
+          resolved={resolved}
           updateNodeParam={updateNodeParam}
           executeGraph={executeGraph}
         />
@@ -87,6 +95,8 @@ export function NodeParamsPanel({
         <OutputParams
           node={node}
           params={params}
+          edges={edges}
+          resolved={resolved}
           updateNodeParam={updateNodeParam}
           executeGraph={executeGraph}
         />
@@ -95,6 +105,8 @@ export function NodeParamsPanel({
         <TextParams
           node={node}
           params={params}
+          edges={edges}
+          resolved={resolved}
           updateNodeParam={updateNodeParam}
           executeGraph={executeGraph}
         />
@@ -103,6 +115,8 @@ export function NodeParamsPanel({
         <GeminiTextParams
           node={node}
           params={params}
+          edges={edges}
+          resolved={resolved}
           updateNodeParam={updateNodeParam}
           executeGraph={executeGraph}
         />
@@ -111,6 +125,8 @@ export function NodeParamsPanel({
         <GeminiVisionParams
           node={node}
           params={params}
+          edges={edges}
+          resolved={resolved}
           updateNodeParam={updateNodeParam}
           executeGraph={executeGraph}
         />
@@ -119,6 +135,8 @@ export function NodeParamsPanel({
         <GeminiImagenParams
           node={node}
           params={params}
+          edges={edges}
+          resolved={resolved}
           updateNodeParam={updateNodeParam}
           executeGraph={executeGraph}
         />

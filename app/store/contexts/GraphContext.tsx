@@ -44,6 +44,7 @@ function findPort(
 interface GraphCtx {
   nodes: Node<NodeParams>[]
   edges: Edge[]
+  resolved: Record<string, unknown>
   onNodesChange: OnNodesChange
   onEdgesChange: OnEdgesChange
   onConnect: OnConnect
@@ -200,6 +201,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const resolvedRef = useRef<Record<string, unknown>>({})
+  const [resolved, setResolved] = useState<Record<string, unknown>>({})
   const [runningNodeIds, setRunningNodeIds] = useState<Set<string>>(new Set())
 
   const executeGraph = useCallback(async () => {
@@ -208,6 +210,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     await runGraph(nodes, edges, resolvedRef.current, showToast, (img: string | null) => {
       ;(window as Window & { customRenderImage?: string | null }).customRenderImage = img
     })
+    setResolved({ ...resolvedRef.current })
   }, [nodes, edges, showToast])
 
   const runNode = useCallback(
@@ -223,12 +226,14 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
           ;(window as Window & { customRenderImage?: string | null }).customRenderImage = img
         },
         (id) => setRunningNodeIds((s) => new Set(s).add(id)),
-        (id) =>
+        (id) => {
           setRunningNodeIds((s) => {
             const next = new Set(s)
             next.delete(id)
             return next
           })
+          setResolved({ ...resolvedRef.current })
+        }
       )
     },
     [nodes, edges, showToast]
@@ -239,6 +244,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const ctx: GraphCtx = {
     nodes,
     edges,
+    resolved,
     onNodesChange,
     onEdgesChange,
     onConnect,
