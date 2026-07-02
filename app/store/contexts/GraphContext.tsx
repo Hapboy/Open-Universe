@@ -6,28 +6,48 @@ import {
   type Connection,
   type Edge,
   type EdgeChange,
+  type IsValidConnection,
   type Node,
   type NodeChange,
   type OnConnect,
   type OnEdgesChange,
   type OnNodesChange,
 } from '@xyflow/react'
-import { NODE_TEMPLATES } from '../data/nodes.ts'
-import type { CanonMode, CurrentUser, NodeParams, PlayerState, TeamMember } from '../types.ts'
+import { NODE_TEMPLATES } from '../../data/nodes.ts'
+import type { CanonMode, NodeParams, Port } from '../../types.ts'
+import { useToastContext } from './ToastContext.tsx'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+const GRAPH_STORAGE_KEY = 'hv_graph'
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+function loadStoredGraph(): { nodes: Node<NodeParams>[]; edges: Edge[] } {
+  try {
+    const raw = localStorage.getItem(GRAPH_STORAGE_KEY)
+    if (!raw) return { nodes: [], edges: [] }
+    const parsed = JSON.parse(raw)
+    return { nodes: parsed.nodes ?? [], edges: parsed.edges ?? [] }
+  } catch {
+    return { nodes: [], edges: [] }
+  }
 }
 
-interface AppCtx {
+function findPort(
+  nodes: Node<NodeParams>[],
+  nodeId: string | null | undefined,
+  handleId: string | null | undefined,
+  direction: 'source' | 'target'
+): Port | undefined {
+  const node = nodes.find((n) => n.id === nodeId)
+  const ports = direction === 'source' ? node?.data.outputs : node?.data.inputs
+  return ports?.find((p) => p.id === handleId)
+}
+
+interface GraphCtx {
   nodes: Node<NodeParams>[]
   edges: Edge[]
   onNodesChange: OnNodesChange
   onEdgesChange: OnEdgesChange
   onConnect: OnConnect
+  isValidConnection: IsValidConnection
 
   selectedNodeId: string | null
   selectNode: (id: string | null) => void
@@ -36,72 +56,25 @@ interface AppCtx {
   deleteNode: (id: string) => void
   updateNodeParam: (nodeId: string, key: string, value: unknown) => void
   executeGraph: () => Promise<void>
+  runNode: (nodeId: string) => Promise<void>
+  runningNodeIds: Set<string>
   loadPinterestBoards: (node: Node<NodeParams>) => Promise<void>
   loadPinterestPins: (node: Node<NodeParams>, boardId: string) => Promise<void>
 
   canonMode: CanonMode
   setCanonMode: (m: CanonMode) => void
-
-  player: PlayerState
-  setPlayer: (patch: Partial<PlayerState>) => void
-
-  currentUser: CurrentUser | null
-  setCurrentUser: (u: CurrentUser) => void
-  team: TeamMember[]
-
-  toast: string | null
-  showToast: (msg: string) => void
-
-  deferredInstallPrompt: BeforeInstallPromptEvent | null
-  setDeferredInstallPrompt: (e: BeforeInstallPromptEvent | null) => void
 }
 
-// ─── Defaults ─────────────────────────────────────────────────────────────────
+const Ctx = createContext<GraphCtx>(null!)
+export const useGraphContext = () => useContext(Ctx)
 
-const INITIAL_PLAYER: PlayerState = {
-  isPlaying: false,
-  movieTime: 330,
-  activeSceneIndex: 3,
-  playerMode: 'film',
-  cam: 'classic',
-  pal: 0,
-  dlg: true,
-  tempo: 32,
-  gameAv: { x: 225, y: 235 },
-  gameSavedT: 330,
-}
+export function GraphProvider({ children }: { children: React.ReactNode }) {
+  const { showToast } = useToastContext()
 
-const INITIAL_TEAM: TeamMember[] = [
-  { name: 'Арам', charName: 'Аракс', side: 'moct', role: 'Разработчик', isMe: false },
-  { name: 'Сона', charName: 'Ани', side: 'urvakan', role: 'Стилист', isMe: false },
-  { name: 'Карен', charName: 'Давид', side: 'rambalkoshe', role: 'Художник', isMe: false },
-]
-
-// ─── Context ──────────────────────────────────────────────────────────────────
-
-const Ctx = createContext<AppCtx>(null!)
-export const useAppContext = () => useContext(Ctx)
-
-// Imperative getter for use in vanilla TS files (game.ts)
-let _snapshot: (() => Pick<AppCtx, 'player'>) | null = null
-export const getAppSnapshot = () => _snapshot?.()
-
-// ─── Provider ─────────────────────────────────────────────────────────────────
-
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [nodes, setNodes] = useState<Node<NodeParams>[]>([])
-  const [edges, setEdges] = useState<Edge[]>([])
+  const [nodes, setNodes] = useState<Node<NodeParams>[]>(() => loadStoredGraph().nodes)
+  const [edges, setEdges] = useState<Edge[]>(() => loadStoredGraph().edges)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [canonMode, setCanonMode] = useState<CanonMode>('canon')
-  const [player, setPlayerBase] = useState<PlayerState>(INITIAL_PLAYER)
-  const [toast, setToast] = useState<string | null>(null)
-  const [currentUser, setCurrentUserBase] = useState<CurrentUser | null>(
-    JSON.parse(localStorage.getItem('hv_current_user') || 'null')
-  )
-  const [deferredInstallPrompt, setDeferredInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null)
-
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── React Flow handlers ─────────────────────────────────────────────────────
 
@@ -117,22 +90,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setEdges((es) => addEdge(conn, es))
   }, [])
 
-  // ── Utilities ───────────────────────────────────────────────────────────────
+  const isValidConnection: IsValidConnection = useCallback(
+    (conn) => {
+      const sourcePort = findPort(nodes, conn.source, conn.sourceHandle, 'source')
+      const targetPort = findPort(nodes, conn.target, conn.targetHandle, 'target')
+      if (!sourcePort || !targetPort) return false
+      if (sourcePort.type === 'any' || targetPort.type === 'any') return true
+      return sourcePort.type === targetPort.type
+    },
+    [nodes]
+  )
 
-  const showToast = useCallback((msg: string) => {
-    setToast(msg)
-    if (toastTimer.current) clearTimeout(toastTimer.current)
-    toastTimer.current = setTimeout(() => setToast(null), 3000)
-  }, [])
+  // ── Graph persistence (temp localStorage autosave; will move to a backend) ──
 
-  const setPlayer = useCallback((patch: Partial<PlayerState>) => {
-    setPlayerBase((s) => ({ ...s, ...patch }))
-  }, [])
-
-  const setCurrentUser = useCallback((u: CurrentUser) => {
-    localStorage.setItem('hv_current_user', JSON.stringify(u))
-    setCurrentUserBase(u)
-  }, [])
+  const graphSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current)
+    graphSaveTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(GRAPH_STORAGE_KEY, JSON.stringify({ nodes, edges }))
+      } catch {
+        showToast('Не удалось сохранить граф локально (превышен лимит хранилища)')
+      }
+    }, 400)
+    return () => {
+      if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current)
+    }
+  }, [nodes, edges, showToast])
 
   // ── Graph actions ───────────────────────────────────────────────────────────
 
@@ -183,7 +167,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const loadPinterestBoards = useCallback(
     async (node: Node<NodeParams>) => {
-      const { PinterestService } = await import('../core/services/index.ts')
+      const { PinterestService } = await import('../../core/services/index.ts')
       const boards = await PinterestService.fetchBoards(showToast)
       setNodes((ns) =>
         ns.map((n) => {
@@ -201,7 +185,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   )
 
   const loadPinterestPins = useCallback(async (node: Node<NodeParams>, boardId: string) => {
-    const { PinterestService } = await import('../core/services/index.ts')
+    const { PinterestService } = await import('../../core/services/index.ts')
     const pins = await PinterestService.fetchPins(boardId)
     const selectedPin = pins.length
       ? (pins[0] as { image: string }).image
@@ -215,45 +199,63 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     )
   }, [])
 
+  const resolvedRef = useRef<Record<string, unknown>>({})
+  const [runningNodeIds, setRunningNodeIds] = useState<Set<string>>(new Set())
+
   const executeGraph = useCallback(async () => {
-    const { runGraph } = await import('../core/graph.ts')
-    await runGraph(nodes, edges, showToast, (img: string | null) => {
+    const { runGraph } = await import('../../core/graph.ts')
+    resolvedRef.current = {}
+    await runGraph(nodes, edges, resolvedRef.current, showToast, (img: string | null) => {
       ;(window as Window & { customRenderImage?: string | null }).customRenderImage = img
     })
   }, [nodes, edges, showToast])
 
+  const runNode = useCallback(
+    async (nodeId: string) => {
+      const { runNodeCascade } = await import('../../core/graph.ts')
+      await runNodeCascade(
+        nodeId,
+        nodes,
+        edges,
+        resolvedRef.current,
+        showToast,
+        (img: string | null) => {
+          ;(window as Window & { customRenderImage?: string | null }).customRenderImage = img
+        },
+        (id) => setRunningNodeIds((s) => new Set(s).add(id)),
+        (id) =>
+          setRunningNodeIds((s) => {
+            const next = new Set(s)
+            next.delete(id)
+            return next
+          })
+      )
+    },
+    [nodes, edges, showToast]
+  )
+
   // ── Assemble and expose ─────────────────────────────────────────────────────
 
-  const ctx: AppCtx = {
+  const ctx: GraphCtx = {
     nodes,
     edges,
     onNodesChange,
     onEdgesChange,
     onConnect,
+    isValidConnection,
     selectedNodeId,
     selectNode,
     createNode,
     deleteNode,
     updateNodeParam,
     executeGraph,
+    runNode,
+    runningNodeIds,
     loadPinterestBoards,
     loadPinterestPins,
     canonMode,
     setCanonMode,
-    player,
-    setPlayer,
-    currentUser,
-    setCurrentUser,
-    team: INITIAL_TEAM,
-    toast,
-    showToast,
-    deferredInstallPrompt,
-    setDeferredInstallPrompt,
   }
-
-  useEffect(() => {
-    _snapshot = () => ({ player: ctx.player })
-  })
 
   return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>
 }

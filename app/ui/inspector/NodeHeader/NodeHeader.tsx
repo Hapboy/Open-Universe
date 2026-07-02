@@ -1,16 +1,17 @@
-import { useAppContext } from '../../store/AppContext.tsx'
+import { useGraphContext } from '../../../store/contexts/GraphContext.tsx'
 import type { Node } from '@xyflow/react'
-import type { NodeParams } from '../../types.ts'
+import type { NodeParams } from '../../../types.ts'
+import styles from './NodeHeader.module.css'
 
 export function NodeHeader({ node, onDelete }: { node: Node<NodeParams>; onDelete: () => void }) {
-  const { updateNodeParam } = useAppContext()
+  const { updateNodeParam } = useGraphContext()
   return (
-    <div className="insp-section">
-      <div className="insp-h" style={{ '--nc': node.data.color } as React.CSSProperties}>
+    <div className={styles.inspSection}>
+      <div className={styles.inspH} style={{ '--nc': node.data.color } as React.CSSProperties}>
         <i className={`ti ${node.data.icon}`} />
         <span>Свойства: {node.data.label}</span>
       </div>
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Имя ноды</span>
         <input
           type="text"
@@ -19,7 +20,7 @@ export function NodeHeader({ node, onDelete }: { node: Node<NodeParams>; onDelet
         />
       </div>
       <button
-        className="btn"
+        className={styles.btn}
         onClick={onDelete}
         style={{
           color: 'var(--color-text-danger)',

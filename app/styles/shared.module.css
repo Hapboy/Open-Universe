@@ -1,0 +1,145 @@
+/* Cross-component atoms, pulled into component modules via `composes`.
+   Populated incrementally as components migrate off the old global style.css. */
+
+.spacer {
+  flex: 1;
+}
+
+.inspSection {
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.inspH {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inspH i {
+  color: var(--nc);
+}
+
+.fld {
+  margin-bottom: 12px;
+}
+
+.fld > span {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.fld input[type='text'],
+.fld select {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.fld input[type='text']:focus,
+.fld select:focus {
+  border-color: var(--color-border-active);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: var(--color-bg-card);
+}
+
+.pri {
+  background: var(--color-bg-accent);
+  border-color: var(--color-bg-accent);
+  color: #fff;
+}
+
+.pri:hover {
+  opacity: 0.95;
+}
+
+.segBtn {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: 100%;
+}
+
+.segBtn button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  padding: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.segBtn button.isOn {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.chipGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.chip:hover {
+  border-color: var(--color-border-hover);
+  color: var(--color-text-primary);
+}
+
+.chip.isOn {
+  border-color: var(--color-border-active);
+  background: rgba(239, 159, 39, 0.1);
+  color: var(--color-text-accent);
+  font-weight: 500;
+}

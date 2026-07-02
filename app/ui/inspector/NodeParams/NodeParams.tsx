@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
-import type { NodeParamsProps } from './shared.tsx'
-import { PinterestParams } from './PinterestParams.tsx'
-import { SoulParams, CameraParams, SpeakParams } from './HiggsFieldParams.tsx'
-import { GeminiTextParams, GeminiVisionParams, GeminiImagenParams } from './GeminiParams.tsx'
+import type { NodeParamsProps } from '../shared.tsx'
+import { PinterestParams } from '../PinterestParams/PinterestParams.tsx'
+import { SoulParams, CameraParams, SpeakParams } from '../HiggsFieldParams.tsx'
+import { GeminiTextParams, GeminiVisionParams, GeminiImagenParams } from '../GeminiParams.tsx'
 import {
   CharacterParams,
   LocationParams,
@@ -14,8 +14,8 @@ import {
   ScriptParams,
   StoryboardParams,
   TransportParams,
-} from './EntityParams.tsx'
-import { OutputParams, TextParams } from './UtilParams.tsx'
+} from '../EntityParams/EntityParams.tsx'
+import { OutputParams, TextParams } from '../UtilParams.tsx'
 import type {
   CharacterNodeParams,
   LocationNodeParams,
@@ -27,7 +27,8 @@ import type {
   ScriptNodeParams,
   StoryboardNodeParams,
   TransportNodeParams,
-} from '../../types.ts'
+} from '../../../types.ts'
+import styles from './NodeParams.module.css'
 
 export function NodeParamsPanel({
   node,
@@ -47,7 +48,7 @@ export function NodeParamsPanel({
   }, [node, nodeType, loadPinterestBoards])
 
   return (
-    <div className="insp-section">
+    <div className={styles.inspSection}>
       <h5>Параметры ноды</h5>
       <br />
       {nodeType === 'pinterest_board' && (
@@ -56,7 +57,6 @@ export function NodeParamsPanel({
           params={params}
           updateNodeParam={updateNodeParam}
           loadPinterestPins={loadPinterestPins}
-          executeGraph={executeGraph}
         />
       )}
       {nodeType === 'higgsfield_soul' && (

@@ -1,0 +1,3 @@
+.inspSection {
+  composes: inspSection from '../../../styles/shared.module.css';
+}

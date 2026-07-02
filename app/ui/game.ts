@@ -1,4 +1,4 @@
-import { getAppSnapshot } from '../store/AppContext.tsx'
+import { getAppSnapshot } from '../store/contexts/PlayerContext.tsx'
 
 // Art piece position in top-down view (matches renderer.ts topDown ART coords)
 const ART = { x: 360, y: 48 }

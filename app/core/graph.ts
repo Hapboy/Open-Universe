@@ -4,15 +4,129 @@ import { GeminiService, HiggsfieldService } from './services/index.ts'
 
 type ShowToast = (msg: string) => void
 type SetRenderImage = (img: string | null) => void
+type Resolved = Record<string, unknown>
 
+const ENTITY_TYPES = [
+  'character',
+  'location',
+  'building',
+  'clothing',
+  'artwork',
+  'furniture',
+  'music',
+  'script',
+  'storyboard',
+  'transport',
+]
+
+// Mirrors the original inline lookup: if the input is wired to an edge, use
+// whatever is currently resolved for its source (even if that's still
+// undefined) — only fall back to the node's own param when nothing is wired
+// at all. This preserves the fixed-point pass's existing convergence
+// behavior in `runGraph`.
+function edgeInput(
+  d: NodeParams,
+  edges: Edge[],
+  resolved: Resolved,
+  inputIndex: number
+): { wired: boolean; value: unknown } {
+  const edge = edges.find((e) => e.targetHandle === d.inputs[inputIndex]?.id)
+  return edge
+    ? { wired: true, value: resolved[edge.sourceHandle ?? ''] }
+    : { wired: false, value: undefined }
+}
+
+// Computes a single node's output value. Returns undefined when the node
+// type produces nothing yet (unmet dependency, or the underlying service call
+// yielded no result) — callers should leave `resolved` untouched in that case.
+async function computeNodeOutput(
+  node: Node<NodeParams>,
+  edges: Edge[],
+  resolved: Resolved,
+  showToast: ShowToast
+): Promise<unknown> {
+  const d = node.data
+
+  if (d.nodeType === 'pinterest_board') {
+    return d.params.selectedPin
+  } else if (d.nodeType === 'text_prompt') {
+    return d.params.text
+  } else if (d.nodeType === 'higgsfield_soul') {
+    const face = edgeInput(d, edges, resolved, 0)
+    const prompt = edgeInput(d, edges, resolved, 1)
+    const faceVal = (face.wired ? face.value : null) as string | null
+    const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string
+    return await HiggsfieldService.runSoul(promptVal, faceVal, showToast)
+  } else if (d.nodeType === 'higgsfield_camera') {
+    const input = edgeInput(d, edges, resolved, 0)
+    const val = (input.wired ? input.value : null) as string | null
+    return await HiggsfieldService.runMotion(val, d.params.motionPreset as string, showToast)
+  } else if (ENTITY_TYPES.includes(d.nodeType)) {
+    return d.params.selectedItem
+  } else if (d.nodeType === 'gemini_text') {
+    const prompt = edgeInput(d, edges, resolved, 0)
+    const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string
+    return await GeminiService.runText(promptVal || '', showToast, d.params.model as string)
+  } else if (d.nodeType === 'gemini_vision') {
+    const img = edgeInput(d, edges, resolved, 0)
+    const query = edgeInput(d, edges, resolved, 1)
+    const imgVal = (img.wired ? img.value : null) as string | null
+    const queryVal = (query.wired ? query.value : d.params.query) as string
+    if (!imgVal) return undefined
+    return await GeminiService.runVision(
+      imgVal,
+      queryVal || 'Describe this scene',
+      showToast,
+      d.params.model as string
+    )
+  } else if (d.nodeType === 'gemini_imagen') {
+    const prompt = edgeInput(d, edges, resolved, 0)
+    const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string
+    return await GeminiService.runImagen(
+      promptVal || '',
+      (d.params.aspectRatio as string) ?? '16:9',
+      showToast
+    )
+  } else if (d.nodeType === 'higgsfield_speak') {
+    const input = edgeInput(d, edges, resolved, 0)
+    const val = (input.wired ? input.value : null) as string | null
+    return await HiggsfieldService.runSpeak(val, d.params.expression as string, showToast)
+  }
+
+  return undefined
+}
+
+function updateOutputScene(
+  nodes: Node<NodeParams>[],
+  edges: Edge[],
+  resolved: Resolved,
+  setRenderImage: SetRenderImage,
+  showToast: ShowToast
+): void {
+  const outNode = nodes.find((n) => n.data.nodeType === 'output_scene')
+  if (!outNode) return
+  const vEdge = edges.find((e) => e.targetHandle === outNode.data.inputs[0]?.id)
+  const mEdge = edges.find((e) => e.targetHandle === outNode.data.inputs[1]?.id)
+  const img =
+    (vEdge && resolved[vEdge.sourceHandle ?? '']) ||
+    (mEdge && resolved[mEdge.sourceHandle ?? '']) ||
+    null
+  const prev = (window as Window & { customRenderImage?: string | null }).customRenderImage
+  if (img !== prev) {
+    setRenderImage(img as string | null)
+    showToast('Кадр фильма обновлен на основе выходов графа!')
+  }
+}
+
+// Full-graph pass: recomputes every node from scratch into `resolved`
+// (mutated in place — pass an empty object to fully reset the cache).
 export async function runGraph(
   nodes: Node<NodeParams>[],
   edges: Edge[],
+  resolved: Resolved,
   showToast: ShowToast,
   setRenderImage: SetRenderImage
 ): Promise<void> {
-  const resolved: Record<string, unknown> = {}
-
   for (let pass = 0; pass < nodes.length; pass++) {
     for (const node of nodes) {
       const d = node.data
@@ -20,98 +134,53 @@ export async function runGraph(
       // Skip nodes whose output is already resolved from a previous pass
       if (d.outputs[0]?.id && resolved[d.outputs[0].id] !== undefined) continue
 
-      if (d.nodeType === 'pinterest_board') {
-        resolved[d.outputs[0]?.id] = d.params.selectedPin
-      } else if (d.nodeType === 'text_prompt') {
-        resolved[d.outputs[0]?.id] = d.params.text
-      } else if (d.nodeType === 'higgsfield_soul') {
-        const faceEdge = edges.find((e) => e.targetHandle === d.inputs[0]?.id)
-        const promptEdge = edges.find((e) => e.targetHandle === d.inputs[1]?.id)
-        const faceVal = faceEdge ? (resolved[faceEdge.sourceHandle ?? ''] as string) : null
-        const promptVal = promptEdge
-          ? (resolved[promptEdge.sourceHandle ?? ''] as string)
-          : (d.params.prompt as string)
-        resolved[d.outputs[0]?.id] = await HiggsfieldService.runSoul(promptVal, faceVal, showToast)
-      } else if (d.nodeType === 'higgsfield_camera') {
-        const edge = edges.find((e) => e.targetHandle === d.inputs[0]?.id)
-        const val = edge ? (resolved[edge.sourceHandle ?? ''] as string) : null
-        resolved[d.outputs[0]?.id] = await HiggsfieldService.runMotion(
-          val,
-          d.params.motionPreset as string,
-          showToast
-        )
-      } else if (
-        [
-          'character',
-          'location',
-          'building',
-          'clothing',
-          'artwork',
-          'furniture',
-          'music',
-          'script',
-          'storyboard',
-          'transport',
-        ].includes(d.nodeType)
-      ) {
-        if (d.outputs[0]?.id) resolved[d.outputs[0].id] = d.params.selectedItem
-      } else if (d.nodeType === 'gemini_text') {
-        const promptEdge = edges.find((e) => e.targetHandle === d.inputs[0]?.id)
-        const promptVal = promptEdge
-          ? (resolved[promptEdge.sourceHandle ?? ''] as string)
-          : (d.params.prompt as string)
-        const out = await GeminiService.runText(promptVal || '', showToast)
-        if (out) resolved[d.outputs[0]?.id] = out
-      } else if (d.nodeType === 'gemini_vision') {
-        const imgEdge = edges.find((e) => e.targetHandle === d.inputs[0]?.id)
-        const queryEdge = edges.find((e) => e.targetHandle === d.inputs[1]?.id)
-        const imgVal = imgEdge ? (resolved[imgEdge.sourceHandle ?? ''] as string) : null
-        const queryVal = queryEdge
-          ? (resolved[queryEdge.sourceHandle ?? ''] as string)
-          : (d.params.query as string)
-        if (imgVal) {
-          const out = await GeminiService.runVision(
-            imgVal,
-            queryVal || 'Describe this scene',
-            showToast
-          )
-          if (out) resolved[d.outputs[0]?.id] = out
-        }
-      } else if (d.nodeType === 'gemini_imagen') {
-        const promptEdge = edges.find((e) => e.targetHandle === d.inputs[0]?.id)
-        const promptVal = promptEdge
-          ? (resolved[promptEdge.sourceHandle ?? ''] as string)
-          : (d.params.prompt as string)
-        const out = await GeminiService.runImagen(
-          promptVal || '',
-          (d.params.aspectRatio as string) ?? '16:9',
-          showToast
-        )
-        if (out) resolved[d.outputs[0]?.id] = out
-      } else if (d.nodeType === 'higgsfield_speak') {
-        const edge = edges.find((e) => e.targetHandle === d.inputs[0]?.id)
-        const val = edge ? (resolved[edge.sourceHandle ?? ''] as string) : null
-        resolved[d.outputs[0]?.id] = await HiggsfieldService.runSpeak(
-          val,
-          d.params.expression as string,
-          showToast
-        )
-      }
+      const out = await computeNodeOutput(node, edges, resolved, showToast)
+      if (out !== undefined && d.outputs[0]?.id) resolved[d.outputs[0].id] = out
     }
   }
 
-  const outNode = nodes.find((n) => n.data.nodeType === 'output_scene')
-  if (outNode) {
-    const vEdge = edges.find((e) => e.targetHandle === outNode.data.inputs[0]?.id)
-    const mEdge = edges.find((e) => e.targetHandle === outNode.data.inputs[1]?.id)
-    const img =
-      (vEdge && resolved[vEdge.sourceHandle ?? '']) ||
-      (mEdge && resolved[mEdge.sourceHandle ?? '']) ||
-      null
-    const prev = (window as Window & { customRenderImage?: string | null }).customRenderImage
-    if (img !== prev) {
-      setRenderImage(img as string | null)
-      showToast('Кадр фильма обновлен на основе выходов графа!')
+  updateOutputScene(nodes, edges, resolved, setRenderImage, showToast)
+}
+
+// Recomputes a single node, then cascades forward through everything wired
+// downstream of it, reusing whatever is already in `resolved` for the rest.
+export async function runNodeCascade(
+  startNodeId: string,
+  nodes: Node<NodeParams>[],
+  edges: Edge[],
+  resolved: Resolved,
+  showToast: ShowToast,
+  setRenderImage: SetRenderImage,
+  onNodeStart?: (nodeId: string) => void,
+  onNodeDone?: (nodeId: string) => void
+): Promise<void> {
+  const queue = [startNodeId]
+  const visited = new Set<string>()
+
+  while (queue.length) {
+    const id = queue.shift()!
+    if (visited.has(id)) continue
+    visited.add(id)
+
+    const node = nodes.find((n) => n.id === id)
+    if (!node) continue
+
+    onNodeStart?.(id)
+    try {
+      const out = await computeNodeOutput(node, edges, resolved, showToast)
+      const outputId = node.data.outputs[0]?.id
+      if (outputId) {
+        if (out !== undefined) resolved[outputId] = out
+        else delete resolved[outputId]
+      }
+    } finally {
+      onNodeDone?.(id)
+    }
+
+    for (const edge of edges) {
+      if (edge.source === id) queue.push(edge.target)
     }
   }
+
+  updateOutputScene(nodes, edges, resolved, setRenderImage, showToast)
 }

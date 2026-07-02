@@ -8,6 +8,18 @@ const PORT_TYPES = {
   TEXT: 'Text' as PortType,
 }
 
+// Node types that call a paid AI generation service (GeminiService /
+// HiggsfieldService) — these get a per-node Run button instead of
+// auto-executing on every param change.
+export const AI_MODEL_NODE_TYPES = [
+  'gemini_text',
+  'gemini_vision',
+  'gemini_imagen',
+  'higgsfield_soul',
+  'higgsfield_camera',
+  'higgsfield_speak',
+]
+
 export interface NodeTemplate {
   type: string
   label: string
@@ -82,7 +94,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     color: '#4285F4',
     inputs: [{ name: 'Prompt', type: PORT_TYPES.TEXT }],
     outputs: [{ name: 'Generated Text', type: PORT_TYPES.TEXT }],
-    params: { prompt: '', model: 'gemini-2.0-flash' },
+    params: { prompt: '', model: 'gemini-flash-latest' },
   },
 
   gemini_vision: {
@@ -95,7 +107,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       { name: 'Query', type: PORT_TYPES.TEXT },
     ],
     outputs: [{ name: 'Description', type: PORT_TYPES.TEXT }],
-    params: { query: 'Describe this scene for a film', model: 'gemini-2.0-flash' },
+    params: { query: 'Describe this scene for a film', model: 'gemini-flash-latest' },
   },
 
   gemini_imagen: {

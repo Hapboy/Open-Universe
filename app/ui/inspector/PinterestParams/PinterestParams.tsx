@@ -1,19 +1,19 @@
+import cn from 'classnames'
 import type { Node } from '@xyflow/react'
-import type { NodeParams, PinItem, BoardItem } from '../../types.ts'
-import type { NodeParamsProps } from './shared.tsx'
+import type { NodeParams, PinItem, BoardItem } from '../../../types.ts'
+import type { NodeParamsProps } from '../shared.tsx'
+import styles from './PinterestParams.module.css'
 
 export function PinterestParams({
   node,
   params,
   updateNodeParam,
   loadPinterestPins,
-  executeGraph,
 }: {
   node: Node<NodeParams>
   params: Record<string, unknown>
   updateNodeParam: NodeParamsProps['updateNodeParam']
   loadPinterestPins: NodeParamsProps['loadPinterestPins']
-  executeGraph: NodeParamsProps['executeGraph']
 }) {
   const boards = (params.boards as BoardItem[]) || []
   const pins = (params.pins as PinItem[]) || []
@@ -28,7 +28,7 @@ export function PinterestParams({
 
   return (
     <>
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Pinterest Доска</span>
         <select value={(params.boardId as string) || ''} onChange={handleBoardChange}>
           {boards.length === 0 ? (
@@ -42,18 +42,20 @@ export function PinterestParams({
           )}
         </select>
       </div>
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Выберите изображение (Pin)</span>
-        <div className="pinterest-pins-grid">
+        <div className={styles.pinterestPinsGrid}>
           {pins.map((p) => (
             <div
               key={p.id}
-              className={`pinterest-pin-item${params.selectedPin === p.image ? ' sel' : ''}`}
+              className={cn(
+                styles.pinterestPinItem,
+                params.selectedPin === p.image && styles.isSelected
+              )}
               style={{ backgroundImage: `url('${p.image}')` }}
               title={p.title}
               onClick={() => {
                 updateNodeParam(node.id, 'selectedPin', p.image)
-                void executeGraph()
               }}
             />
           ))}

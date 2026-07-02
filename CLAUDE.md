@@ -17,13 +17,17 @@ git-подобным процессом (форк → PR → модерация 
 
 ```
 app/
-├── core/        graph.ts, renderer.ts, services.ts (Pinterest & Higgsfield AI)
+├── core/        graph.ts, renderer.ts, services/ (index.ts, pinterest.ts,
+│                higgsfield.ts, gemini.ts)
 ├── data/        nodes.ts (NODE_TEMPLATES), presets.ts, scenes.ts
-├── store/       AppContext.tsx (React Context, глобальное состояние)
-├── ui/          App.tsx, NodeEditor.tsx, inspector/, NodeCard.tsx,
-│                Palette.tsx, PlayerPanel.tsx (MiniPlayer only),
-│                Topbar.tsx, Modals.tsx, Toast.tsx, game.ts
-├── style.css    единый CSS (CSS-переменные: --color-bg-*, --radius-*, ...)
+├── store/       AppProviders.tsx + contexts/ (Graph/Player/User/Toast/Pwa —
+│                React Context per concern, глобальное состояние)
+├── ui/          App.tsx (+ App.module.css), NodeEditor/, NodeCard/,
+│                Palette/, PlayerPanel/ (MiniPlayer only), Topbar/,
+│                Modals/, Toast/, inspector/, game.ts — каждый компонент =
+│                папка с колокейтед `Name.module.css`
+├── styles/      global.css (CSS-переменные, reset), shared.module.css
+│                (общие атомы через `composes`)
 ├── types.ts     TS-интерфейсы (NodeParams, PinItem, BoardItem, ...)
 └── main.tsx     точка входа React DOM
 ```
@@ -40,8 +44,10 @@ app/
 ## Ключевые паттерны кода
 
 - Параметры ноды — `params: Record<string, unknown>` (гибко, без смены типов).
-- Обновление: `updateNodeParam(nodeId, key, value)` из `AppContext`.
-- Pinterest-паттерн (`.pinterest-pins-grid` / `.pinterest-pin-item`) уже в `style.css` — переиспользовать для медиа-сеток.
-- CSS-переменные: `--color-bg-primary/secondary/tertiary/card`, `--color-text-primary/secondary/tertiary`, `--color-border`, `--radius-sm/md/lg`.
+- Обновление: `updateNodeParam(nodeId, key, value)` из `GraphContext`.
+- Стили — CSS Modules: каждый компонент импортирует свой `Name.module.css`;
+  общие переиспользуемые классы — через `composes` из `styles/shared.module.css`,
+  не копипастить и не заводить новый глобальный CSS.
+- CSS-переменные (в `styles/global.css`): `--color-bg-primary/secondary/tertiary/card`, `--color-text-primary/secondary/tertiary`, `--color-border`, `--radius-sm/md/lg`.
 - Иконки — Tabler Icons (`ti-*`).
 - Бренд внутри UI — «Hayverse»; имя репозитория — `open-universe`.

@@ -1,6 +1,6 @@
 import { useRef } from 'react'
-import { DatabaseChips, InFrameToggle } from './shared.tsx'
-import type { EP } from './shared.tsx'
+import { DatabaseChips, InFrameToggle } from '../shared.tsx'
+import type { EP } from '../shared.tsx'
 import type {
   CharacterNodeParams,
   LocationNodeParams,
@@ -12,7 +12,8 @@ import type {
   ScriptNodeParams,
   StoryboardNodeParams,
   TransportNodeParams,
-} from '../../types.ts'
+} from '../../../types.ts'
+import styles from './EntityParams.module.css'
 
 export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterNodeParams>) {
   const db = params._db
@@ -47,7 +48,7 @@ export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterN
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
       />
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Возраст ({params.age})</span>
         <input
           type="range"
@@ -58,7 +59,7 @@ export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterN
           onChange={(e) => updateNodeParam(node.id, 'age', parseInt(e.target.value))}
         />
       </div>
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Эмоция</span>
         <select
           value={params.emotion}
@@ -71,7 +72,7 @@ export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterN
           ))}
         </select>
       </div>
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Стилист</span>
         <select
           value={params.stylist}
@@ -88,9 +89,9 @@ export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterN
         value={params.inFrame}
         onChange={(v) => updateNodeParam(node.id, 'inFrame', v)}
       />
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Фото персонажа ({photos.length})</span>
-        <div className="char-photo-actions">
+        <div className={styles.charPhotoActions}>
           <input
             ref={fileInputRef}
             type="file"
@@ -99,7 +100,7 @@ export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterN
             style={{ display: 'none' }}
             onChange={handleUpload}
           />
-          <button className="btn" onClick={() => fileInputRef.current?.click()}>
+          <button className={styles.btn} onClick={() => fileInputRef.current?.click()}>
             <i className="ti ti-upload" /> Загрузить
           </button>
         </div>
@@ -124,7 +125,7 @@ export function LocationParams({ node, params, updateNodeParam }: EP<LocationNod
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
       />
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Погода</span>
         <select
           value={params.weather}
@@ -137,7 +138,7 @@ export function LocationParams({ node, params, updateNodeParam }: EP<LocationNod
           ))}
         </select>
       </div>
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Время суток</span>
         <select
           value={params.timeOfDay}
@@ -163,7 +164,7 @@ export function BuildingParams({ node, params, updateNodeParam }: EP<BuildingNod
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
       />
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Этаж ({params.floor})</span>
         <input
           type="range"
@@ -191,7 +192,7 @@ export function ClothingParams({ node, params, updateNodeParam }: EP<ClothingNod
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
       />
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Сезон</span>
         <select
           value={params.season}
@@ -204,7 +205,7 @@ export function ClothingParams({ node, params, updateNodeParam }: EP<ClothingNod
           ))}
         </select>
       </div>
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Износ ({params.wear}%)</span>
         <input
           type="range"
@@ -228,7 +229,7 @@ export function ArtworkParams({ node, params, updateNodeParam }: EP<ArtworkNodeP
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
       />
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Масштаб ({params.scale}%)</span>
         <input
           type="range"
@@ -256,7 +257,7 @@ export function FurnitureParams({ node, params, updateNodeParam }: EP<FurnitureN
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
       />
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Плотность ({params.density})</span>
         <input
           type="range"
@@ -284,7 +285,7 @@ export function MusicParams({ node, params, updateNodeParam }: EP<MusicNodeParam
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
       />
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Настроение</span>
         <select
           value={params.mood}
@@ -310,7 +311,7 @@ export function ScriptParams({ node, params, updateNodeParam }: EP<ScriptNodePar
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
       />
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Тон</span>
         <select
           value={params.tone}
@@ -336,7 +337,7 @@ export function StoryboardParams({ node, params, updateNodeParam }: EP<Storyboar
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
       />
-      <div className="fld">
+      <div className={styles.fld}>
         <span>Кадров ({params.shots})</span>
         <input
           type="range"

@@ -1,36 +1,25 @@
-import { useEffect, useRef } from 'react'
-import { AppProvider, useAppContext } from './store/AppContext.tsx'
-import { Topbar } from './ui/Topbar.tsx'
-import { NodeEditor } from './ui/NodeEditor.tsx'
+import { AppProviders } from './store/AppProviders.tsx'
+import { useGraphContext } from './store/contexts/GraphContext.tsx'
+import { Topbar } from './ui/Topbar/Topbar.tsx'
+import { NodeEditor } from './ui/NodeEditor/NodeEditor.tsx'
 import { Inspector } from './ui/inspector/index.tsx'
-import { Palette } from './ui/Palette.tsx'
-import { Modals } from './ui/Modals.tsx'
-import { Toast } from './ui/Toast.tsx'
+import { Palette } from './ui/Palette/Palette.tsx'
+import { Modals } from './ui/Modals/Modals.tsx'
+import { Toast } from './ui/Toast/Toast.tsx'
+import styles from './App.module.css'
 
 function AppShell() {
-  const { createNode } = useAppContext()
-
-  const seeded = useRef(false)
-  useEffect(() => {
-    if (seeded.current) return
-    seeded.current = true
-    createNode('pinterest_board', 60, 80)
-    createNode('higgsfield_soul', 360, 80)
-    createNode('output_scene', 660, 80)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   return (
     <div id="app" data-theme="dark">
       <Topbar />
-      <div className="body">
+      <div className={styles.body}>
         <Palette />
-        <main className="stage">
+        <main className={styles.stage}>
           <NodeEditor />
         </main>
         <Inspector />
       </div>
-      <footer className="statusbar">
+      <footer className={styles.statusbar}>
         <StatusBar />
       </footer>
       <Modals />
@@ -40,7 +29,7 @@ function AppShell() {
 }
 
 function StatusBar() {
-  const { nodes, selectedNodeId } = useAppContext()
+  const { nodes, selectedNodeId } = useGraphContext()
   const sel = nodes.find((n) => n.id === selectedNodeId)
   const hfLive = !!(import.meta.env.VITE_HIGGSFIELD_KEY as string)
   const pinLive = !!(import.meta.env.VITE_PINTEREST_TOKEN as string)
@@ -48,20 +37,20 @@ function StatusBar() {
   return (
     <>
       <span id="statJobs">очередь: 0</span>
-      <span className="muted">
+      <span className={styles.muted}>
         Higgsfield: {hfLive ? 'live' : 'mock'} · Pinterest: {pinLive ? 'live' : 'mock'} · Gemini:{' '}
         {geminiLive ? 'live' : 'mock'}
       </span>
-      <span className="spacer" />
-      <span className="muted">{sel ? `${sel.data.label} (${sel.id})` : '—'}</span>
+      <span className={styles.spacer} />
+      <span className={styles.muted}>{sel ? `${sel.data.label} (${sel.id})` : '—'}</span>
     </>
   )
 }
 
 export function App() {
   return (
-    <AppProvider>
+    <AppProviders>
       <AppShell />
-    </AppProvider>
+    </AppProviders>
   )
 }

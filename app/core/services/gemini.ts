@@ -2,12 +2,49 @@ import { GoogleGenAI } from '@google/genai'
 
 type ShowToast = (msg: string) => void
 
+export interface GeminiModelInfo {
+  id: string
+  displayName?: string
+}
+
+const DEFAULT_MODEL = 'gemini-flash-latest'
+
+const FALLBACK_MODELS: GeminiModelInfo[] = [
+  { id: 'gemini-flash-latest', displayName: 'Gemini Flash (latest)' },
+  { id: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash' },
+  { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro' },
+]
+
+let modelsCache: GeminiModelInfo[] | null = null
+
 export const GeminiService = {
   _ai() {
     return new GoogleGenAI({ apiKey: (import.meta.env.VITE_GEMINI_KEY as string) ?? '' })
   },
 
-  async runText(prompt: string, showToast: ShowToast): Promise<string | null> {
+  async listModels(): Promise<GeminiModelInfo[]> {
+    if (!import.meta.env.VITE_GEMINI_KEY) return FALLBACK_MODELS
+    if (modelsCache) return modelsCache
+    try {
+      const pager = await GeminiService._ai().models.list({ config: { pageSize: 100 } })
+      const models: GeminiModelInfo[] = []
+      for await (const m of pager) {
+        if (!m.name || !m.supportedActions?.includes('generateContent')) continue
+        models.push({ id: m.name.replace(/^models\//, ''), displayName: m.displayName })
+      }
+      modelsCache = models.length ? models : FALLBACK_MODELS
+      return modelsCache
+    } catch (e) {
+      console.warn('Gemini listModels error:', e)
+      return FALLBACK_MODELS
+    }
+  },
+
+  async runText(
+    prompt: string,
+    showToast: ShowToast,
+    model: string = DEFAULT_MODEL
+  ): Promise<string | null> {
     if (!import.meta.env.VITE_GEMINI_KEY) {
       showToast('Gemini Text: mock режим')
       return `[Gemini mock] ${prompt}`
@@ -15,7 +52,7 @@ export const GeminiService = {
     try {
       showToast('Gemini: генерация текста…')
       const res = await GeminiService._ai().models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: model || DEFAULT_MODEL,
         contents: prompt,
       })
       showToast('Gemini: текст готов')
@@ -27,7 +64,12 @@ export const GeminiService = {
     }
   },
 
-  async runVision(imageUrl: string, query: string, showToast: ShowToast): Promise<string | null> {
+  async runVision(
+    imageUrl: string,
+    query: string,
+    showToast: ShowToast,
+    model: string = DEFAULT_MODEL
+  ): Promise<string | null> {
     if (!import.meta.env.VITE_GEMINI_KEY) {
       showToast('Gemini Vision: mock режим')
       return '[Gemini mock] Scene with Armenian aesthetic, warm light, cinematic composition.'
@@ -36,7 +78,7 @@ export const GeminiService = {
       showToast('Gemini Vision: анализ изображения…')
       const base64 = await GeminiService._urlToBase64(imageUrl)
       const res = await GeminiService._ai().models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: model || DEFAULT_MODEL,
         contents: [
           {
             role: 'user',

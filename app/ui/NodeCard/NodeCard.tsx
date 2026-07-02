@@ -1,7 +1,10 @@
 import { memo } from 'react'
+import cn from 'classnames'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
-import type { NodeParams, PortType } from '../types.ts'
-import { useAppContext } from '../store/AppContext.tsx'
+import type { NodeParams, PortType } from '../../types.ts'
+import { AI_MODEL_NODE_TYPES } from '../../data/nodes.ts'
+import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
+import styles from './NodeCard.module.css'
 
 function portColor(type: PortType): string {
   if (type === 'Image') return 'var(--color-node-scene)'
@@ -53,14 +56,16 @@ export const NodeCard = memo(function NodeCard({
   data,
   selected,
 }: NodeProps<Node<NodeParams>>) {
-  const { updateNodeParam } = useAppContext()
+  const { updateNodeParam, runNode, runningNodeIds } = useGraphContext()
 
   const photos = data.nodeType === 'character' ? (data.params.photos as string[]) || [] : []
   const photoIdx = (data.params.photoIdx as number) || 0
+  const isAiModel = AI_MODEL_NODE_TYPES.includes(data.nodeType)
+  const isRunning = runningNodeIds.has(id)
 
   return (
     <div
-      className={`node${selected ? ' sel' : ''}`}
+      className={cn(styles.card, selected && styles.isSelected)}
       style={{ '--nc': data.color } as React.CSSProperties}
     >
       {/* Input handles */}
@@ -71,25 +76,45 @@ export const NodeCard = memo(function NodeCard({
           position={Position.Left}
           id={port.id}
           style={{ top: 10 + i * 20, background: portColor(port.type) }}
-          title={port.name}
+          title={`${port.name} (${port.type === 'any' ? 'любой тип' : port.type})`}
         />
       ))}
 
-      <div className="node-h">
+      <div className={styles.header}>
         <i className={`ti ${data.icon}`} />
         <span>{data.label}</span>
+        {isAiModel && (
+          <button
+            className={styles.runBtn}
+            onMouseDown={(e) => e.stopPropagation()}
+            disabled={isRunning}
+            title="Запустить генерацию"
+            onClick={(e) => {
+              e.stopPropagation()
+              void runNode(id)
+            }}
+          >
+            <i
+              className={cn(
+                'ti',
+                isRunning ? 'ti-loader-2' : 'ti-player-play',
+                isRunning && styles.spin
+              )}
+            />
+          </button>
+        )}
       </div>
-      <div className="node-body">
-        <div className="node-title-val">{nodeDisplayValue(data)}</div>
+      <div className={styles.body}>
+        <div className={styles.titleVal}>{nodeDisplayValue(data)}</div>
       </div>
 
       {photos.length > 0 && (
-        <div className="node-photo-slider">
-          <img src={photos[photoIdx]} alt="" className="node-photo-img" />
+        <div className={styles.photoSlider}>
+          <img src={photos[photoIdx]} alt="" className={styles.photoImg} />
           {photos.length > 1 && (
             <>
               <button
-                className="node-photo-nav prev"
+                className={cn(styles.photoNav, styles.prev)}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation()
@@ -99,7 +124,7 @@ export const NodeCard = memo(function NodeCard({
                 <i className="ti ti-chevron-left" />
               </button>
               <button
-                className="node-photo-nav next"
+                className={cn(styles.photoNav, styles.next)}
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation()
@@ -108,13 +133,13 @@ export const NodeCard = memo(function NodeCard({
               >
                 <i className="ti ti-chevron-right" />
               </button>
-              <span className="node-photo-count">
+              <span className={styles.photoCount}>
                 {photoIdx + 1}/{photos.length}
               </span>
             </>
           )}
           <button
-            className="node-photo-del"
+            className={styles.photoDel}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation()
@@ -136,7 +161,7 @@ export const NodeCard = memo(function NodeCard({
           position={Position.Right}
           id={port.id}
           style={{ top: 10 + i * 20, background: portColor(port.type) }}
-          title={port.name}
+          title={`${port.name} (${port.type === 'any' ? 'любой тип' : port.type})`}
         />
       ))}
     </div>

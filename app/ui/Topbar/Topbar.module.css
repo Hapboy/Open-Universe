@@ -1,0 +1,87 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 16px;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.brand i {
+  font-size: 20px;
+  color: var(--color-bg-accent);
+}
+
+.brand em {
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 500;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  margin-left: 8px;
+}
+
+.spacer {
+  composes: spacer from '../../styles/shared.module.css';
+}
+
+.tb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tb:hover {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-hover);
+}
+
+.tb i {
+  font-size: 14px;
+}
+
+.tb b {
+  font-size: 11px;
+  background: var(--color-bg-accent);
+  color: #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.runBtn {
+  background: var(--color-bg-accent);
+  border-color: var(--color-bg-accent);
+  color: #fff;
+}
+
+.runBtn:hover {
+  opacity: 0.9;
+}

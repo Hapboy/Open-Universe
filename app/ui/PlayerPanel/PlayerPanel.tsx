@@ -1,11 +1,15 @@
 import { useEffect } from 'react'
-import { useAppContext } from '../store/AppContext.tsx'
-import { buildSceneSvg, fmtTime, sceneAt, SCENES, TOTAL_DURATION } from '../core/renderer.ts'
+import cn from 'classnames'
+import { usePlayerContext } from '../../store/contexts/PlayerContext.tsx'
+import { useUserContext } from '../../store/contexts/UserContext.tsx'
+import { buildSceneSvg, fmtTime, sceneAt, SCENES, TOTAL_DURATION } from '../../core/renderer.ts'
+import styles from './PlayerPanel.module.css'
 
 // ── Shared SVG player hook ────────────────────────────────────────────────────
 
 function usePlayerSvg(svgId: string) {
-  const { player, team, currentUser } = useAppContext()
+  const { player } = usePlayerContext()
+  const { team, currentUser } = useUserContext()
   const customImage = (window as Window & { customRenderImage?: string | null }).customRenderImage
 
   useEffect(() => {
@@ -18,7 +22,7 @@ function usePlayerSvg(svgId: string) {
 // ── Mini player (inspector sidebar) ──────────────────────────────────────────
 
 export function MiniPlayer() {
-  const { player, setPlayer } = useAppContext()
+  const { player, setPlayer } = usePlayerContext()
   const scene = SCENES[player.activeSceneIndex]
 
   usePlayerSvg('inspSvg')
@@ -35,32 +39,35 @@ export function MiniPlayer() {
   const pct = (player.movieTime / TOTAL_DURATION) * 100
 
   return (
-    <div className="insp-section" style={{ borderTop: '1px solid var(--color-border)' }}>
-      <div className="insp-h">
+    <div className={styles.inspSection} style={{ borderTop: '1px solid var(--color-border)' }}>
+      <div className={styles.inspH}>
         <i className="ti ti-video" /> Генеративный плеер
       </div>
-      <div className="player-container">
-        <div className="player-view">
+      <div className={styles.playerContainer}>
+        <div className={styles.playerView}>
           <svg id="inspSvg" viewBox="0 0 480 300" />
-          <div className="player-overlay player-tc" id="inspTC">
+          <div className={cn(styles.playerOverlay, styles.playerTc)} id="inspTC">
             {fmtTime(player.movieTime)}
           </div>
-          <div className="player-overlay player-sc" id="inspSC">
+          <div className={cn(styles.playerOverlay, styles.playerSc)} id="inspSC">
             {scene?.num} · {scene?.title}
           </div>
           {player.dlg && (
-            <div className="player-overlay player-sub" id="inspSub">
+            <div className={cn(styles.playerOverlay, styles.playerSub)} id="inspSub">
               {scene?.sub}
             </div>
           )}
         </div>
-        <div className="player-controls">
-          <button className="play-btn" onClick={() => setPlayer({ isPlaying: !player.isPlaying })}>
+        <div className={styles.playerControls}>
+          <button
+            className={styles.playBtn}
+            onClick={() => setPlayer({ isPlaying: !player.isPlaying })}
+          >
             <i className={`ti ${player.isPlaying ? 'ti-player-pause' : 'ti-player-play'}`} />
           </button>
-          <div className="scrub-bar" id="inspScrub" onClick={handleScrub}>
-            <div className="scrub-progress" style={{ width: `${pct}%` }} />
-            <div className="scrub-handle" style={{ left: `${pct}%` }} />
+          <div className={styles.scrubBar} id="inspScrub" onClick={handleScrub}>
+            <div className={styles.scrubProgress} style={{ width: `${pct}%` }} />
+            <div className={styles.scrubHandle} style={{ left: `${pct}%` }} />
           </div>
         </div>
       </div>

@@ -1,7 +1,9 @@
-import { useAppContext } from '../../store/AppContext.tsx'
-import { MiniPlayer } from '../PlayerPanel.tsx'
-import { NodeHeader } from './NodeHeader.tsx'
-import { NodeParamsPanel } from './NodeParams.tsx'
+import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
+import { useToastContext } from '../../store/contexts/ToastContext.tsx'
+import { MiniPlayer } from '../PlayerPanel/PlayerPanel.tsx'
+import { NodeHeader } from './NodeHeader/NodeHeader.tsx'
+import { NodeParamsPanel } from './NodeParams/NodeParams.tsx'
+import styles from './index.module.css'
 
 export function Inspector() {
   const {
@@ -13,15 +15,15 @@ export function Inspector() {
     loadPinterestBoards,
     loadPinterestPins,
     executeGraph,
-    showToast,
-  } = useAppContext()
+  } = useGraphContext()
+  const { showToast } = useToastContext()
 
   const node = nodes.find((n) => n.id === selectedNodeId) ?? null
 
   if (!node) {
     return (
-      <aside className="inspector" id="inspector">
-        <div className="insp-empty">
+      <aside className={styles.inspector} id="inspector">
+        <div className={styles.inspEmpty}>
           Выбери ноду на холсте, чтобы настроить её свойства и API параметры.
         </div>
         <MiniPlayer />
@@ -30,7 +32,7 @@ export function Inspector() {
   }
 
   return (
-    <aside className="inspector" id="inspector">
+    <aside className={styles.inspector} id="inspector">
       <NodeHeader
         node={node}
         onDelete={() => {

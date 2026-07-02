@@ -1,0 +1,29 @@
+.fld {
+  composes: fld from '../../../styles/shared.module.css';
+}
+
+.pinterestPinsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+}
+
+.pinterestPinItem {
+  aspect-ratio: 1;
+  background-size: cover;
+  background-position: center;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.15s;
+}
+
+.pinterestPinItem.isSelected {
+  border-color: var(--color-bg-accent);
+}

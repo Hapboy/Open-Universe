@@ -1,5 +1,7 @@
+import cn from 'classnames'
 import type { Node } from '@xyflow/react'
 import type { NodeParams } from '../../types.ts'
+import styles from '../../styles/shared.module.css'
 
 export interface NodeParamsProps {
   node: Node<NodeParams>
@@ -35,13 +37,13 @@ export function DatabaseChips({
   onSelect: (v: string) => void
 }) {
   return (
-    <div className="fld">
+    <div className={styles.fld}>
       <span>{label}</span>
-      <div className="chip-group">
+      <div className={styles.chipGroup}>
         {items.map((item) => (
           <button
             key={item}
-            className={`chip${selected === item ? ' on' : ''}`}
+            className={cn(styles.chip, selected === item && styles.isOn)}
             onClick={() => onSelect(item)}
           >
             {selected === item && <i className="ti ti-check" style={{ fontSize: 11 }} />} {item}
@@ -60,13 +62,13 @@ export function InFrameToggle({
   onChange: (v: boolean) => void
 }) {
   return (
-    <div className="fld" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div className={styles.fld} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       <span style={{ minWidth: 60, margin: 0 }}>в кадре</span>
-      <div className="seg-btn" style={{ width: 'auto' }}>
-        <button className={value ? 'on' : ''} onClick={() => onChange(true)}>
+      <div className={styles.segBtn} style={{ width: 'auto' }}>
+        <button className={value ? styles.isOn : ''} onClick={() => onChange(true)}>
           да
         </button>
-        <button className={!value ? 'on' : ''} onClick={() => onChange(false)}>
+        <button className={!value ? styles.isOn : ''} onClick={() => onChange(false)}>
           нет
         </button>
       </div>
