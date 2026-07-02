@@ -70,6 +70,10 @@ export const NodeCard = memo(function NodeCard({
     data.nodeType === 'gemini_text' && outputId
       ? (resolved[outputId] as string | undefined)
       : undefined
+  const generatedImage =
+    data.nodeType === 'gemini_imagen' && outputId
+      ? (resolved[outputId] as string | undefined)
+      : undefined
 
   return (
     <div
@@ -120,6 +124,12 @@ export const NodeCard = memo(function NodeCard({
           {nodeDisplayValue(data, generatedText)}
         </div>
       </div>
+
+      {generatedImage && (
+        <div className={styles.photoSlider}>
+          <img src={generatedImage} alt="" className={styles.photoImg} />
+        </div>
+      )}
 
       {photos.length > 0 && (
         <div className={styles.photoSlider}>
