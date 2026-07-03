@@ -117,7 +117,22 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     color: '#4285F4',
     inputs: [{ name: 'Style Prompt', type: PORT_TYPES.TEXT }],
     outputs: [{ name: 'Generated Image', type: PORT_TYPES.IMAGE }],
-    params: { prompt: '', aspectRatio: '16:9' },
+    params: {
+      prompt: '',
+      aspectRatio: '16:9',
+      model: 'imagen-4.0-generate-001',
+      resolution: '1K',
+      negativePrompt: '',
+      numberOfImages: 1,
+      seed: '',
+      personGeneration: 'ALLOW_ADULT',
+      safetyFilterLevel: 'BLOCK_MEDIUM_AND_ABOVE',
+      enhancePrompt: true,
+      outputMimeType: 'image/png',
+      outputCompressionQuality: 75,
+      guidanceScale: '',
+      language: 'auto',
+    },
   },
 
   output_scene: {

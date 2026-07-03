@@ -91,9 +91,37 @@ export function GeminiVisionParams({ node, params, edges, resolved, updateNodePa
   )
 }
 
+const IMAGEN_MODELS: GeminiModelInfo[] = [
+  { id: 'imagen-4.0-generate-001', displayName: 'Imagen 4' },
+  { id: 'imagen-4.0-ultra-generate-001', displayName: 'Imagen 4 Ultra' },
+  { id: 'imagen-4.0-fast-generate-001', displayName: 'Imagen 4 Fast' },
+]
+
+const PERSON_GENERATION_OPTIONS = [
+  { id: 'DONT_ALLOW', label: 'Запрещено' },
+  { id: 'ALLOW_ADULT', label: 'Только взрослые' },
+  { id: 'ALLOW_ALL', label: 'Все' },
+]
+
+const SAFETY_FILTER_OPTIONS = [
+  'BLOCK_LOW_AND_ABOVE',
+  'BLOCK_MEDIUM_AND_ABOVE',
+  'BLOCK_ONLY_HIGH',
+  'BLOCK_NONE',
+]
+
+const OUTPUT_MIME_OPTIONS = [
+  { id: 'image/png', label: 'PNG' },
+  { id: 'image/jpeg', label: 'JPEG' },
+]
+
+const LANGUAGE_OPTIONS = ['auto', 'en', 'ja', 'ko', 'hi', 'zh', 'pt', 'es']
+
 export function GeminiImagenParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
   const RATIOS = ['16:9', '1:1', '9:16', '4:3', '3:4']
+  const RESOLUTIONS = ['1K', '2K']
   const prompt = edgeInput(node.data, edges, resolved, 0)
+  const isJpeg = params.outputMimeType === 'image/jpeg'
   return (
     <>
       <WirableTextField
@@ -105,6 +133,19 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
         liveValue={prompt.value}
         updateNodeParam={updateNodeParam}
       />
+      <div className={styles.fld}>
+        <span>Модель</span>
+        <select
+          value={params.model as string}
+          onChange={(e) => updateNodeParam(node.id, 'model', e.target.value)}
+        >
+          {IMAGEN_MODELS.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.displayName ?? m.id}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className={styles.fld}>
         <span>Соотношение сторон</span>
         <select
@@ -119,6 +160,141 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
             </option>
           ))}
         </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Разрешение</span>
+        <select
+          value={params.resolution as string}
+          onChange={(e) => {
+            updateNodeParam(node.id, 'resolution', e.target.value)
+          }}
+        >
+          {RESOLUTIONS.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Негативный промпт</span>
+        <input
+          type="text"
+          defaultValue={params.negativePrompt as string}
+          onBlur={(e) => updateNodeParam(node.id, 'negativePrompt', e.target.value)}
+        />
+      </div>
+      <div className={styles.fld}>
+        <span>Количество изображений</span>
+        <select
+          value={String(params.numberOfImages ?? 1)}
+          onChange={(e) => updateNodeParam(node.id, 'numberOfImages', Number(e.target.value))}
+        >
+          {[1, 2, 3, 4].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Сид (seed)</span>
+        <input
+          type="text"
+          placeholder="авто"
+          defaultValue={params.seed as string}
+          onBlur={(e) => updateNodeParam(node.id, 'seed', e.target.value)}
+        />
+      </div>
+      <div className={styles.fld}>
+        <span>Guidance Scale</span>
+        <input
+          type="text"
+          placeholder="авто"
+          defaultValue={params.guidanceScale as string}
+          onBlur={(e) => updateNodeParam(node.id, 'guidanceScale', e.target.value)}
+        />
+      </div>
+      <div className={styles.fld}>
+        <span>Генерация людей</span>
+        <select
+          value={params.personGeneration as string}
+          onChange={(e) => updateNodeParam(node.id, 'personGeneration', e.target.value)}
+        >
+          {PERSON_GENERATION_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Уровень safety-фильтра</span>
+        <select
+          value={params.safetyFilterLevel as string}
+          onChange={(e) => updateNodeParam(node.id, 'safetyFilterLevel', e.target.value)}
+        >
+          {SAFETY_FILTER_OPTIONS.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Формат вывода</span>
+        <select
+          value={params.outputMimeType as string}
+          onChange={(e) => updateNodeParam(node.id, 'outputMimeType', e.target.value)}
+        >
+          {OUTPUT_MIME_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {isJpeg && (
+        <div className={styles.fld}>
+          <span>Качество JPEG (0-100)</span>
+          <input
+            type="text"
+            defaultValue={params.outputCompressionQuality as number}
+            onBlur={(e) =>
+              updateNodeParam(node.id, 'outputCompressionQuality', Number(e.target.value))
+            }
+          />
+        </div>
+      )}
+      <div className={styles.fld}>
+        <span>Язык промпта</span>
+        <select
+          value={params.language as string}
+          onChange={(e) => updateNodeParam(node.id, 'language', e.target.value)}
+        >
+          {LANGUAGE_OPTIONS.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ minWidth: 100, margin: 0 }}>Улучшить промпт</span>
+        <div className={styles.segBtn} style={{ width: 'auto' }}>
+          <button
+            className={params.enhancePrompt ? styles.isOn : ''}
+            onClick={() => updateNodeParam(node.id, 'enhancePrompt', true)}
+          >
+            да
+          </button>
+          <button
+            className={!params.enhancePrompt ? styles.isOn : ''}
+            onClick={() => updateNodeParam(node.id, 'enhancePrompt', false)}
+          >
+            нет
+          </button>
+        </div>
       </div>
     </>
   )

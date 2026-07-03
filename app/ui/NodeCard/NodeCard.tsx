@@ -48,6 +48,7 @@ function nodeDisplayValue(data: NodeParams, generatedText?: string): string {
     case 'transport':
       return (p.selectedItem as string) || ''
     case 'gemini_text':
+    case 'gemini_vision':
       return generatedText || ''
     default:
       return (p.renderingEngine as string) || ''
@@ -67,7 +68,7 @@ export const NodeCard = memo(function NodeCard({
   const isRunning = runningNodeIds.has(id)
   const outputId = data.outputs[0]?.id
   const generatedText =
-    data.nodeType === 'gemini_text' && outputId
+    (data.nodeType === 'gemini_text' || data.nodeType === 'gemini_vision') && outputId
       ? (resolved[outputId] as string | undefined)
       : undefined
   const generatedImage =

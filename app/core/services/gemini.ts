@@ -1,10 +1,27 @@
 import { GoogleGenAI } from '@google/genai'
+import type { ImagePromptLanguage, PersonGeneration, SafetyFilterLevel } from '@google/genai'
 
 type ShowToast = (msg: string) => void
 
 export interface GeminiModelInfo {
   id: string
   displayName?: string
+}
+
+export interface ImagenOptions {
+  aspectRatio: string
+  model: string
+  resolution: string
+  negativePrompt?: string
+  numberOfImages?: number
+  seed?: number
+  personGeneration?: string
+  safetyFilterLevel?: string
+  enhancePrompt?: boolean
+  outputMimeType?: string
+  outputCompressionQuality?: number
+  guidanceScale?: number
+  language?: string
 }
 
 const DEFAULT_MODEL = 'gemini-flash-latest'
@@ -97,7 +114,7 @@ export const GeminiService = {
 
   async runImagen(
     prompt: string,
-    aspectRatio: string,
+    options: ImagenOptions,
     showToast: ShowToast
   ): Promise<string | null> {
     if (!import.meta.env.VITE_GEMINI_KEY) {
@@ -106,10 +123,28 @@ export const GeminiService = {
     }
     try {
       showToast('Imagen 4: генерация кадра…')
+      const hasSeed = options.seed !== undefined
       const res = await GeminiService._ai().models.generateImages({
-        model: 'imagen-4.0-generate-001',
+        model: options.model || 'imagen-4.0-generate-001',
         prompt,
-        config: { numberOfImages: 1, aspectRatio },
+        config: {
+          numberOfImages: options.numberOfImages ?? 1,
+          aspectRatio: options.aspectRatio,
+          imageSize: options.resolution,
+          negativePrompt: options.negativePrompt || undefined,
+          seed: options.seed,
+          // seed and watermark are mutually exclusive per the Imagen API;
+          // watermark isn't user-exposed, so force it off whenever a seed is set
+          addWatermark: hasSeed ? false : undefined,
+          personGeneration: options.personGeneration as PersonGeneration,
+          safetyFilterLevel: options.safetyFilterLevel as SafetyFilterLevel,
+          enhancePrompt: options.enhancePrompt,
+          outputMimeType: options.outputMimeType,
+          outputCompressionQuality:
+            options.outputMimeType === 'image/jpeg' ? options.outputCompressionQuality : undefined,
+          guidanceScale: options.guidanceScale,
+          language: options.language as ImagePromptLanguage,
+        },
       })
       const bytes = res.generatedImages?.[0]?.image?.imageBytes
       if (!bytes) throw new Error('no image bytes')
