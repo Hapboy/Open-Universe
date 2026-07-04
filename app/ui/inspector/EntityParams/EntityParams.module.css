@@ -6,6 +6,14 @@
   composes: btn from '../../../styles/shared.module.css';
 }
 
+.segBtn {
+  composes: segBtn from '../../../styles/shared.module.css';
+}
+
+.isOn {
+  composes: isOn from '../../../styles/shared.module.css';
+}
+
 .charPhotoActions {
   display: flex;
   gap: 6px;

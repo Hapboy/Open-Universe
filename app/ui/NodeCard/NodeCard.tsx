@@ -29,8 +29,11 @@ function nodeDisplayValue(data: NodeParams, generatedText?: string): string {
       return (p.text as string) || ''
     case 'character':
       return (p.selectedItem as string) || ''
-    case 'location':
-      return `${p.selectedItem} · ${p.timeOfDay}`
+    case 'location': {
+      const typeStr = (p.interiorExterior as string) || 'Экстерьер'
+      const dmg = p.damageLevel !== undefined ? ` · ${p.damageLevel}%` : ''
+      return `${p.selectedItem} (${typeStr})${dmg}`
+    }
     case 'building':
       return (p.selectedItem as string) || ''
     case 'clothing':

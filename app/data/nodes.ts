@@ -189,6 +189,8 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       selectedItem: 'Старый Конд',
       weather: 'туман',
       timeOfDay: 'рассвет',
+      interiorExterior: 'Экстерьер',
+      damageLevel: 0,
       _db: ['Старый Конд', 'Каскад', 'Гарни', 'Севан'],
     },
   },

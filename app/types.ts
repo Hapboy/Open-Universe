@@ -85,6 +85,8 @@ export interface LocationNodeParams extends Record<string, unknown> {
   selectedItem: string
   weather: string
   timeOfDay: string
+  interiorExterior: 'Интерьер' | 'Экстерьер'
+  damageLevel: number
 }
 
 export interface BuildingNodeParams extends Record<string, unknown> {

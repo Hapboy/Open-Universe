@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import cn from 'classnames'
 import { DatabaseChips, DatabaseSelect, InFrameToggle } from '../shared.tsx'
 import type { EP } from '../shared.tsx'
 import type {
@@ -126,13 +127,23 @@ export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterN
 }
 
 export function LocationParams({ node, params, updateNodeParam }: EP<LocationNodeParams>) {
+  const db = params._db || []
+
+  const addLocation = (name: string) => {
+    const existing = db.find((c) => c.toLowerCase() === name.toLowerCase())
+    if (!existing) updateNodeParam(node.id, '_db', [...db, name])
+    updateNodeParam(node.id, 'selectedItem', existing ?? name)
+  }
+
   return (
     <>
-      <DatabaseChips
+      <DatabaseSelect
         label="Локация"
-        items={params._db}
+        items={db}
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
+        onAdd={addLocation}
+        addLabel="Добавить локацию"
       />
       <div className={styles.fld}>
         <span>Погода</span>
@@ -159,6 +170,33 @@ export function LocationParams({ node, params, updateNodeParam }: EP<LocationNod
             </option>
           ))}
         </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Интерьер / Экстерьер</span>
+        <div className={styles.segBtn}>
+          {['Интерьер', 'Экстерьер'].map((v) => (
+            <button
+              key={v}
+              className={cn(params.interiorExterior === v && styles.isOn)}
+              onClick={() =>
+                updateNodeParam(node.id, 'interiorExterior', v as 'Интерьер' | 'Экстерьер')
+              }
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className={styles.fld}>
+        <span>Уровень повреждения дома ({params.damageLevel ?? 0}%)</span>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          value={params.damageLevel ?? 0}
+          onChange={(e) => updateNodeParam(node.id, 'damageLevel', Number(e.target.value))}
+        />
       </div>
     </>
   )

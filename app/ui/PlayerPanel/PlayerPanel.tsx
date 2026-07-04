@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import cn from 'classnames'
 import { usePlayerContext } from '../../store/contexts/PlayerContext.tsx'
 import { useUserContext } from '../../store/contexts/UserContext.tsx'
+import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
 import { buildSceneSvg, fmtTime, sceneAt, SCENES, TOTAL_DURATION } from '../../core/renderer.ts'
 import styles from './PlayerPanel.module.css'
 
@@ -10,12 +11,22 @@ import styles from './PlayerPanel.module.css'
 function usePlayerSvg(svgId: string) {
   const { player } = usePlayerContext()
   const { team, currentUser } = useUserContext()
+  const { nodes } = useGraphContext()
   const customImage = (window as Window & { customRenderImage?: string | null }).customRenderImage
+
+  const locationNode = nodes.find((n) => n.data.nodeType === 'location')
+  const locationParams = locationNode?.data.params
 
   useEffect(() => {
     const svg = document.getElementById(svgId)
     if (!svg) return
-    svg.innerHTML = buildSceneSvg({ player, team, currentUser, customRenderImage: customImage })
+    svg.innerHTML = buildSceneSvg({
+      player,
+      team,
+      currentUser,
+      customRenderImage: customImage,
+      locationParams,
+    })
   })
 }
 
