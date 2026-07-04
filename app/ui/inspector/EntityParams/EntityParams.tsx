@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { DatabaseChips, InFrameToggle } from '../shared.tsx'
+import { DatabaseChips, DatabaseSelect, InFrameToggle } from '../shared.tsx'
 import type { EP } from '../shared.tsx'
 import type {
   CharacterNodeParams,
@@ -40,13 +40,22 @@ export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterN
     e.target.value = ''
   }
 
+  const addCharacter = (name: string) => {
+    // duplicate (case-insensitive) — just select the existing entry
+    const existing = db.find((c) => c.toLowerCase() === name.toLowerCase())
+    if (!existing) updateNodeParam(node.id, '_db', [...db, name])
+    updateNodeParam(node.id, 'selectedItem', existing ?? name)
+  }
+
   return (
     <>
-      <DatabaseChips
+      <DatabaseSelect
         label="Персонаж"
         items={db}
         selected={params.selectedItem}
         onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
+        onAdd={addCharacter}
+        addLabel="Добавить персонажа"
       />
       <div className={styles.fld}>
         <span>Возраст ({params.age})</span>

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import cn from 'classnames'
 import type { Edge, Node } from '@xyflow/react'
 import type { NodeParams } from '../../types.ts'
@@ -95,6 +96,87 @@ export function DatabaseChips({
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+// Dropdown over a node's `_db` list with an inline "add new item" flow:
+// pick from the select, or press the add button, type a name and confirm
+// with Enter / the check button (Escape cancels).
+export function DatabaseSelect({
+  label,
+  items,
+  selected,
+  onSelect,
+  onAdd,
+  addLabel = 'Добавить',
+}: {
+  label: string
+  items: string[]
+  selected: string
+  onSelect: (v: string) => void
+  onAdd: (name: string) => void
+  addLabel?: string
+}) {
+  const [adding, setAdding] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  const cancel = () => {
+    setAdding(false)
+    setDraft('')
+  }
+  const confirm = () => {
+    const name = draft.trim()
+    if (!name) return cancel()
+    onAdd(name)
+    cancel()
+  }
+
+  return (
+    <div className={styles.fld}>
+      <span>{label}</span>
+      <select value={selected} onChange={(e) => onSelect(e.target.value)}>
+        {items.map((item) => (
+          <option key={item} value={item}>
+            {item}
+          </option>
+        ))}
+      </select>
+      {adding ? (
+        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+          <input
+            type="text"
+            autoFocus
+            placeholder="Имя нового..."
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') confirm()
+              if (e.key === 'Escape') cancel()
+            }}
+          />
+          <button
+            className={cn(styles.btn, styles.pri)}
+            style={{ width: 'auto', flexShrink: 0 }}
+            onClick={confirm}
+            aria-label="Подтвердить"
+          >
+            <i className="ti ti-check" />
+          </button>
+          <button
+            className={styles.btn}
+            style={{ width: 'auto', flexShrink: 0 }}
+            onClick={cancel}
+            aria-label="Отмена"
+          >
+            <i className="ti ti-x" />
+          </button>
+        </div>
+      ) : (
+        <button className={styles.btn} style={{ marginTop: 6 }} onClick={() => setAdding(true)}>
+          <i className="ti ti-plus" /> {addLabel}
+        </button>
+      )}
     </div>
   )
 }
