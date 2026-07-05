@@ -1,7 +1,9 @@
 import { useRef } from 'react'
 import cn from 'classnames'
-import { DatabaseChips, DatabaseSelect, InFrameToggle } from '../shared.tsx'
+import { DatabaseSelect, InFrameToggle, usePresetDatabase } from '../shared.tsx'
 import type { EP } from '../shared.tsx'
+import { SelectField } from '../../components/SelectField/SelectField.tsx'
+import { RangeField } from '../../components/RangeField/RangeField.tsx'
 import type {
   CharacterNodeParams,
   LocationNodeParams,
@@ -16,8 +18,13 @@ import type {
 } from '../../../types.ts'
 import styles from './EntityParams.module.css'
 
-export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterNodeParams>) {
-  const db = params._db
+export function CharacterParams({
+  node,
+  params,
+  updateNodeParam,
+  updateNodeParams,
+}: EP<CharacterNodeParams>) {
+  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
   const photos = params.photos || []
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -41,60 +48,36 @@ export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterN
     e.target.value = ''
   }
 
-  const addCharacter = (name: string) => {
-    // duplicate (case-insensitive) — just select the existing entry
-    const existing = db.find((c) => c.toLowerCase() === name.toLowerCase())
-    if (!existing) updateNodeParam(node.id, '_db', [...db, name])
-    updateNodeParam(node.id, 'selectedItem', existing ?? name)
-  }
-
   return (
     <>
       <DatabaseSelect
         label="Персонаж"
         items={db}
         selected={params.selectedItem}
-        onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
-        onAdd={addCharacter}
+        onSelect={onSelect}
+        onAdd={onAdd}
         addLabel="Добавить персонажа"
       />
-      <div className={styles.fld}>
-        <span>Возраст ({params.age})</span>
-        <input
-          type="range"
-          min="10"
-          max="90"
-          step="1"
-          defaultValue={params.age}
-          onChange={(e) => updateNodeParam(node.id, 'age', parseInt(e.target.value))}
-        />
-      </div>
-      <div className={styles.fld}>
-        <span>Эмоция</span>
-        <select
-          value={params.emotion}
-          onChange={(e) => updateNodeParam(node.id, 'emotion', e.target.value)}
-        >
-          {['спокойствие', 'грусть', 'радость', 'тревога', 'задумчивость'].map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Стилист</span>
-        <select
-          value={params.stylist}
-          onChange={(e) => updateNodeParam(node.id, 'stylist', e.target.value)}
-        >
-          {['Без стилиста', 'Tigran Avetisyan', 'Anna K', 'Народный'].map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </div>
+      <RangeField
+        label={`Возраст (${params.age})`}
+        min={10}
+        max={90}
+        step={1}
+        value={params.age}
+        onChange={(v) => updateNodeParam(node.id, 'age', v)}
+      />
+      <SelectField
+        label="Эмоция"
+        value={params.emotion}
+        onChange={(v) => updateNodeParam(node.id, 'emotion', v)}
+        options={['спокойствие', 'грусть', 'радость', 'тревога', 'задумчивость']}
+      />
+      <SelectField
+        label="Стилист"
+        value={params.stylist}
+        onChange={(v) => updateNodeParam(node.id, 'stylist', v)}
+        options={['Без стилиста', 'Tigran Avetisyan', 'Anna K', 'Народный']}
+      />
       <InFrameToggle
         value={params.inFrame}
         onChange={(v) => updateNodeParam(node.id, 'inFrame', v)}
@@ -115,6 +98,7 @@ export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterN
           </button>
         </div>
         <input
+          key={params.selectedItem}
           type="text"
           placeholder="Pinterest board URL"
           defaultValue={params.pinterestUrl || ''}
@@ -126,14 +110,13 @@ export function CharacterParams({ node, params, updateNodeParam }: EP<CharacterN
   )
 }
 
-export function LocationParams({ node, params, updateNodeParam }: EP<LocationNodeParams>) {
-  const db = params._db || []
-
-  const addLocation = (name: string) => {
-    const existing = db.find((c) => c.toLowerCase() === name.toLowerCase())
-    if (!existing) updateNodeParam(node.id, '_db', [...db, name])
-    updateNodeParam(node.id, 'selectedItem', existing ?? name)
-  }
+export function LocationParams({
+  node,
+  params,
+  updateNodeParam,
+  updateNodeParams,
+}: EP<LocationNodeParams>) {
+  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
 
   return (
     <>
@@ -141,36 +124,22 @@ export function LocationParams({ node, params, updateNodeParam }: EP<LocationNod
         label="Локация"
         items={db}
         selected={params.selectedItem}
-        onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
-        onAdd={addLocation}
+        onSelect={onSelect}
+        onAdd={onAdd}
         addLabel="Добавить локацию"
       />
-      <div className={styles.fld}>
-        <span>Погода</span>
-        <select
-          value={params.weather}
-          onChange={(e) => updateNodeParam(node.id, 'weather', e.target.value)}
-        >
-          {['туман', 'солнце', 'дождь', 'снег', 'пасмурно'].map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Время суток</span>
-        <select
-          value={params.timeOfDay}
-          onChange={(e) => updateNodeParam(node.id, 'timeOfDay', e.target.value)}
-        >
-          {['рассвет', 'утро', 'день', 'закат', 'ночь'].map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Погода"
+        value={params.weather}
+        onChange={(v) => updateNodeParam(node.id, 'weather', v)}
+        options={['туман', 'солнце', 'дождь', 'снег', 'пасмурно']}
+      />
+      <SelectField
+        label="Время суток"
+        value={params.timeOfDay}
+        onChange={(v) => updateNodeParam(node.id, 'timeOfDay', v)}
+        options={['рассвет', 'утро', 'день', 'закат', 'ночь']}
+      />
       <div className={styles.fld}>
         <span>Интерьер / Экстерьер</span>
         <div className={styles.segBtn}>
@@ -187,41 +156,43 @@ export function LocationParams({ node, params, updateNodeParam }: EP<LocationNod
           ))}
         </div>
       </div>
-      <div className={styles.fld}>
-        <span>Уровень повреждения дома ({params.damageLevel ?? 0}%)</span>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="5"
-          value={params.damageLevel ?? 0}
-          onChange={(e) => updateNodeParam(node.id, 'damageLevel', Number(e.target.value))}
-        />
-      </div>
+      <RangeField
+        label={`Уровень повреждения дома (${params.damageLevel ?? 0}%)`}
+        min={0}
+        max={100}
+        step={5}
+        value={params.damageLevel ?? 0}
+        onChange={(v) => updateNodeParam(node.id, 'damageLevel', v)}
+      />
     </>
   )
 }
 
-export function BuildingParams({ node, params, updateNodeParam }: EP<BuildingNodeParams>) {
+export function BuildingParams({
+  node,
+  params,
+  updateNodeParam,
+  updateNodeParams,
+}: EP<BuildingNodeParams>) {
+  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
   return (
     <>
-      <DatabaseChips
+      <DatabaseSelect
         label="Здание"
-        items={params._db}
+        items={db}
         selected={params.selectedItem}
-        onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
+        onSelect={onSelect}
+        onAdd={onAdd}
+        addLabel="Добавить здание"
       />
-      <div className={styles.fld}>
-        <span>Этаж ({params.floor})</span>
-        <input
-          type="range"
-          min="1"
-          max="10"
-          step="1"
-          defaultValue={params.floor}
-          onChange={(e) => updateNodeParam(node.id, 'floor', parseInt(e.target.value))}
-        />
-      </div>
+      <RangeField
+        label={`Этаж (${params.floor})`}
+        min={1}
+        max={10}
+        step={1}
+        value={params.floor}
+        onChange={(v) => updateNodeParam(node.id, 'floor', v)}
+      />
       <InFrameToggle
         value={params.inFrame}
         onChange={(v) => updateNodeParam(node.id, 'inFrame', v)}
@@ -230,63 +201,66 @@ export function BuildingParams({ node, params, updateNodeParam }: EP<BuildingNod
   )
 }
 
-export function ClothingParams({ node, params, updateNodeParam }: EP<ClothingNodeParams>) {
+export function ClothingParams({
+  node,
+  params,
+  updateNodeParam,
+  updateNodeParams,
+}: EP<ClothingNodeParams>) {
+  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
   return (
     <>
-      <DatabaseChips
+      <DatabaseSelect
         label="Дизайнер"
-        items={params._db}
+        items={db}
         selected={params.selectedItem}
-        onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
+        onSelect={onSelect}
+        onAdd={onAdd}
+        addLabel="Добавить дизайнера"
       />
-      <div className={styles.fld}>
-        <span>Сезон</span>
-        <select
-          value={params.season}
-          onChange={(e) => updateNodeParam(node.id, 'season', e.target.value)}
-        >
-          {['FW26', 'SS26', 'FW25', 'SS25'].map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Износ ({params.wear}%)</span>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          defaultValue={params.wear}
-          onChange={(e) => updateNodeParam(node.id, 'wear', parseInt(e.target.value))}
-        />
-      </div>
+      <SelectField
+        label="Сезон"
+        value={params.season}
+        onChange={(v) => updateNodeParam(node.id, 'season', v)}
+        options={['FW26', 'SS26', 'FW25', 'SS25']}
+      />
+      <RangeField
+        label={`Износ (${params.wear}%)`}
+        min={0}
+        max={100}
+        step={1}
+        value={params.wear}
+        onChange={(v) => updateNodeParam(node.id, 'wear', v)}
+      />
     </>
   )
 }
 
-export function ArtworkParams({ node, params, updateNodeParam }: EP<ArtworkNodeParams>) {
+export function ArtworkParams({
+  node,
+  params,
+  updateNodeParam,
+  updateNodeParams,
+}: EP<ArtworkNodeParams>) {
+  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
   return (
     <>
-      <DatabaseChips
+      <DatabaseSelect
         label="Произведение"
-        items={params._db}
+        items={db}
         selected={params.selectedItem}
-        onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
+        onSelect={onSelect}
+        onAdd={onAdd}
+        addLabel="Добавить произведение"
       />
-      <div className={styles.fld}>
-        <span>Масштаб ({params.scale}%)</span>
-        <input
-          type="range"
-          min="20"
-          max="300"
-          step="10"
-          defaultValue={params.scale}
-          onChange={(e) => updateNodeParam(node.id, 'scale', parseInt(e.target.value))}
-        />
-      </div>
+      <RangeField
+        label={`Масштаб (${params.scale}%)`}
+        min={20}
+        max={300}
+        step={10}
+        value={params.scale}
+        onChange={(v) => updateNodeParam(node.id, 'scale', v)}
+      />
       <InFrameToggle
         value={params.inFrame}
         onChange={(v) => updateNodeParam(node.id, 'inFrame', v)}
@@ -295,26 +269,31 @@ export function ArtworkParams({ node, params, updateNodeParam }: EP<ArtworkNodeP
   )
 }
 
-export function FurnitureParams({ node, params, updateNodeParam }: EP<FurnitureNodeParams>) {
+export function FurnitureParams({
+  node,
+  params,
+  updateNodeParam,
+  updateNodeParams,
+}: EP<FurnitureNodeParams>) {
+  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
   return (
     <>
-      <DatabaseChips
+      <DatabaseSelect
         label="Мебель"
-        items={params._db}
+        items={db}
         selected={params.selectedItem}
-        onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
+        onSelect={onSelect}
+        onAdd={onAdd}
+        addLabel="Добавить мебель"
       />
-      <div className={styles.fld}>
-        <span>Плотность ({params.density})</span>
-        <input
-          type="range"
-          min="1"
-          max="10"
-          step="1"
-          defaultValue={params.density}
-          onChange={(e) => updateNodeParam(node.id, 'density', parseInt(e.target.value))}
-        />
-      </div>
+      <RangeField
+        label={`Плотность (${params.density})`}
+        min={1}
+        max={10}
+        step={1}
+        value={params.density}
+        onChange={(v) => updateNodeParam(node.id, 'density', v)}
+      />
       <InFrameToggle
         value={params.inFrame}
         onChange={(v) => updateNodeParam(node.id, 'inFrame', v)}
@@ -323,90 +302,105 @@ export function FurnitureParams({ node, params, updateNodeParam }: EP<FurnitureN
   )
 }
 
-export function MusicParams({ node, params, updateNodeParam }: EP<MusicNodeParams>) {
+export function MusicParams({
+  node,
+  params,
+  updateNodeParam,
+  updateNodeParams,
+}: EP<MusicNodeParams>) {
+  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
   return (
     <>
-      <DatabaseChips
+      <DatabaseSelect
         label="Трек"
-        items={params._db}
+        items={db}
         selected={params.selectedItem}
-        onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
+        onSelect={onSelect}
+        onAdd={onAdd}
+        addLabel="Добавить трек"
       />
-      <div className={styles.fld}>
-        <span>Настроение</span>
-        <select
-          value={params.mood}
-          onChange={(e) => updateNodeParam(node.id, 'mood', e.target.value)}
-        >
-          {['элегия', 'торжество', 'тоска', 'медитация', 'танец'].map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Настроение"
+        value={params.mood}
+        onChange={(v) => updateNodeParam(node.id, 'mood', v)}
+        options={['элегия', 'торжество', 'тоска', 'медитация', 'танец']}
+      />
     </>
   )
 }
 
-export function ScriptParams({ node, params, updateNodeParam }: EP<ScriptNodeParams>) {
+export function ScriptParams({
+  node,
+  params,
+  updateNodeParam,
+  updateNodeParams,
+}: EP<ScriptNodeParams>) {
+  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
   return (
     <>
-      <DatabaseChips
+      <DatabaseSelect
         label="Сцена"
-        items={params._db}
+        items={db}
         selected={params.selectedItem}
-        onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
+        onSelect={onSelect}
+        onAdd={onAdd}
+        addLabel="Добавить сцену"
       />
-      <div className={styles.fld}>
-        <span>Тон</span>
-        <select
-          value={params.tone}
-          onChange={(e) => updateNodeParam(node.id, 'tone', e.target.value)}
-        >
-          {['драма', 'комедия', 'лирика', 'хоррор', 'документ'].map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Тон"
+        value={params.tone}
+        onChange={(v) => updateNodeParam(node.id, 'tone', v)}
+        options={['драма', 'комедия', 'лирика', 'хоррор', 'документ']}
+      />
     </>
   )
 }
 
-export function StoryboardParams({ node, params, updateNodeParam }: EP<StoryboardNodeParams>) {
+export function StoryboardParams({
+  node,
+  params,
+  updateNodeParam,
+  updateNodeParams,
+}: EP<StoryboardNodeParams>) {
+  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
   return (
     <>
-      <DatabaseChips
+      <DatabaseSelect
         label="Версия"
-        items={params._db}
+        items={db}
         selected={params.selectedItem}
-        onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
+        onSelect={onSelect}
+        onAdd={onAdd}
+        addLabel="Добавить версию"
       />
-      <div className={styles.fld}>
-        <span>Кадров ({params.shots})</span>
-        <input
-          type="range"
-          min="1"
-          max="12"
-          step="1"
-          defaultValue={params.shots}
-          onChange={(e) => updateNodeParam(node.id, 'shots', parseInt(e.target.value))}
-        />
-      </div>
+      <RangeField
+        label={`Кадров (${params.shots})`}
+        min={1}
+        max={12}
+        step={1}
+        value={params.shots}
+        onChange={(v) => updateNodeParam(node.id, 'shots', v)}
+      />
     </>
   )
 }
 
-export function TransportParams({ node, params, updateNodeParam }: EP<TransportNodeParams>) {
+export function TransportParams({
+  node,
+  params,
+  updateNodeParam,
+  updateNodeParams,
+}: EP<TransportNodeParams>) {
+  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
   return (
     <>
-      <DatabaseChips
+      <DatabaseSelect
         label="Транспорт"
-        items={params._db}
+        items={db}
         selected={params.selectedItem}
-        onSelect={(v) => updateNodeParam(node.id, 'selectedItem', v)}
+        onSelect={onSelect}
+        onAdd={onAdd}
+        addLabel="Добавить транспорт"
       />
       <InFrameToggle
         value={params.inFrame}

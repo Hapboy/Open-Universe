@@ -3,6 +3,8 @@ import cn from 'classnames'
 import { useUserContext } from '../../store/contexts/UserContext.tsx'
 import { useToastContext } from '../../store/contexts/ToastContext.tsx'
 import type { CurrentUser } from '../../types.ts'
+import { SelectField } from '../components/SelectField/SelectField.tsx'
+import { TextField } from '../components/TextField/TextField.tsx'
 import styles from './Modals.module.css'
 
 function sideColor(side: string): string {
@@ -74,41 +76,39 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
             Каждый разработчик создаёт своего персонажа, выбирает сторону и роль по текущему
             сценарию. Твой персонаж попадёт в финальный фильм вместе с вымышленными.
           </p>
-          <div className={styles.fld}>
-            <span>Имя разработчика</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Введите имя..."
-            />
-          </div>
-          <div className={styles.fld}>
-            <span>Имя персонажа во вселенной</span>
-            <input
-              type="text"
-              value={charName}
-              onChange={(e) => setCharName(e.target.value)}
-              placeholder="Введите имя персонажа..."
-            />
-          </div>
-          <div className={styles.fld}>
-            <span>Фракция / сторона</span>
-            <select value={side} onChange={(e) => setSide(e.target.value)}>
-              <option value="urvakan">Urvakan (Авангард, музыкальные архивы)</option>
-              <option value="rambalkoshe">Rambalkoshe (Визуальное искусство, модерн)</option>
-              <option value="moct">Moct (Современная архитектура, мосты культур)</option>
-            </select>
-          </div>
-          <div className={styles.fld}>
-            <span>Роль во вселенной</span>
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="Режиссер">Режиссер (Director)</option>
-              <option value="Разработчик">Разработчик (Developer)</option>
-              <option value="Художник">Художник (Artist)</option>
-              <option value="Стилист">Стилист (Stylist)</option>
-            </select>
-          </div>
+          <TextField
+            label="Имя разработчика"
+            value={name}
+            onChange={setName}
+            placeholder="Введите имя..."
+          />
+          <TextField
+            label="Имя персонажа во вселенной"
+            value={charName}
+            onChange={setCharName}
+            placeholder="Введите имя персонажа..."
+          />
+          <SelectField
+            label="Фракция / сторона"
+            value={side}
+            onChange={setSide}
+            options={[
+              { value: 'urvakan', label: 'Urvakan (Авангард, музыкальные архивы)' },
+              { value: 'rambalkoshe', label: 'Rambalkoshe (Визуальное искусство, модерн)' },
+              { value: 'moct', label: 'Moct (Современная архитектура, мосты культур)' },
+            ]}
+          />
+          <SelectField
+            label="Роль во вселенной"
+            value={role}
+            onChange={setRole}
+            options={[
+              { value: 'Режиссер', label: 'Режиссер (Director)' },
+              { value: 'Разработчик', label: 'Разработчик (Developer)' },
+              { value: 'Художник', label: 'Художник (Artist)' },
+              { value: 'Стилист', label: 'Стилист (Stylist)' },
+            ]}
+          />
           <br />
           <button className={cn(styles.btn, styles.pri)} onClick={handleRegister}>
             Войти в команду

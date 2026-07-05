@@ -4,7 +4,7 @@ import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import type { NodeParams, PortType } from '../../types.ts'
 import { AI_MODEL_NODE_TYPES } from '../../data/nodes.ts'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
-import { CircleLoader } from '../CircleLoader/CircleLoader.tsx'
+import { CircleLoader } from '../components/CircleLoader/CircleLoader.tsx'
 import { MediaSlider } from './MediaSlider/MediaSlider.tsx'
 import styles from './NodeCard.module.css'
 

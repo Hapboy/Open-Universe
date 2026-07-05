@@ -1,7 +1,9 @@
 import { edgeInput } from '../../core/graph.ts'
 import { HIGGSFIELD_PRESETS } from '../../data/presets.ts'
 import { WirableTextField, type EEP } from './shared.tsx'
-import styles from '../../styles/shared.module.css'
+import { SelectField } from '../components/SelectField/SelectField.tsx'
+import { TextField } from '../components/TextField/TextField.tsx'
+import { RangeField } from '../components/RangeField/RangeField.tsx'
 
 export function SoulParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
   const prompt = edgeInput(node.data, edges, resolved, 1)
@@ -16,52 +18,35 @@ export function SoulParams({ node, params, edges, resolved, updateNodeParam }: E
         liveValue={prompt.value}
         updateNodeParam={updateNodeParam}
       />
-      <div className={styles.fld}>
-        <span>Влияние лица (Face Weight)</span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.1"
-          defaultValue={params.faceWeight as number}
-          onChange={(e) => updateNodeParam(node.id, 'faceWeight', parseFloat(e.target.value))}
-        />
-      </div>
+      <RangeField
+        label="Влияние лица (Face Weight)"
+        min={0}
+        max={1}
+        step={0.1}
+        value={params.faceWeight as number}
+        onChange={(v) => updateNodeParam(node.id, 'faceWeight', v)}
+      />
     </>
   )
 }
 
 export function CameraParams({ node, params, updateNodeParam }: EEP) {
   return (
-    <div className={styles.fld}>
-      <span>Движение камеры (Пресет)</span>
-      <select
-        value={params.motionPreset as string}
-        onChange={(e) => {
-          updateNodeParam(node.id, 'motionPreset', e.target.value)
-        }}
-      >
-        {HIGGSFIELD_PRESETS.map((p) => (
-          <option key={p} value={p}>
-            {p}
-          </option>
-        ))}
-      </select>
-    </div>
+    <SelectField
+      label="Движение камеры (Пресет)"
+      value={params.motionPreset as string}
+      onChange={(v) => updateNodeParam(node.id, 'motionPreset', v)}
+      options={HIGGSFIELD_PRESETS}
+    />
   )
 }
 
 export function SpeakParams({ node, params, updateNodeParam }: EEP) {
   return (
-    <div className={styles.fld}>
-      <span>Мимика / Липсинк Текст</span>
-      <input
-        type="text"
-        defaultValue={params.expression as string}
-        onBlur={(e) => {
-          updateNodeParam(node.id, 'expression', e.target.value)
-        }}
-      />
-    </div>
+    <TextField
+      label="Мимика / Липсинк Текст"
+      defaultValue={params.expression as string}
+      onBlur={(v) => updateNodeParam(node.id, 'expression', v)}
+    />
   )
 }

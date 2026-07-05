@@ -68,8 +68,13 @@ export interface Palette {
   sofa: string
 }
 
+// An entity node's saved names: key -> a snapshot of that entity's own params
+// (everything except selectedItem/_presets), loaded onto the node when it's
+// selected again. The dropdown's option list is just `Object.keys(_presets)`.
+export type EntityPresets = Record<string, Record<string, unknown>>
+
 export interface CharacterNodeParams extends Record<string, unknown> {
-  _db: string[]
+  _presets: EntityPresets
   selectedItem: string
   inFrame: boolean
   age: number
@@ -81,7 +86,7 @@ export interface CharacterNodeParams extends Record<string, unknown> {
 }
 
 export interface LocationNodeParams extends Record<string, unknown> {
-  _db: string[]
+  _presets: EntityPresets
   selectedItem: string
   weather: string
   timeOfDay: string
@@ -90,53 +95,53 @@ export interface LocationNodeParams extends Record<string, unknown> {
 }
 
 export interface BuildingNodeParams extends Record<string, unknown> {
-  _db: string[]
+  _presets: EntityPresets
   selectedItem: string
   inFrame: boolean
   floor: number
 }
 
 export interface ClothingNodeParams extends Record<string, unknown> {
-  _db: string[]
+  _presets: EntityPresets
   selectedItem: string
   season: string
   wear: number
 }
 
 export interface ArtworkNodeParams extends Record<string, unknown> {
-  _db: string[]
+  _presets: EntityPresets
   selectedItem: string
   inFrame: boolean
   scale: number
 }
 
 export interface FurnitureNodeParams extends Record<string, unknown> {
-  _db: string[]
+  _presets: EntityPresets
   selectedItem: string
   inFrame: boolean
   density: number
 }
 
 export interface MusicNodeParams extends Record<string, unknown> {
-  _db: string[]
+  _presets: EntityPresets
   selectedItem: string
   mood: string
 }
 
 export interface ScriptNodeParams extends Record<string, unknown> {
-  _db: string[]
+  _presets: EntityPresets
   selectedItem: string
   tone: string
 }
 
 export interface StoryboardNodeParams extends Record<string, unknown> {
-  _db: string[]
+  _presets: EntityPresets
   selectedItem: string
   shots: number
 }
 
 export interface TransportNodeParams extends Record<string, unknown> {
-  _db: string[]
+  _presets: EntityPresets
   selectedItem: string
   inFrame: boolean
 }

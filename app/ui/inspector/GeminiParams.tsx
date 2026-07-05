@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { edgeInput } from '../../core/graph.ts'
 import { GeminiService, type GeminiModelInfo } from '../../core/services/gemini.ts'
 import { WirableTextField, type EEP } from './shared.tsx'
+import { SelectField } from '../components/SelectField/SelectField.tsx'
+import { TextField } from '../components/TextField/TextField.tsx'
 import styles from '../../styles/shared.module.css'
 
 const FALLBACK_MODELS: GeminiModelInfo[] = [
@@ -29,6 +31,10 @@ function useGeminiModels(currentModel: string): GeminiModelInfo[] {
   return models
 }
 
+function modelOptions(models: GeminiModelInfo[]) {
+  return models.map((m) => ({ value: m.id, label: m.displayName ?? m.id }))
+}
+
 export function GeminiTextParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
   const MODELS = useGeminiModels(params.model as string)
   const prompt = edgeInput(node.data, edges, resolved, 0)
@@ -43,19 +49,12 @@ export function GeminiTextParams({ node, params, edges, resolved, updateNodePara
         liveValue={prompt.value}
         updateNodeParam={updateNodeParam}
       />
-      <div className={styles.fld}>
-        <span>Модель</span>
-        <select
-          value={params.model as string}
-          onChange={(e) => updateNodeParam(node.id, 'model', e.target.value)}
-        >
-          {MODELS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.displayName ?? m.id}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Модель"
+        value={params.model as string}
+        onChange={(v) => updateNodeParam(node.id, 'model', v)}
+        options={modelOptions(MODELS)}
+      />
     </>
   )
 }
@@ -74,19 +73,12 @@ export function GeminiVisionParams({ node, params, edges, resolved, updateNodePa
         liveValue={query.value}
         updateNodeParam={updateNodeParam}
       />
-      <div className={styles.fld}>
-        <span>Модель</span>
-        <select
-          value={params.model as string}
-          onChange={(e) => updateNodeParam(node.id, 'model', e.target.value)}
-        >
-          {MODELS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.displayName ?? m.id}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Модель"
+        value={params.model as string}
+        onChange={(v) => updateNodeParam(node.id, 'model', v)}
+        options={modelOptions(MODELS)}
+      />
     </>
   )
 }
@@ -98,9 +90,9 @@ const IMAGEN_MODELS: GeminiModelInfo[] = [
 ]
 
 const PERSON_GENERATION_OPTIONS = [
-  { id: 'DONT_ALLOW', label: 'Запрещено' },
-  { id: 'ALLOW_ADULT', label: 'Только взрослые' },
-  { id: 'ALLOW_ALL', label: 'Все' },
+  { value: 'DONT_ALLOW', label: 'Запрещено' },
+  { value: 'ALLOW_ADULT', label: 'Только взрослые' },
+  { value: 'ALLOW_ALL', label: 'Все' },
 ]
 
 const SAFETY_FILTER_OPTIONS = [
@@ -111,8 +103,8 @@ const SAFETY_FILTER_OPTIONS = [
 ]
 
 const OUTPUT_MIME_OPTIONS = [
-  { id: 'image/png', label: 'PNG' },
-  { id: 'image/jpeg', label: 'JPEG' },
+  { value: 'image/png', label: 'PNG' },
+  { value: 'image/jpeg', label: 'JPEG' },
 ]
 
 const LANGUAGE_OPTIONS = ['auto', 'en', 'ja', 'ko', 'hi', 'zh', 'pt', 'es']
@@ -145,143 +137,80 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
         liveValue={prompt.value}
         updateNodeParam={updateNodeParam}
       />
-      <div className={styles.fld}>
-        <span>Модель</span>
-        <select
-          value={params.model as string}
-          onChange={(e) => updateNodeParam(node.id, 'model', e.target.value)}
-        >
-          {IMAGEN_MODELS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.displayName ?? m.id}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Соотношение сторон</span>
-        <select
-          value={params.aspectRatio as string}
-          onChange={(e) => {
-            updateNodeParam(node.id, 'aspectRatio', e.target.value)
-          }}
-        >
-          {RATIOS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Разрешение</span>
-        <select
-          value={params.resolution as string}
-          onChange={(e) => {
-            updateNodeParam(node.id, 'resolution', e.target.value)
-          }}
-        >
-          {RESOLUTIONS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld} title={ENTERPRISE_ONLY_HINT}>
-        <span>Негативный промпт</span>
-        <input type="text" disabled defaultValue={params.negativePrompt as string} />
-      </div>
-      <div className={styles.fld}>
-        <span>Количество изображений</span>
-        <select
-          value={String(params.numberOfImages ?? 1)}
-          onChange={(e) => updateNodeParam(node.id, 'numberOfImages', Number(e.target.value))}
-        >
-          {[1, 2, 3, 4].map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld} title={ENTERPRISE_ONLY_HINT}>
-        <span>Сид (seed)</span>
-        <input type="text" disabled placeholder="авто" defaultValue={params.seed as string} />
-      </div>
-      <div className={styles.fld}>
-        <span>Guidance Scale</span>
-        <input
-          type="text"
-          placeholder="авто"
-          defaultValue={params.guidanceScale as string}
-          onBlur={(e) => updateNodeParam(node.id, 'guidanceScale', e.target.value)}
-        />
-      </div>
-      <div className={styles.fld}>
-        <span>Генерация людей</span>
-        <select
-          value={params.personGeneration as string}
-          onChange={(e) => updateNodeParam(node.id, 'personGeneration', e.target.value)}
-        >
-          {PERSON_GENERATION_OPTIONS.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Уровень safety-фильтра</span>
-        <select
-          value={params.safetyFilterLevel as string}
-          onChange={(e) => updateNodeParam(node.id, 'safetyFilterLevel', e.target.value)}
-        >
-          {SAFETY_FILTER_OPTIONS.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Формат вывода</span>
-        <select
-          value={params.outputMimeType as string}
-          onChange={(e) => updateNodeParam(node.id, 'outputMimeType', e.target.value)}
-        >
-          {OUTPUT_MIME_OPTIONS.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Модель"
+        value={params.model as string}
+        onChange={(v) => updateNodeParam(node.id, 'model', v)}
+        options={modelOptions(IMAGEN_MODELS)}
+      />
+      <SelectField
+        label="Соотношение сторон"
+        value={params.aspectRatio as string}
+        onChange={(v) => updateNodeParam(node.id, 'aspectRatio', v)}
+        options={RATIOS}
+      />
+      <SelectField
+        label="Разрешение"
+        value={params.resolution as string}
+        onChange={(v) => updateNodeParam(node.id, 'resolution', v)}
+        options={RESOLUTIONS}
+      />
+      <TextField
+        label="Негативный промпт"
+        disabled
+        defaultValue={params.negativePrompt as string}
+        title={ENTERPRISE_ONLY_HINT}
+      />
+      <SelectField
+        label="Количество изображений"
+        value={String(params.numberOfImages ?? 1)}
+        onChange={(v) => updateNodeParam(node.id, 'numberOfImages', Number(v))}
+        options={['1', '2', '3', '4']}
+      />
+      <TextField
+        label="Сид (seed)"
+        disabled
+        placeholder="авто"
+        defaultValue={params.seed as string}
+        title={ENTERPRISE_ONLY_HINT}
+      />
+      <TextField
+        label="Guidance Scale"
+        placeholder="авто"
+        defaultValue={params.guidanceScale as string}
+        onBlur={(v) => updateNodeParam(node.id, 'guidanceScale', v)}
+      />
+      <SelectField
+        label="Генерация людей"
+        value={params.personGeneration as string}
+        onChange={(v) => updateNodeParam(node.id, 'personGeneration', v)}
+        options={PERSON_GENERATION_OPTIONS}
+      />
+      <SelectField
+        label="Уровень safety-фильтра"
+        value={params.safetyFilterLevel as string}
+        onChange={(v) => updateNodeParam(node.id, 'safetyFilterLevel', v)}
+        options={SAFETY_FILTER_OPTIONS}
+      />
+      <SelectField
+        label="Формат вывода"
+        value={params.outputMimeType as string}
+        onChange={(v) => updateNodeParam(node.id, 'outputMimeType', v)}
+        options={OUTPUT_MIME_OPTIONS}
+      />
       {isJpeg && (
-        <div className={styles.fld}>
-          <span>Качество JPEG (0-100)</span>
-          <input
-            type="text"
-            defaultValue={params.outputCompressionQuality as number}
-            onBlur={(e) =>
-              updateNodeParam(node.id, 'outputCompressionQuality', Number(e.target.value))
-            }
-          />
-        </div>
+        <TextField
+          label="Качество JPEG (0-100)"
+          defaultValue={String(params.outputCompressionQuality as number)}
+          onBlur={(v) => updateNodeParam(node.id, 'outputCompressionQuality', Number(v))}
+        />
       )}
-      <div className={styles.fld}>
-        <span>Язык промпта</span>
-        <select
-          value={params.language as string}
-          onChange={(e) => updateNodeParam(node.id, 'language', e.target.value)}
-        >
-          {LANGUAGE_OPTIONS.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Язык промпта"
+        value={params.language as string}
+        onChange={(v) => updateNodeParam(node.id, 'language', v)}
+        options={LANGUAGE_OPTIONS}
+      />
       <div
         className={styles.fld}
         style={{ display: 'flex', alignItems: 'center', gap: 12 }}
@@ -309,8 +238,8 @@ const VEO_MODELS: GeminiModelInfo[] = [
 
 // Veo's personGeneration is a plain lowercase string, no 'allow_all' option (unlike Imagen).
 const VEO_PERSON_GENERATION_OPTIONS = [
-  { id: 'dont_allow', label: 'Запрещено' },
-  { id: 'allow_adult', label: 'Только взрослые' },
+  { value: 'dont_allow', label: 'Запрещено' },
+  { value: 'allow_adult', label: 'Только взрослые' },
 ]
 
 export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
@@ -328,75 +257,49 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
         liveValue={prompt.value}
         updateNodeParam={updateNodeParam}
       />
-      <div className={styles.fld}>
-        <span>Модель</span>
-        <select
-          value={params.model as string}
-          onChange={(e) => updateNodeParam(node.id, 'model', e.target.value)}
-        >
-          {VEO_MODELS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.displayName ?? m.id}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Соотношение сторон</span>
-        <select
-          value={params.aspectRatio as string}
-          onChange={(e) => updateNodeParam(node.id, 'aspectRatio', e.target.value)}
-        >
-          {RATIOS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Разрешение</span>
-        <select
-          value={params.resolution as string}
-          onChange={(e) => updateNodeParam(node.id, 'resolution', e.target.value)}
-        >
-          {RESOLUTIONS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Длительность (сек)</span>
-        <input
-          type="text"
-          defaultValue={params.durationSeconds as number}
-          onBlur={(e) => updateNodeParam(node.id, 'durationSeconds', Number(e.target.value))}
-        />
-      </div>
-      <div className={styles.fld}>
-        <span>Негативный промпт</span>
-        <input
-          type="text"
-          defaultValue={params.negativePrompt as string}
-          onBlur={(e) => updateNodeParam(node.id, 'negativePrompt', e.target.value)}
-        />
-      </div>
-      <div className={styles.fld} title={ENTERPRISE_ONLY_HINT}>
-        <span>Сид (seed)</span>
-        <input type="text" disabled placeholder="авто" defaultValue={params.seed as string} />
-      </div>
-      <div className={styles.fld} title={VEO_PREVIEW_UNSUPPORTED_HINT}>
-        <span>Генерация людей</span>
-        <select disabled value={params.personGeneration as string}>
-          {VEO_PERSON_GENERATION_OPTIONS.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Модель"
+        value={params.model as string}
+        onChange={(v) => updateNodeParam(node.id, 'model', v)}
+        options={modelOptions(VEO_MODELS)}
+      />
+      <SelectField
+        label="Соотношение сторон"
+        value={params.aspectRatio as string}
+        onChange={(v) => updateNodeParam(node.id, 'aspectRatio', v)}
+        options={RATIOS}
+      />
+      <SelectField
+        label="Разрешение"
+        value={params.resolution as string}
+        onChange={(v) => updateNodeParam(node.id, 'resolution', v)}
+        options={RESOLUTIONS}
+      />
+      <TextField
+        label="Длительность (сек)"
+        defaultValue={String(params.durationSeconds as number)}
+        onBlur={(v) => updateNodeParam(node.id, 'durationSeconds', Number(v))}
+      />
+      <TextField
+        label="Негативный промпт"
+        defaultValue={params.negativePrompt as string}
+        onBlur={(v) => updateNodeParam(node.id, 'negativePrompt', v)}
+      />
+      <TextField
+        label="Сид (seed)"
+        disabled
+        placeholder="авто"
+        defaultValue={params.seed as string}
+        title={ENTERPRISE_ONLY_HINT}
+      />
+      <SelectField
+        label="Генерация людей"
+        disabled
+        value={params.personGeneration as string}
+        onChange={() => {}}
+        options={VEO_PERSON_GENERATION_OPTIONS}
+        title={VEO_PREVIEW_UNSUPPORTED_HINT}
+      />
       <div
         className={styles.fld}
         style={{ display: 'flex', alignItems: 'center', gap: 12 }}
@@ -442,9 +345,9 @@ const NANO_BANANA_MODELS: GeminiModelInfo[] = [
 // and Veo's lowercase dont_allow/allow_adult pair. Confirmed live: this field is
 // Vertex/Enterprise-only, same gating as Imagen/Veo's disabled fields above.
 const NANO_BANANA_PERSON_OPTIONS = [
-  { id: 'ALLOW_ALL', label: 'Все' },
-  { id: 'ALLOW_ADULT', label: 'Только взрослые' },
-  { id: 'ALLOW_NONE', label: 'Запрещено' },
+  { value: 'ALLOW_ALL', label: 'Все' },
+  { value: 'ALLOW_ADULT', label: 'Только взрослые' },
+  { value: 'ALLOW_NONE', label: 'Запрещено' },
 ]
 
 export function GeminiNanoBananaParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
@@ -462,64 +365,38 @@ export function GeminiNanoBananaParams({ node, params, edges, resolved, updateNo
         liveValue={prompt.value}
         updateNodeParam={updateNodeParam}
       />
-      <div className={styles.fld}>
-        <span>Модель</span>
-        <select
-          value={params.model as string}
-          onChange={(e) => updateNodeParam(node.id, 'model', e.target.value)}
-        >
-          {NANO_BANANA_MODELS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.displayName ?? m.id}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Соотношение сторон</span>
-        <select
-          value={params.aspectRatio as string}
-          onChange={(e) => updateNodeParam(node.id, 'aspectRatio', e.target.value)}
-        >
-          {RATIOS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Разрешение</span>
-        <select
-          value={params.imageSize as string}
-          onChange={(e) => updateNodeParam(node.id, 'imageSize', e.target.value)}
-        >
-          {SIZES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Сид (seed)</span>
-        <input
-          type="text"
-          placeholder="авто"
-          defaultValue={params.seed as string}
-          onBlur={(e) => updateNodeParam(node.id, 'seed', e.target.value)}
-        />
-      </div>
-      <div className={styles.fld} title={ENTERPRISE_ONLY_HINT}>
-        <span>Генерация людей</span>
-        <select disabled value={params.personGeneration as string}>
-          {NANO_BANANA_PERSON_OPTIONS.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        label="Модель"
+        value={params.model as string}
+        onChange={(v) => updateNodeParam(node.id, 'model', v)}
+        options={modelOptions(NANO_BANANA_MODELS)}
+      />
+      <SelectField
+        label="Соотношение сторон"
+        value={params.aspectRatio as string}
+        onChange={(v) => updateNodeParam(node.id, 'aspectRatio', v)}
+        options={RATIOS}
+      />
+      <SelectField
+        label="Разрешение"
+        value={params.imageSize as string}
+        onChange={(v) => updateNodeParam(node.id, 'imageSize', v)}
+        options={SIZES}
+      />
+      <TextField
+        label="Сид (seed)"
+        placeholder="авто"
+        defaultValue={params.seed as string}
+        onBlur={(v) => updateNodeParam(node.id, 'seed', v)}
+      />
+      <SelectField
+        label="Генерация людей"
+        disabled
+        value={params.personGeneration as string}
+        onChange={() => {}}
+        options={NANO_BANANA_PERSON_OPTIONS}
+        title={ENTERPRISE_ONLY_HINT}
+      />
     </>
   )
 }
@@ -542,28 +419,18 @@ export function GeminiLyriaParams({ node, params, edges, resolved, updateNodePar
         liveValue={prompt.value}
         updateNodeParam={updateNodeParam}
       />
-      <div className={styles.fld}>
-        <span>Модель</span>
-        <select
-          value={params.model as string}
-          onChange={(e) => updateNodeParam(node.id, 'model', e.target.value)}
-        >
-          {LYRIA_MODELS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.displayName ?? m.id}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={styles.fld}>
-        <span>Сид (seed)</span>
-        <input
-          type="text"
-          placeholder="авто"
-          defaultValue={params.seed as string}
-          onBlur={(e) => updateNodeParam(node.id, 'seed', e.target.value)}
-        />
-      </div>
+      <SelectField
+        label="Модель"
+        value={params.model as string}
+        onChange={(v) => updateNodeParam(node.id, 'model', v)}
+        options={modelOptions(LYRIA_MODELS)}
+      />
+      <TextField
+        label="Сид (seed)"
+        placeholder="авто"
+        defaultValue={params.seed as string}
+        onBlur={(v) => updateNodeParam(node.id, 'seed', v)}
+      />
     </>
   )
 }

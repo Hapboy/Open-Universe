@@ -9,6 +9,7 @@ export interface NodeParamsProps {
   edges: Edge[]
   resolved: Record<string, unknown>
   updateNodeParam: (id: string, key: string, value: unknown) => void
+  updateNodeParams: (id: string, patch: Record<string, unknown>) => void
   loadPinterestBoards: (node: Node<NodeParams>) => Promise<void>
   loadPinterestPins: (node: Node<NodeParams>, boardId: string) => Promise<void>
   executeGraph: () => Promise<void>
@@ -19,6 +20,7 @@ export type EP<P extends Record<string, unknown>> = {
   node: Node<NodeParams>
   params: P
   updateNodeParam: NodeParamsProps['updateNodeParam']
+  updateNodeParams: NodeParamsProps['updateNodeParams']
 }
 
 export type EEP = {
@@ -71,38 +73,44 @@ export function WirableTextField({
   )
 }
 
-export function DatabaseChips({
-  label,
-  items,
-  selected,
-  onSelect,
-}: {
-  label: string
-  items: string[]
-  selected: string
-  onSelect: (v: string) => void
-}) {
-  return (
-    <div className={styles.fld}>
-      <span>{label}</span>
-      <div className={styles.chipGroup}>
-        {items.map((item) => (
-          <button
-            key={item}
-            className={cn(styles.chip, selected === item && styles.isOn)}
-            onClick={() => onSelect(item)}
-          >
-            {selected === item && <i className="ti ti-check" style={{ fontSize: 11 }} />} {item}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
+const BOOKKEEPING_KEYS = ['selectedItem', '_presets']
+
+// Manages an entity node's `_presets` map: its keys are the dropdown's name
+// list, its values are each entity's own saved params. Selecting a name loads
+// its preset (if any) onto the node; adding a new name snapshots the node's
+// current params (everything but the bookkeeping keys above) as that entity's
+// preset. Edits made afterward stay local to the node — the preset itself is
+// only ever rewritten by `onAdd`.
+export function usePresetDatabase(
+  node: Node<NodeParams>,
+  params: Record<string, unknown>,
+  updateNodeParams: NodeParamsProps['updateNodeParams']
+) {
+  const presets = (params._presets as Record<string, Record<string, unknown>>) || {}
+  const db = Object.keys(presets)
+
+  const onSelect = (name: string) => {
+    updateNodeParams(node.id, { selectedItem: name, ...(presets[name] ?? {}) })
+  }
+
+  const onAdd = (name: string) => {
+    const existing = db.find((c) => c.toLowerCase() === name.toLowerCase())
+    if (existing) return onSelect(existing)
+    const snapshot = Object.fromEntries(
+      Object.entries(params).filter(([k]) => !BOOKKEEPING_KEYS.includes(k))
+    )
+    updateNodeParams(node.id, {
+      _presets: { ...presets, [name]: snapshot },
+      selectedItem: name,
+    })
+  }
+
+  return { db, onSelect, onAdd }
 }
 
-// Dropdown over a node's `_db` list with an inline "add new item" flow:
-// pick from the select, or press the add button, type a name and confirm
-// with Enter / the check button (Escape cancels).
+// Dropdown over a name list with an inline "add new item" flow: pick from
+// the select, or press the add button, type a name and confirm with Enter /
+// the check button (Escape cancels).
 export function DatabaseSelect({
   label,
   items,

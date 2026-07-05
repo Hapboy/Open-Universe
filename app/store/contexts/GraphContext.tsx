@@ -56,6 +56,7 @@ interface GraphCtx {
   createNode: (type: string, x: number, y: number) => Node<NodeParams> | null
   deleteNode: (id: string) => void
   updateNodeParam: (nodeId: string, key: string, value: unknown) => void
+  updateNodeParams: (nodeId: string, patch: Record<string, unknown>) => void
   executeGraph: () => Promise<void>
   runNode: (nodeId: string) => Promise<void>
   runningNodeIds: Set<string>
@@ -166,6 +167,14 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     )
   }, [])
 
+  const updateNodeParams = useCallback((nodeId: string, patch: Record<string, unknown>) => {
+    setNodes((ns) =>
+      ns.map((n) =>
+        n.id !== nodeId ? n : { ...n, data: { ...n.data, params: { ...n.data.params, ...patch } } }
+      )
+    )
+  }, [])
+
   const loadPinterestBoards = useCallback(
     async (node: Node<NodeParams>) => {
       const { PinterestService } = await import('../../core/services/index.ts')
@@ -254,6 +263,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     createNode,
     deleteNode,
     updateNodeParam,
+    updateNodeParams,
     executeGraph,
     runNode,
     runningNodeIds,

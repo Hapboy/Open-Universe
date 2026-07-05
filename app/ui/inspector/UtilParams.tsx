@@ -1,40 +1,25 @@
 import type { EEP } from './shared.tsx'
-import styles from '../../styles/shared.module.css'
+import { SelectField } from '../components/SelectField/SelectField.tsx'
+import { TextField } from '../components/TextField/TextField.tsx'
 
 export function OutputParams({ node, params, updateNodeParam }: EEP) {
   const ENGINES = ['Hayverse Realtime Veo 3', 'Hayverse Draft', 'Hayverse Cinema 4K']
   return (
-    <>
-      <div className={styles.fld}>
-        <span>Рендер-движок</span>
-        <select
-          value={params.renderingEngine as string}
-          onChange={(e) => {
-            updateNodeParam(node.id, 'renderingEngine', e.target.value)
-          }}
-        >
-          {ENGINES.map((e) => (
-            <option key={e} value={e}>
-              {e}
-            </option>
-          ))}
-        </select>
-      </div>
-    </>
+    <SelectField
+      label="Рендер-движок"
+      value={params.renderingEngine as string}
+      onChange={(v) => updateNodeParam(node.id, 'renderingEngine', v)}
+      options={ENGINES}
+    />
   )
 }
 
 export function TextParams({ node, params, updateNodeParam }: EEP) {
   return (
-    <div className={styles.fld}>
-      <span>Текстовое значение</span>
-      <input
-        type="text"
-        defaultValue={params.text as string}
-        onBlur={(e) => {
-          updateNodeParam(node.id, 'text', e.target.value)
-        }}
-      />
-    </div>
+    <TextField
+      label="Текстовое значение"
+      defaultValue={params.text as string}
+      onBlur={(v) => updateNodeParam(node.id, 'text', v)}
+    />
   )
 }

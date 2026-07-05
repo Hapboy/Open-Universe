@@ -2,6 +2,7 @@ import cn from 'classnames'
 import type { Node } from '@xyflow/react'
 import type { NodeParams, PinItem, BoardItem } from '../../../types.ts'
 import type { NodeParamsProps } from '../shared.tsx'
+import { SelectField } from '../../components/SelectField/SelectField.tsx'
 import styles from './PinterestParams.module.css'
 
 export function PinterestParams({
@@ -18,9 +19,8 @@ export function PinterestParams({
   const boards = (params.boards as BoardItem[]) || []
   const pins = (params.pins as PinItem[]) || []
 
-  const handleBoardChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const id = e.target.value
-    const name = e.target.options[e.target.selectedIndex].text
+  const handleBoardChange = async (id: string) => {
+    const name = boards.find((b) => b.id === id)?.name ?? ''
     updateNodeParam(node.id, 'boardId', id)
     updateNodeParam(node.id, 'boardName', name)
     await loadPinterestPins(node, id)
@@ -28,20 +28,16 @@ export function PinterestParams({
 
   return (
     <>
-      <div className={styles.fld}>
-        <span>Pinterest Доска</span>
-        <select value={(params.boardId as string) || ''} onChange={handleBoardChange}>
-          {boards.length === 0 ? (
-            <option value="">Сначала введите API Pinterest в настройках...</option>
-          ) : (
-            boards.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))
-          )}
-        </select>
-      </div>
+      <SelectField
+        label="Pinterest Доска"
+        value={(params.boardId as string) || ''}
+        onChange={handleBoardChange}
+        options={
+          boards.length === 0
+            ? [{ value: '', label: 'Сначала введите API Pinterest в настройках...' }]
+            : boards.map((b) => ({ value: b.id, label: b.name }))
+        }
+      />
       <div className={styles.fld}>
         <span>Выберите изображение (Pin)</span>
         <div className={styles.pinterestPinsGrid}>

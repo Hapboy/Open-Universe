@@ -1,7 +1,3 @@
-.fld {
-  composes: fld from '../../styles/shared.module.css';
-}
-
 .btn {
   composes: btn from '../../styles/shared.module.css';
 }

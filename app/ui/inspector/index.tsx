@@ -14,6 +14,7 @@ export function Inspector() {
     selectNode,
     deleteNode,
     updateNodeParam,
+    updateNodeParams,
     loadPinterestBoards,
     loadPinterestPins,
     executeGraph,
@@ -47,6 +48,7 @@ export function Inspector() {
         edges={edges}
         resolved={resolved}
         updateNodeParam={updateNodeParam}
+        updateNodeParams={updateNodeParams}
         loadPinterestBoards={loadPinterestBoards}
         loadPinterestPins={loadPinterestPins}
         executeGraph={executeGraph}

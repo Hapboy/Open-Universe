@@ -42,6 +42,7 @@ export function NodeParamsPanel({
   edges,
   resolved,
   updateNodeParam,
+  updateNodeParams,
   loadPinterestBoards,
   loadPinterestPins,
   executeGraph,
@@ -183,6 +184,7 @@ export function NodeParamsPanel({
           node={node}
           params={params as CharacterNodeParams}
           updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
         />
       )}
       {nodeType === 'location' && (
@@ -190,6 +192,7 @@ export function NodeParamsPanel({
           node={node}
           params={params as LocationNodeParams}
           updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
         />
       )}
       {nodeType === 'building' && (
@@ -197,6 +200,7 @@ export function NodeParamsPanel({
           node={node}
           params={params as BuildingNodeParams}
           updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
         />
       )}
       {nodeType === 'clothing' && (
@@ -204,6 +208,7 @@ export function NodeParamsPanel({
           node={node}
           params={params as ClothingNodeParams}
           updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
         />
       )}
       {nodeType === 'artwork' && (
@@ -211,6 +216,7 @@ export function NodeParamsPanel({
           node={node}
           params={params as ArtworkNodeParams}
           updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
         />
       )}
       {nodeType === 'furniture' && (
@@ -218,6 +224,7 @@ export function NodeParamsPanel({
           node={node}
           params={params as FurnitureNodeParams}
           updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
         />
       )}
       {nodeType === 'music' && (
@@ -225,6 +232,7 @@ export function NodeParamsPanel({
           node={node}
           params={params as MusicNodeParams}
           updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
         />
       )}
       {nodeType === 'script' && (
@@ -232,6 +240,7 @@ export function NodeParamsPanel({
           node={node}
           params={params as ScriptNodeParams}
           updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
         />
       )}
       {nodeType === 'storyboard' && (
@@ -239,6 +248,7 @@ export function NodeParamsPanel({
           node={node}
           params={params as StoryboardNodeParams}
           updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
         />
       )}
       {nodeType === 'transport' && (
@@ -246,6 +256,7 @@ export function NodeParamsPanel({
           node={node}
           params={params as TransportNodeParams}
           updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
         />
       )}
     </div>
