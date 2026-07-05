@@ -89,16 +89,32 @@ async function computeNodeOutput(
         aspectRatio: (d.params.aspectRatio as string) ?? '16:9',
         model: d.params.model as string,
         resolution: d.params.resolution as string,
-        negativePrompt: (d.params.negativePrompt as string) || undefined,
         numberOfImages: (d.params.numberOfImages as number) || 1,
-        seed: toNum(d.params.seed),
         personGeneration: d.params.personGeneration as string,
         safetyFilterLevel: d.params.safetyFilterLevel as string,
-        enhancePrompt: d.params.enhancePrompt as boolean,
         outputMimeType: d.params.outputMimeType as string,
         outputCompressionQuality: d.params.outputCompressionQuality as number,
         guidanceScale: toNum(d.params.guidanceScale),
         language: d.params.language as string,
+      },
+      showToast
+    )
+  } else if (d.nodeType === 'gemini_veo') {
+    const prompt = edgeInput(d, edges, resolved, 0)
+    const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string
+    const img = edgeInput(d, edges, resolved, 1)
+    const imgVal = (img.wired ? img.value : null) as string | null
+    return await GeminiService.runVeo(
+      promptVal || '',
+      imgVal,
+      {
+        model: d.params.model as string,
+        aspectRatio: (d.params.aspectRatio as string) ?? '16:9',
+        resolution: (d.params.resolution as string) ?? '720p',
+        durationSeconds: d.params.durationSeconds as number,
+        negativePrompt: (d.params.negativePrompt as string) || undefined,
+        personGeneration: d.params.personGeneration as string,
+        enhancePrompt: d.params.enhancePrompt as boolean,
       },
       showToast
     )

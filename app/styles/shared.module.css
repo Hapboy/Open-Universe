@@ -53,7 +53,8 @@
   border-color: var(--color-border-active);
 }
 
-.fld input[type='text']:disabled {
+.fld input[type='text']:disabled,
+.fld select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -122,6 +123,11 @@
   background: var(--color-bg-tertiary);
   color: var(--color-text-primary);
   font-weight: 600;
+}
+
+.segBtn button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .chipGroup {

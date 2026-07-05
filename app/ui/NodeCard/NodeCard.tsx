@@ -5,6 +5,7 @@ import type { NodeParams, PortType } from '../../types.ts'
 import { AI_MODEL_NODE_TYPES } from '../../data/nodes.ts'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
 import { CircleLoader } from '../CircleLoader/CircleLoader.tsx'
+import { MediaSlider } from './MediaSlider/MediaSlider.tsx'
 import styles from './NodeCard.module.css'
 
 function portColor(type: PortType): string {
@@ -78,6 +79,10 @@ export const NodeCard = memo(function NodeCard({
     data.nodeType === 'gemini_imagen' && outputId
       ? (resolved[outputId] as string | undefined)
       : undefined
+  const generatedVideo =
+    data.nodeType === 'gemini_veo' && outputId
+      ? (resolved[outputId] as string | undefined)
+      : undefined
 
   return (
     <div
@@ -129,55 +134,21 @@ export const NodeCard = memo(function NodeCard({
         </div>
       </div>
 
-      {generatedImage && (
-        <div className={styles.photoSlider}>
-          <img src={generatedImage} alt="" className={styles.photoImg} />
-        </div>
-      )}
+      {generatedImage && <MediaSlider items={[{ url: generatedImage, type: 'image' }]} />}
+
+      {generatedVideo && <MediaSlider items={[{ url: generatedVideo, type: 'video' }]} />}
 
       {photos.length > 0 && (
-        <div className={styles.photoSlider}>
-          <img src={photos[photoIdx]} alt="" className={styles.photoImg} />
-          {photos.length > 1 && (
-            <>
-              <button
-                className={cn(styles.photoNav, styles.prev)}
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  updateNodeParam(id, 'photoIdx', (photoIdx - 1 + photos.length) % photos.length)
-                }}
-              >
-                <i className="ti ti-chevron-left" />
-              </button>
-              <button
-                className={cn(styles.photoNav, styles.next)}
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  updateNodeParam(id, 'photoIdx', (photoIdx + 1) % photos.length)
-                }}
-              >
-                <i className="ti ti-chevron-right" />
-              </button>
-              <span className={styles.photoCount}>
-                {photoIdx + 1}/{photos.length}
-              </span>
-            </>
-          )}
-          <button
-            className={styles.photoDel}
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation()
-              const next = photos.filter((_, i) => i !== photoIdx)
-              updateNodeParam(id, 'photos', next)
-              updateNodeParam(id, 'photoIdx', Math.max(0, Math.min(photoIdx, next.length - 1)))
-            }}
-          >
-            <i className="ti ti-trash" />
-          </button>
-        </div>
+        <MediaSlider
+          items={photos.map((url) => ({ url, type: 'image' }))}
+          index={photoIdx}
+          onIndexChange={(i) => updateNodeParam(id, 'photoIdx', i)}
+          onDelete={(i) => {
+            const next = photos.filter((_, idx) => idx !== i)
+            updateNodeParam(id, 'photos', next)
+            updateNodeParam(id, 'photoIdx', Math.max(0, Math.min(photoIdx, next.length - 1)))
+          }}
+        />
       )}
 
       {/* Output handles */}

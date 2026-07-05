@@ -15,6 +15,7 @@ export const AI_MODEL_NODE_TYPES = [
   'gemini_text',
   'gemini_vision',
   'gemini_imagen',
+  'gemini_veo',
   'higgsfield_soul',
   'higgsfield_camera',
   'higgsfield_speak',
@@ -122,16 +123,44 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       aspectRatio: '16:9',
       model: 'imagen-4.0-generate-001',
       resolution: '1K',
-      negativePrompt: '',
       numberOfImages: 1,
-      seed: '',
       personGeneration: 'ALLOW_ADULT',
       safetyFilterLevel: 'BLOCK_MEDIUM_AND_ABOVE',
-      enhancePrompt: true,
       outputMimeType: 'image/png',
       outputCompressionQuality: 75,
       guidanceScale: '',
       language: 'auto',
+      // Vertex/Enterprise-only fields — this browser app can only reach the Gemini
+      // Developer API, which rejects these. Kept (disabled) in the inspector for
+      // when a backend proxy adds Vertex support.
+      negativePrompt: '',
+      seed: '',
+      enhancePrompt: true,
+    },
+  },
+
+  gemini_veo: {
+    type: 'gemini_veo',
+    label: 'Veo Video',
+    icon: 'ti-video-plus',
+    color: '#4285F4',
+    inputs: [
+      { name: 'Prompt', type: PORT_TYPES.TEXT },
+      { name: 'Reference Image', type: PORT_TYPES.IMAGE },
+    ],
+    outputs: [{ name: 'Generated Video', type: PORT_TYPES.VIDEO }],
+    params: {
+      prompt: '',
+      model: 'veo-3.1-generate-preview',
+      aspectRatio: '16:9',
+      resolution: '720p',
+      durationSeconds: 8,
+      negativePrompt: '',
+      personGeneration: 'allow_adult',
+      enhancePrompt: true,
+      // Vertex/Enterprise-only — see comment on gemini_imagen above.
+      seed: '',
+      generateAudio: true,
     },
   },
 
@@ -324,7 +353,7 @@ export const PALETTE_GROUPS: { label: string; types: string[] }[] = [
   { label: 'Нарратив', types: ['music', 'script', 'storyboard', 'transport'] },
   { label: 'Pinterest', types: ['pinterest_board'] },
   { label: 'Higgsfield AI', types: ['higgsfield_soul', 'higgsfield_camera', 'higgsfield_speak'] },
-  { label: 'Gemini AI', types: ['gemini_text', 'gemini_vision', 'gemini_imagen'] },
+  { label: 'Gemini AI', types: ['gemini_text', 'gemini_vision', 'gemini_imagen', 'gemini_veo'] },
   { label: 'Утилиты', types: ['text_prompt'] },
   { label: 'Вывод', types: ['output_scene'] },
 ]

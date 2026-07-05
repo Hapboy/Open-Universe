@@ -2,7 +2,12 @@ import { useEffect, useRef } from 'react'
 import type { NodeParamsProps } from '../shared.tsx'
 import { PinterestParams } from '../PinterestParams/PinterestParams.tsx'
 import { SoulParams, CameraParams, SpeakParams } from '../HiggsFieldParams.tsx'
-import { GeminiTextParams, GeminiVisionParams, GeminiImagenParams } from '../GeminiParams.tsx'
+import {
+  GeminiTextParams,
+  GeminiVisionParams,
+  GeminiImagenParams,
+  GeminiVeoParams,
+} from '../GeminiParams.tsx'
 import {
   CharacterParams,
   LocationParams,
@@ -133,6 +138,16 @@ export function NodeParamsPanel({
       )}
       {nodeType === 'gemini_imagen' && (
         <GeminiImagenParams
+          node={node}
+          params={params}
+          edges={edges}
+          resolved={resolved}
+          updateNodeParam={updateNodeParam}
+          executeGraph={executeGraph}
+        />
+      )}
+      {nodeType === 'gemini_veo' && (
+        <GeminiVeoParams
           node={node}
           params={params}
           edges={edges}

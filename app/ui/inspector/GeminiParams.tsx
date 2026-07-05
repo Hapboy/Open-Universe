@@ -117,6 +117,18 @@ const OUTPUT_MIME_OPTIONS = [
 
 const LANGUAGE_OPTIONS = ['auto', 'en', 'ja', 'ko', 'hi', 'zh', 'pt', 'es']
 
+// Vertex AI "Enterprise" mode is required for these fields, and the SDK only
+// supports Vertex auth (project/location/service-account) on Node runtimes —
+// it's ignored in the browser. This app has no backend yet, so these stay
+// disabled until one exists to proxy Vertex calls.
+const ENTERPRISE_ONLY_HINT =
+  'Доступно только через backend с Vertex AI Enterprise — пока не поддерживается в этом браузерном приложении'
+
+// Confirmed by hitting the live API: every veo-3.1-*-preview model currently
+// available on this key rejects these fields outright ("currently not
+// supported" / "not supported by this model"), regardless of value.
+const VEO_PREVIEW_UNSUPPORTED_HINT = 'Не поддерживается моделями Veo 3.1 preview на данный момент'
+
 export function GeminiImagenParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
   const RATIOS = ['16:9', '1:1', '9:16', '4:3', '3:4']
   const RESOLUTIONS = ['1K', '2K']
@@ -176,13 +188,9 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
           ))}
         </select>
       </div>
-      <div className={styles.fld}>
+      <div className={styles.fld} title={ENTERPRISE_ONLY_HINT}>
         <span>Негативный промпт</span>
-        <input
-          type="text"
-          defaultValue={params.negativePrompt as string}
-          onBlur={(e) => updateNodeParam(node.id, 'negativePrompt', e.target.value)}
-        />
+        <input type="text" disabled defaultValue={params.negativePrompt as string} />
       </div>
       <div className={styles.fld}>
         <span>Количество изображений</span>
@@ -197,14 +205,9 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
           ))}
         </select>
       </div>
-      <div className={styles.fld}>
+      <div className={styles.fld} title={ENTERPRISE_ONLY_HINT}>
         <span>Сид (seed)</span>
-        <input
-          type="text"
-          placeholder="авто"
-          defaultValue={params.seed as string}
-          onBlur={(e) => updateNodeParam(node.id, 'seed', e.target.value)}
-        />
+        <input type="text" disabled placeholder="авто" defaultValue={params.seed as string} />
       </div>
       <div className={styles.fld}>
         <span>Guidance Scale</span>
@@ -279,19 +282,147 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
           ))}
         </select>
       </div>
-      <div className={styles.fld} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div
+        className={styles.fld}
+        style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+        title={ENTERPRISE_ONLY_HINT}
+      >
         <span style={{ minWidth: 100, margin: 0 }}>Улучшить промпт</span>
         <div className={styles.segBtn} style={{ width: 'auto' }}>
-          <button
-            className={params.enhancePrompt ? styles.isOn : ''}
-            onClick={() => updateNodeParam(node.id, 'enhancePrompt', true)}
-          >
+          <button disabled className={params.enhancePrompt ? styles.isOn : ''}>
             да
           </button>
-          <button
-            className={!params.enhancePrompt ? styles.isOn : ''}
-            onClick={() => updateNodeParam(node.id, 'enhancePrompt', false)}
-          >
+          <button disabled className={!params.enhancePrompt ? styles.isOn : ''}>
+            нет
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+const VEO_MODELS: GeminiModelInfo[] = [
+  { id: 'veo-3.1-generate-preview', displayName: 'Veo 3.1' },
+  { id: 'veo-3.1-fast-generate-preview', displayName: 'Veo 3.1 Fast' },
+  { id: 'veo-3.1-lite-generate-preview', displayName: 'Veo 3.1 Lite' },
+]
+
+// Veo's personGeneration is a plain lowercase string, no 'allow_all' option (unlike Imagen).
+const VEO_PERSON_GENERATION_OPTIONS = [
+  { id: 'dont_allow', label: 'Запрещено' },
+  { id: 'allow_adult', label: 'Только взрослые' },
+]
+
+export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
+  const RATIOS = ['16:9', '9:16']
+  const RESOLUTIONS = ['720p', '1080p']
+  const prompt = edgeInput(node.data, edges, resolved, 0)
+  return (
+    <>
+      <WirableTextField
+        label="Промпт"
+        node={node}
+        paramKey="prompt"
+        params={params}
+        wired={prompt.wired}
+        liveValue={prompt.value}
+        updateNodeParam={updateNodeParam}
+      />
+      <div className={styles.fld}>
+        <span>Модель</span>
+        <select
+          value={params.model as string}
+          onChange={(e) => updateNodeParam(node.id, 'model', e.target.value)}
+        >
+          {VEO_MODELS.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.displayName ?? m.id}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Соотношение сторон</span>
+        <select
+          value={params.aspectRatio as string}
+          onChange={(e) => updateNodeParam(node.id, 'aspectRatio', e.target.value)}
+        >
+          {RATIOS.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Разрешение</span>
+        <select
+          value={params.resolution as string}
+          onChange={(e) => updateNodeParam(node.id, 'resolution', e.target.value)}
+        >
+          {RESOLUTIONS.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Длительность (сек)</span>
+        <input
+          type="text"
+          defaultValue={params.durationSeconds as number}
+          onBlur={(e) => updateNodeParam(node.id, 'durationSeconds', Number(e.target.value))}
+        />
+      </div>
+      <div className={styles.fld}>
+        <span>Негативный промпт</span>
+        <input
+          type="text"
+          defaultValue={params.negativePrompt as string}
+          onBlur={(e) => updateNodeParam(node.id, 'negativePrompt', e.target.value)}
+        />
+      </div>
+      <div className={styles.fld} title={ENTERPRISE_ONLY_HINT}>
+        <span>Сид (seed)</span>
+        <input type="text" disabled placeholder="авто" defaultValue={params.seed as string} />
+      </div>
+      <div className={styles.fld} title={VEO_PREVIEW_UNSUPPORTED_HINT}>
+        <span>Генерация людей</span>
+        <select disabled value={params.personGeneration as string}>
+          {VEO_PERSON_GENERATION_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div
+        className={styles.fld}
+        style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+        title={VEO_PREVIEW_UNSUPPORTED_HINT}
+      >
+        <span style={{ minWidth: 100, margin: 0 }}>Улучшить промпт</span>
+        <div className={styles.segBtn} style={{ width: 'auto' }}>
+          <button disabled className={params.enhancePrompt ? styles.isOn : ''}>
+            да
+          </button>
+          <button disabled className={!params.enhancePrompt ? styles.isOn : ''}>
+            нет
+          </button>
+        </div>
+      </div>
+      <div
+        className={styles.fld}
+        style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+        title={ENTERPRISE_ONLY_HINT}
+      >
+        <span style={{ minWidth: 100, margin: 0 }}>Звук</span>
+        <div className={styles.segBtn} style={{ width: 'auto' }}>
+          <button disabled className={params.generateAudio ? styles.isOn : ''}>
+            да
+          </button>
+          <button disabled className={!params.generateAudio ? styles.isOn : ''}>
             нет
           </button>
         </div>
