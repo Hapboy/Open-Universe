@@ -76,11 +76,15 @@ export const NodeCard = memo(function NodeCard({
       ? (resolved[outputId] as string | undefined)
       : undefined
   const generatedImage =
-    data.nodeType === 'gemini_imagen' && outputId
+    (data.nodeType === 'gemini_imagen' || data.nodeType === 'gemini_nanobanana') && outputId
       ? (resolved[outputId] as string | undefined)
       : undefined
   const generatedVideo =
     data.nodeType === 'gemini_veo' && outputId
+      ? (resolved[outputId] as string | undefined)
+      : undefined
+  const generatedAudio =
+    data.nodeType === 'gemini_lyria' && outputId
       ? (resolved[outputId] as string | undefined)
       : undefined
 
@@ -137,6 +141,14 @@ export const NodeCard = memo(function NodeCard({
       {generatedImage && <MediaSlider items={[{ url: generatedImage, type: 'image' }]} />}
 
       {generatedVideo && <MediaSlider items={[{ url: generatedVideo, type: 'video' }]} />}
+
+      {generatedAudio && (
+        <audio
+          src={generatedAudio}
+          controls
+          className={cn(styles.audioPlayer, 'nodrag', 'nowheel')}
+        />
+      )}
 
       {photos.length > 0 && (
         <MediaSlider

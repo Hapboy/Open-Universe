@@ -38,6 +38,27 @@ export interface VeoOptions {
   enhancePrompt?: boolean
 }
 
+// Nano Banana (gemini-*-image models) generates images via generateContent, not
+// Imagen's predict API — a different config shape (ImageConfig) with its own
+// Vertex-only field: personGeneration throws client-side in Developer API mode
+// here too ("only supported in Gemini Enterprise Agent Platform mode"), confirmed
+// live. aspectRatio/imageSize/seed all work fine in Developer API.
+export interface NanoBananaOptions {
+  model: string
+  aspectRatio?: string
+  imageSize?: string
+  seed?: number
+}
+
+// Lyria (lyria-3-*-preview) generates music via generateContent + responseModalities:
+// ['AUDIO'] — confirmed live it returns a directly playable audio/mpeg (MP3) inlineData
+// part, no PCM/WAV header wrangling needed. candidateCount > 1 is rejected by the API
+// ("Multiple candidates is not enabled for this model"), so no multi-track option.
+export interface LyriaOptions {
+  model: string
+  seed?: number
+}
+
 const DEFAULT_MODEL = 'gemini-flash-latest'
 
 const FALLBACK_MODELS: GeminiModelInfo[] = [
@@ -225,6 +246,87 @@ export const GeminiService = {
     } catch (e) {
       console.warn('Veo error:', e)
       showToast('Veo: ошибка API')
+      return null
+    }
+  },
+
+  async runNanoBanana(
+    prompt: string,
+    imageUrl: string | null,
+    options: NanoBananaOptions,
+    showToast: ShowToast
+  ): Promise<string | null> {
+    if (!import.meta.env.VITE_GEMINI_KEY) {
+      showToast('Nano Banana: mock режим')
+      return null
+    }
+    try {
+      showToast('Nano Banana: генерация изображения…')
+      const contents = imageUrl
+        ? [
+            {
+              role: 'user',
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: await GeminiService._urlToBase64(imageUrl),
+                  },
+                },
+              ],
+            },
+          ]
+        : prompt
+      const res = await GeminiService._ai().models.generateContent({
+        model: options.model || 'gemini-3.1-flash-image',
+        contents,
+        config: {
+          responseModalities: ['IMAGE'],
+          imageConfig: {
+            aspectRatio: options.aspectRatio,
+            imageSize: options.imageSize,
+          },
+          seed: options.seed,
+        },
+      })
+      const part = res.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)
+      if (!part?.inlineData?.data) throw new Error('no image in response')
+      showToast('Nano Banana: изображение готово!')
+      return `data:${part.inlineData.mimeType ?? 'image/png'};base64,${part.inlineData.data}`
+    } catch (e) {
+      console.warn('Nano Banana error:', e)
+      showToast('Nano Banana: ошибка API')
+      return null
+    }
+  },
+
+  async runLyria(
+    prompt: string,
+    options: LyriaOptions,
+    showToast: ShowToast
+  ): Promise<string | null> {
+    if (!import.meta.env.VITE_GEMINI_KEY) {
+      showToast('Lyria: mock режим')
+      return null
+    }
+    try {
+      showToast('Lyria: генерация музыки…')
+      const res = await GeminiService._ai().models.generateContent({
+        model: options.model || 'lyria-3-clip-preview',
+        contents: prompt,
+        config: {
+          responseModalities: ['AUDIO'],
+          seed: options.seed,
+        },
+      })
+      const part = res.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)
+      if (!part?.inlineData?.data) throw new Error('no audio in response')
+      showToast('Lyria: музыка готова!')
+      return `data:${part.inlineData.mimeType ?? 'audio/mpeg'};base64,${part.inlineData.data}`
+    } catch (e) {
+      console.warn('Lyria error:', e)
+      showToast('Lyria: ошибка API')
       return null
     }
   },

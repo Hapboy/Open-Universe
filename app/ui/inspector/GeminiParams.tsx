@@ -430,3 +430,140 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
     </>
   )
 }
+
+const NANO_BANANA_MODELS: GeminiModelInfo[] = [
+  { id: 'gemini-3.1-flash-image', displayName: 'Nano Banana 2' },
+  { id: 'gemini-3-pro-image', displayName: 'Nano Banana Pro' },
+  { id: 'gemini-2.5-flash-image', displayName: 'Gemini 2.5 Flash Image' },
+]
+
+// Nano Banana's own personGeneration enum (ALLOW_ALL/ALLOW_ADULT/ALLOW_NONE, per the
+// SDK's ImageConfig doc comment) — distinct from Imagen's DONT_ALLOW/ALLOW_ADULT/ALLOW_ALL
+// and Veo's lowercase dont_allow/allow_adult pair. Confirmed live: this field is
+// Vertex/Enterprise-only, same gating as Imagen/Veo's disabled fields above.
+const NANO_BANANA_PERSON_OPTIONS = [
+  { id: 'ALLOW_ALL', label: 'Все' },
+  { id: 'ALLOW_ADULT', label: 'Только взрослые' },
+  { id: 'ALLOW_NONE', label: 'Запрещено' },
+]
+
+export function GeminiNanoBananaParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
+  const RATIOS = ['16:9', '1:1', '9:16', '3:2', '2:3', '4:3', '21:9']
+  const SIZES = ['1K', '2K', '4K']
+  const prompt = edgeInput(node.data, edges, resolved, 0)
+  return (
+    <>
+      <WirableTextField
+        label="Промпт"
+        node={node}
+        paramKey="prompt"
+        params={params}
+        wired={prompt.wired}
+        liveValue={prompt.value}
+        updateNodeParam={updateNodeParam}
+      />
+      <div className={styles.fld}>
+        <span>Модель</span>
+        <select
+          value={params.model as string}
+          onChange={(e) => updateNodeParam(node.id, 'model', e.target.value)}
+        >
+          {NANO_BANANA_MODELS.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.displayName ?? m.id}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Соотношение сторон</span>
+        <select
+          value={params.aspectRatio as string}
+          onChange={(e) => updateNodeParam(node.id, 'aspectRatio', e.target.value)}
+        >
+          {RATIOS.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Разрешение</span>
+        <select
+          value={params.imageSize as string}
+          onChange={(e) => updateNodeParam(node.id, 'imageSize', e.target.value)}
+        >
+          {SIZES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Сид (seed)</span>
+        <input
+          type="text"
+          placeholder="авто"
+          defaultValue={params.seed as string}
+          onBlur={(e) => updateNodeParam(node.id, 'seed', e.target.value)}
+        />
+      </div>
+      <div className={styles.fld} title={ENTERPRISE_ONLY_HINT}>
+        <span>Генерация людей</span>
+        <select disabled value={params.personGeneration as string}>
+          {NANO_BANANA_PERSON_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </>
+  )
+}
+
+const LYRIA_MODELS: GeminiModelInfo[] = [
+  { id: 'lyria-3-clip-preview', displayName: 'Lyria 3 Clip' },
+  { id: 'lyria-3-pro-preview', displayName: 'Lyria 3 Pro' },
+]
+
+export function GeminiLyriaParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
+  const prompt = edgeInput(node.data, edges, resolved, 0)
+  return (
+    <>
+      <WirableTextField
+        label="Промпт"
+        node={node}
+        paramKey="prompt"
+        params={params}
+        wired={prompt.wired}
+        liveValue={prompt.value}
+        updateNodeParam={updateNodeParam}
+      />
+      <div className={styles.fld}>
+        <span>Модель</span>
+        <select
+          value={params.model as string}
+          onChange={(e) => updateNodeParam(node.id, 'model', e.target.value)}
+        >
+          {LYRIA_MODELS.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.displayName ?? m.id}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.fld}>
+        <span>Сид (seed)</span>
+        <input
+          type="text"
+          placeholder="авто"
+          defaultValue={params.seed as string}
+          onBlur={(e) => updateNodeParam(node.id, 'seed', e.target.value)}
+        />
+      </div>
+    </>
+  )
+}

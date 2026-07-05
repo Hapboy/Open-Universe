@@ -16,6 +16,8 @@ export const AI_MODEL_NODE_TYPES = [
   'gemini_vision',
   'gemini_imagen',
   'gemini_veo',
+  'gemini_nanobanana',
+  'gemini_lyria',
   'higgsfield_soul',
   'higgsfield_camera',
   'higgsfield_speak',
@@ -161,6 +163,41 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       // Vertex/Enterprise-only — see comment on gemini_imagen above.
       seed: '',
       generateAudio: true,
+    },
+  },
+
+  gemini_nanobanana: {
+    type: 'gemini_nanobanana',
+    label: 'Nano Banana',
+    icon: 'ti-photo-spark',
+    color: '#4285F4',
+    inputs: [
+      { name: 'Prompt', type: PORT_TYPES.TEXT },
+      { name: 'Reference Image', type: PORT_TYPES.IMAGE },
+    ],
+    outputs: [{ name: 'Generated Image', type: PORT_TYPES.IMAGE }],
+    params: {
+      prompt: '',
+      model: 'gemini-3.1-flash-image',
+      aspectRatio: '16:9',
+      imageSize: '1K',
+      seed: '',
+      // Vertex/Enterprise-only — see comment on gemini_imagen above.
+      personGeneration: 'ALLOW_ADULT',
+    },
+  },
+
+  gemini_lyria: {
+    type: 'gemini_lyria',
+    label: 'Lyria Music',
+    icon: 'ti-music-bolt',
+    color: '#4285F4',
+    inputs: [{ name: 'Prompt', type: PORT_TYPES.TEXT }],
+    outputs: [{ name: 'Generated Audio', type: PORT_TYPES.AUDIO }],
+    params: {
+      prompt: '',
+      model: 'lyria-3-clip-preview',
+      seed: '',
     },
   },
 
@@ -353,7 +390,17 @@ export const PALETTE_GROUPS: { label: string; types: string[] }[] = [
   { label: 'Нарратив', types: ['music', 'script', 'storyboard', 'transport'] },
   { label: 'Pinterest', types: ['pinterest_board'] },
   { label: 'Higgsfield AI', types: ['higgsfield_soul', 'higgsfield_camera', 'higgsfield_speak'] },
-  { label: 'Gemini AI', types: ['gemini_text', 'gemini_vision', 'gemini_imagen', 'gemini_veo'] },
+  {
+    label: 'Gemini AI',
+    types: [
+      'gemini_text',
+      'gemini_vision',
+      'gemini_imagen',
+      'gemini_veo',
+      'gemini_nanobanana',
+      'gemini_lyria',
+    ],
+  },
   { label: 'Утилиты', types: ['text_prompt'] },
   { label: 'Вывод', types: ['output_scene'] },
 ]

@@ -7,6 +7,8 @@ import {
   GeminiVisionParams,
   GeminiImagenParams,
   GeminiVeoParams,
+  GeminiNanoBananaParams,
+  GeminiLyriaParams,
 } from '../GeminiParams.tsx'
 import {
   CharacterParams,
@@ -148,6 +150,26 @@ export function NodeParamsPanel({
       )}
       {nodeType === 'gemini_veo' && (
         <GeminiVeoParams
+          node={node}
+          params={params}
+          edges={edges}
+          resolved={resolved}
+          updateNodeParam={updateNodeParam}
+          executeGraph={executeGraph}
+        />
+      )}
+      {nodeType === 'gemini_nanobanana' && (
+        <GeminiNanoBananaParams
+          node={node}
+          params={params}
+          edges={edges}
+          resolved={resolved}
+          updateNodeParam={updateNodeParam}
+          executeGraph={executeGraph}
+        />
+      )}
+      {nodeType === 'gemini_lyria' && (
+        <GeminiLyriaParams
           node={node}
           params={params}
           edges={edges}

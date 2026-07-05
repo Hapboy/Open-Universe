@@ -118,6 +118,32 @@ async function computeNodeOutput(
       },
       showToast
     )
+  } else if (d.nodeType === 'gemini_nanobanana') {
+    const prompt = edgeInput(d, edges, resolved, 0)
+    const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string
+    const img = edgeInput(d, edges, resolved, 1)
+    const imgVal = (img.wired ? img.value : null) as string | null
+    const toNum = (v: unknown) => (v === '' || v == null ? undefined : Number(v))
+    return await GeminiService.runNanoBanana(
+      promptVal || '',
+      imgVal,
+      {
+        model: d.params.model as string,
+        aspectRatio: d.params.aspectRatio as string,
+        imageSize: d.params.imageSize as string,
+        seed: toNum(d.params.seed),
+      },
+      showToast
+    )
+  } else if (d.nodeType === 'gemini_lyria') {
+    const prompt = edgeInput(d, edges, resolved, 0)
+    const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string
+    const toNum = (v: unknown) => (v === '' || v == null ? undefined : Number(v))
+    return await GeminiService.runLyria(
+      promptVal || '',
+      { model: d.params.model as string, seed: toNum(d.params.seed) },
+      showToast
+    )
   } else if (d.nodeType === 'higgsfield_speak') {
     const input = edgeInput(d, edges, resolved, 0)
     const val = (input.wired ? input.value : null) as string | null
