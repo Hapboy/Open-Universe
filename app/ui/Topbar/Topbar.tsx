@@ -35,16 +35,6 @@ export function Topbar() {
         <span>Прогнать граф</span>
       </button>
       <TeamButton />
-      <a
-        href="/models.html"
-        target="_blank"
-        rel="noopener noreferrer"
-        className={styles.tb}
-        style={{ textDecoration: 'none' }}
-      >
-        <i className="ti ti-robot" />
-        <span>Модели Gemini</span>
-      </a>
       {deferredInstallPrompt && (
         <button className={styles.tb} onClick={handleInstall}>
           <i className="ti ti-download" />
