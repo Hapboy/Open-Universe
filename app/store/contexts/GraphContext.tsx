@@ -55,6 +55,14 @@ function loadStoredSceneGraphs(): Record<string, { nodes: Node<NodeParams>[]; ed
 }
 
 function loadActiveSceneId(): string {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search)
+    const sceneParam = params.get('scene')
+    if (sceneParam) {
+      localStorage.setItem(ACTIVE_SCENE_KEY, sceneParam)
+      return sceneParam
+    }
+  }
   return localStorage.getItem(ACTIVE_SCENE_KEY) || 'sc1'
 }
 
@@ -237,6 +245,16 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const [canonMode, setCanonMode] = useState<CanonMode>('canon')
   const [showMiniMap, setShowMiniMap] = useState<boolean>(true)
   const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false)
+
+  // Clean query parameter from URL bar on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('scene')) {
+      const newUrl =
+        window.location.protocol + '//' + window.location.host + window.location.pathname
+      window.history.replaceState({ path: newUrl }, '', newUrl)
+    }
+  }, [])
 
   const setActiveSceneId = useCallback(
     (nextId: string) => {

@@ -471,7 +471,7 @@ cv.addEventListener('pointerdown', (e) => {
       '<p>Пересечение судеб: <b>' + n.chars.map((c) => c.name).join(', ') + '</b>. ' +
       (n.chars.length > 1 ? 'Каждое взаимодействие создаёт новый синапс в памяти вселенной.' : 'Одиночное событие линии.') + '</p>' +
       '<div class="prov">state: t=' + fmt(colT(n.col)) + ' · погода: ' + st.weather + ' · ветка: main</div>' +
-      '<div class="row"><button class="pri" onclick="window.__act(\'Открываю сцену «' + st.name + '» (' + n.chars.length + ' перс.)\')">Открыть сцену</button>' +
+      '<div class="row"><button class="pri" onclick="window.__openScene(' + n.col + ')">Открыть сцену</button>' +
       '<button onclick="window.__act(\'Форк узла «' + st.name + '» → мультивселенная\')">⑂ Форк</button></div>');
     return;
   }
@@ -499,6 +499,22 @@ cv.addEventListener('pointermove', (e) => {
 });
 cv.addEventListener('pointerup', () => S.dragging = false);
 window.__act = (m) => { popup.style.display = 'none'; toast(m); };
+window.__openScene = (colIdx) => {
+  const mapping = {
+    0: 'sc1',   // Севан
+    1: 'sc2',   // Дорога
+    2: 'sc4a',  // Конд
+    3: 'sc5',   // Мастерская
+    4: 'sc3',   // Вернисаж
+    5: 'sc6'    // Каскад
+  };
+  const sceneId = mapping[colIdx] || 'sc1';
+  popup.style.display = 'none';
+  toast('Открываю сцену: ' + COLUMNS[colIdx].name + '...');
+  setTimeout(() => {
+    window.location.href = '/?scene=' + sceneId;
+  }, 800);
+};
 function genFragment(b){
   const F = [
     'Он шёл вдоль трамвайных путей, и город менял его быстрее, чем он успевал меняться сам',
