@@ -13,16 +13,14 @@ export function Timeline() {
     setActiveSceneId,
     showMontageMonitor,
     setShowMontageMonitor,
+    narrativeSettings,
+    updateNarrativeSettings,
   } = useGraphContext()
 
+  // Tab State
+  const [activeTab, setActiveTab] = useState<'scenes' | 'synapses' | 'settings'>('scenes')
+
   // Playback state
-  const [activeCameras, setActiveCameras] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {}
-    DEFAULT_SCENES.forEach((s) => {
-      initial[s.id] = s.cameraActive
-    })
-    return initial
-  })
   const [currentTime, setCurrentTime] = useState<number>(0)
   const [isPlaying, setIsPlaying] = useState<boolean>(false)
   const [playSpeed, setPlaySpeed] = useState<number>(1.0)
@@ -34,7 +32,17 @@ export function Timeline() {
   const [showStateDebugger, setShowStateDebugger] = useState<boolean>(false)
   const [showVolumeSlider, setShowVolumeSlider] = useState<boolean>(false)
 
+  // Camera toggle state
+  const [activeCameras, setActiveCameras] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {}
+    DEFAULT_SCENES.forEach((s) => {
+      initial[s.id] = s.cameraActive
+    })
+    return initial
+  })
+
   const containerRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const isDragging = useRef<boolean>(false)
 
   // Speeds cycle list
@@ -53,7 +61,6 @@ export function Timeline() {
     } else if (currentBranch === 'fork-rambalkoshe') {
       sub = `[Альт-линия @rambalkoshe] ${s.sub || ''}`
     }
-
     return {
       ...s,
       title,
@@ -106,6 +113,197 @@ export function Timeline() {
     frameId = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frameId)
   }, [isPlaying, playSpeed, collapseEmptySpace, totalDuration, totalPackedDuration])
+
+  // Canvas drawing for Tab 2: Synapses of Fates
+  useEffect(() => {
+    if (activeTab !== 'synapses' || !canvasRef.current) return
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let animationId: number
+
+    const handleResize = () => {
+      const rect = canvas.getBoundingClientRect()
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = rect.width * dpr
+      canvas.height = rect.height * dpr
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+
+    const draw = () => {
+      const W = canvas.clientWidth
+      const H = canvas.clientHeight
+      ctx.clearRect(0, 0, W, H)
+
+      // Grid/Columns geometry
+      const colCount = scenes.length
+      const paddingLeft = 60
+      const paddingRight = 60
+      const colWidth = (W - paddingLeft - paddingRight) / (colCount - 1)
+      const colX = scenes.map((_, i) => paddingLeft + i * colWidth)
+
+      const lanesCount = 5
+      const paddingTop = 20
+      const paddingBottom = 20
+      const laneHeight = (H - paddingTop - paddingBottom) / (lanesCount - 1)
+      const laneY = Array.from({ length: lanesCount }, (_, i) => paddingTop + i * laneHeight)
+
+      // Draw columns and location texts
+      ctx.save()
+      ctx.font = '9px system-ui, sans-serif'
+      ctx.fillStyle = 'rgba(241, 239, 232, 0.4)'
+      ctx.textAlign = 'center'
+      scenes.forEach((s, i) => {
+        ctx.strokeStyle =
+          s.id === activeSceneId ? 'rgba(239, 159, 39, 0.25)' : 'rgba(241, 239, 232, 0.08)'
+        ctx.lineWidth = s.id === activeSceneId ? 2 : 1
+        ctx.beginPath()
+        ctx.moveTo(colX[i], paddingTop - 5)
+        ctx.lineTo(colX[i], H - paddingBottom + 5)
+        ctx.stroke()
+
+        ctx.fillStyle =
+          s.id === activeSceneId ? 'var(--color-bg-accent)' : 'var(--color-text-secondary)'
+        ctx.fillText(s.num, colX[i], paddingTop - 8)
+      })
+      ctx.restore()
+
+      // Character lifepaths (Threads)
+      const CHAR_LANES = [
+        { name: 'Ара Гехецик', color: '#EF9F27', slots: [2, 1, 1, 2, 3, 2, 1, 2] },
+        { name: 'Анаит', color: '#D4537E', slots: [0, 1, 2, 2, 1, 2, 0, 2] },
+        { name: 'Вардан', color: '#5DCAA5', slots: [4, 3, 1, 2, 3, 2, 4, 2] },
+        { name: 'Цовинар', color: '#85B7EB', slots: [3, 4, 4, 2, 0, 2, 3, 2] },
+        { name: 'Вреж · dev', color: '#AFA9EC', slots: [1, 0, 3, 4, 4, 2, 1, 2] },
+      ]
+
+      CHAR_LANES.forEach((c) => {
+        ctx.save()
+        ctx.lineWidth = 2.0
+        ctx.strokeStyle = c.color
+        ctx.globalAlpha = 0.8
+        ctx.shadowColor = c.color
+        ctx.shadowBlur = 6
+
+        ctx.beginPath()
+        let isFirst = true
+        scenes.forEach((s, idx) => {
+          const slot = c.slots[idx % c.slots.length]
+          const x = colX[idx]
+          const y = laneY[slot]
+          if (isFirst) {
+            ctx.moveTo(x, y)
+            isFirst = false
+          } else {
+            const prevX = colX[idx - 1]
+            const prevSlot = c.slots[(idx - 1) % c.slots.length]
+            const prevY = laneY[prevSlot]
+            const mx = (prevX + x) / 2
+            ctx.bezierCurveTo(mx, prevY, mx, y, x, y)
+          }
+        })
+        ctx.stroke()
+        ctx.restore()
+      })
+
+      // Synapse intersections (⬤ Nodes)
+      scenes.forEach((s, idx) => {
+        const x = colX[idx]
+        const charAtScene = CHAR_LANES.filter((c) => c.slots[idx % c.slots.length] !== undefined)
+        const isCurrentScene = s.id === activeSceneId
+        const pulse = Math.sin(Date.now() / 250 + idx) * 1.2
+
+        charAtScene.forEach((c, j) => {
+          const slot = c.slots[idx % c.slots.length]
+          const y = laneY[slot]
+          ctx.save()
+          ctx.beginPath()
+          ctx.arc(x, y, 5 + pulse + j * 1.5, 0, Math.PI * 2)
+          ctx.strokeStyle = c.color
+          ctx.lineWidth = 1.6
+          ctx.globalAlpha = isCurrentScene ? 1.0 : 0.35
+          if (isCurrentScene) {
+            ctx.shadowColor = c.color
+            ctx.shadowBlur = 8
+          }
+          ctx.stroke()
+          ctx.restore()
+        })
+
+        // Central glowing core
+        const firstSlot = CHAR_LANES[0].slots[idx % CHAR_LANES[0].slots.length]
+        const centerY = laneY[firstSlot]
+        ctx.save()
+        ctx.beginPath()
+        ctx.arc(x, centerY, 3.5, 0, Math.PI * 2)
+        ctx.fillStyle = isCurrentScene ? '#ef9f27' : '#e8e4d8'
+        ctx.shadowColor = '#fff'
+        ctx.shadowBlur = isCurrentScene ? 12 : 3
+        ctx.fill()
+        ctx.restore()
+      })
+
+      // Render vertical playback playhead line
+      const maxTime = collapseEmptySpace ? totalPackedDuration : totalDuration
+      const scrubberX = paddingLeft + (currentTime / maxTime) * (W - paddingLeft - paddingRight)
+      ctx.save()
+      ctx.strokeStyle = '#ef9f27'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(scrubberX, paddingTop - 8)
+      ctx.lineTo(scrubberX, H - paddingBottom + 8)
+      ctx.stroke()
+      ctx.restore()
+
+      animationId = requestAnimationFrame(draw)
+    }
+
+    animationId = requestAnimationFrame(draw)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      cancelAnimationFrame(animationId)
+    }
+  }, [
+    activeTab,
+    currentTime,
+    collapseEmptySpace,
+    totalDuration,
+    totalPackedDuration,
+    activeSceneId,
+    scenes,
+  ])
+
+  // Canvas click to select scene
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return
+    const rect = canvasRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const W = rect.width
+    const paddingLeft = 60
+    const paddingRight = 60
+    const colWidth = (W - paddingLeft - paddingRight) / (scenes.length - 1)
+
+    let closestIdx = 0
+    let minDiff = Infinity
+    scenes.forEach((_, idx) => {
+      const colX = paddingLeft + idx * colWidth
+      const diff = Math.abs(x - colX)
+      if (diff < minDiff) {
+        minDiff = diff
+        closestIdx = idx
+      }
+    })
+
+    if (minDiff < 40) {
+      const targetScene = scenes[closestIdx]
+      handleSceneTabClick(targetScene.id, targetScene.start)
+    }
+  }
 
   // Map absolute time of a scene to packed time
   const getScenePosition = (scene: TimelineScene) => {
@@ -355,12 +553,59 @@ export function Timeline() {
     return ticks
   }
 
+  // Active scene narrative settings
+  const activeSettings = narrativeSettings[activeSceneId] || {
+    emotionalTrend: 0,
+    conflictType: 'physical',
+    conflictTarget: 'man_vs_man',
+  }
+
+  // Calculate SVG arrow parameters
+  // Start is bottom-left (50, 95)
+  // End is top-right (350, y2) where y2 goes from 95 (flat) to 20 (steep)
+  const arrowY2 = 95 - 75 * ((activeSettings.emotionalTrend + 100) / 200)
+
   return (
     <div className={styles.timelineContainer}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <i className="ti ti-timeline" />
           <span>Таймлайн фильма</span>
+
+          {/* Segmented Timeline Tabs */}
+          <div className={styles.tabHeaders}>
+            <button
+              className={cn(
+                styles.tabHeaderBtn,
+                activeTab === 'scenes' && styles.tabHeaderBtnActive
+              )}
+              onClick={() => setActiveTab('scenes')}
+            >
+              <i className="ti ti-layout-grid" />
+              <span>Сцены</span>
+            </button>
+            <button
+              className={cn(
+                styles.tabHeaderBtn,
+                activeTab === 'synapses' && styles.tabHeaderBtnActive
+              )}
+              onClick={() => setActiveTab('synapses')}
+            >
+              <i className="ti ti-circles" />
+              <span>Сеть судеб</span>
+            </button>
+            <button
+              className={cn(
+                styles.tabHeaderBtn,
+                activeTab === 'settings' && styles.tabHeaderBtnActive
+              )}
+              onClick={() => setActiveTab('settings')}
+            >
+              <i className="ti ti-adjustments" />
+              <span>Настройки сцены</span>
+            </button>
+          </div>
+
           <div className={styles.branchSelectWrapper}>
             <i className="ti ti-git-branch" />
             <select
@@ -406,78 +651,276 @@ export function Timeline() {
         </div>
       )}
 
-      {/* Timeline Ruler */}
-      <div className={styles.rulerContainer}>{renderRulerTicks()}</div>
+      {/* Main Tracks / Canvas Area depending on Active Tab */}
+      <div className={styles.mainTimelineArea}>
+        {activeTab === 'scenes' && (
+          <>
+            {/* Timeline Ruler */}
+            <div className={styles.rulerContainer}>{renderRulerTicks()}</div>
 
-      <div className={styles.tracksWrapper} ref={containerRef} onMouseDown={handleScrubStart}>
-        {/* Playhead vertical line */}
-        <div className={styles.playhead} style={{ left: `${scrubberPercent}%` }}>
-          <div className={styles.playheadHandle} />
-        </div>
-
-        {/* Track Row 1 */}
-        <div className={styles.trackRow}>
-          {track1Scenes.map((scene) => (
-            <div
-              key={scene.id}
-              className={cn(
-                styles.sceneCard,
-                isSceneActive(scene) && styles.sceneCardActive,
-                scene.id === activeSceneId && styles.sceneCardSelected,
-                scene.cameraActive && styles.sceneCardCameraSelected
-              )}
-              style={{
-                ...getScenePosition(scene),
-                backgroundImage: `url(${scene.coverUrl})`,
-              }}
-              onClick={() => handleSceneTabClick(scene.id, scene.start)}
-            >
-              <div className={styles.cardOverlay}>
-                <span className={styles.sceneNum}>Scene {scene.num}</span>
-                <span className={styles.sceneTitle}>{scene.title}</span>
+            <div className={styles.tracksWrapper} ref={containerRef} onMouseDown={handleScrubStart}>
+              {/* Playhead vertical line */}
+              <div className={styles.playhead} style={{ left: `${scrubberPercent}%` }}>
+                <div className={styles.playheadHandle} />
               </div>
-              <button
-                className={cn(styles.camBtn, scene.cameraActive && styles.camBtnActive)}
-                onClick={(e) => toggleCamera(scene.id, e)}
-                title="Активировать камеру для рендера"
-              >
-                <i className="ti ti-video" />
-              </button>
-            </div>
-          ))}
-        </div>
 
-        {/* Track Row 2 */}
-        <div className={styles.trackRow}>
-          {track2Scenes.map((scene) => (
-            <div
-              key={scene.id}
-              className={cn(
-                styles.sceneCard,
-                isSceneActive(scene) && styles.sceneCardActive,
-                scene.id === activeSceneId && styles.sceneCardSelected,
-                scene.cameraActive && styles.sceneCardCameraSelected
-              )}
-              style={{
-                ...getScenePosition(scene),
-                backgroundImage: `url(${scene.coverUrl})`,
-              }}
-              onClick={() => handleSceneTabClick(scene.id, scene.start)}
-            >
-              <div className={styles.cardOverlay}>
-                <span className={styles.sceneNum}>Scene {scene.num}</span>
-                <span className={styles.sceneTitle}>{scene.title}</span>
+              {/* Track Row 1 */}
+              <div className={styles.trackRow}>
+                {track1Scenes.map((scene) => (
+                  <div
+                    key={scene.id}
+                    className={cn(
+                      styles.sceneCard,
+                      isSceneActive(scene) && styles.sceneCardActive,
+                      scene.id === activeSceneId && styles.sceneCardSelected,
+                      scene.cameraActive && styles.sceneCardCameraSelected
+                    )}
+                    style={{
+                      ...getScenePosition(scene),
+                      backgroundImage: `url(${scene.coverUrl})`,
+                    }}
+                    onClick={() => handleSceneTabClick(scene.id, scene.start)}
+                  >
+                    <div className={styles.cardOverlay}>
+                      <span className={styles.sceneNum}>Scene {scene.num}</span>
+                      <span className={styles.sceneTitle}>{scene.title}</span>
+                    </div>
+                    <button
+                      className={cn(styles.camBtn, scene.cameraActive && styles.camBtnActive)}
+                      onClick={(e) => toggleCamera(scene.id, e)}
+                      title="Активировать камеру для рендера"
+                    >
+                      <i className="ti ti-video" />
+                    </button>
+                  </div>
+                ))}
               </div>
-              <button
-                className={cn(styles.camBtn, scene.cameraActive && styles.camBtnActive)}
-                onClick={(e) => toggleCamera(scene.id, e)}
-                title="Активировать камеру для рендера"
-              >
-                <i className="ti ti-video" />
-              </button>
+
+              {/* Track Row 2 */}
+              <div className={styles.trackRow}>
+                {track2Scenes.map((scene) => (
+                  <div
+                    key={scene.id}
+                    className={cn(
+                      styles.sceneCard,
+                      isSceneActive(scene) && styles.sceneCardActive,
+                      scene.id === activeSceneId && styles.sceneCardSelected,
+                      scene.cameraActive && styles.sceneCardCameraSelected
+                    )}
+                    style={{
+                      ...getScenePosition(scene),
+                      backgroundImage: `url(${scene.coverUrl})`,
+                    }}
+                    onClick={() => handleSceneTabClick(scene.id, scene.start)}
+                  >
+                    <div className={styles.cardOverlay}>
+                      <span className={styles.sceneNum}>Scene {scene.num}</span>
+                      <span className={styles.sceneTitle}>{scene.title}</span>
+                    </div>
+                    <button
+                      className={cn(styles.camBtn, scene.cameraActive && styles.camBtnActive)}
+                      onClick={(e) => toggleCamera(scene.id, e)}
+                      title="Активировать камеру для рендера"
+                    >
+                      <i className="ti ti-video" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+          </>
+        )}
+
+        {activeTab === 'synapses' && (
+          <div className={styles.canvasWrapper}>
+            <canvas ref={canvasRef} onClick={handleCanvasClick} className={styles.synapsesCanvas} />
+            <div className={styles.canvasLegend}>
+              <span>
+                ⬤ синапс (пересечение линий судеб персонажей) · кликни на синапс для перехода
+              </span>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className={styles.settingsWrapper}>
+            <div className={styles.settingsGrid}>
+              {/* Left Column: Emotional Line (Эмоциональная линия) */}
+              <div className={styles.settingsCol}>
+                <div className={styles.columnHeader}>
+                  <i className="ti ti-trending-up" />
+                  <span>
+                    Эмоциональная линия сцены ({scenes.find((s) => s.id === activeSceneId)?.title})
+                  </span>
+                </div>
+
+                <div className={styles.emotionalBox}>
+                  <svg className={styles.emotionalSvg} viewBox="0 0 400 120">
+                    <defs>
+                      <marker
+                        id="arrow"
+                        viewBox="0 0 10 10"
+                        refX="5"
+                        refY="5"
+                        markerWidth="6"
+                        markerHeight="6"
+                        orient="auto-start-reverse"
+                      >
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-text-primary)" />
+                      </marker>
+                      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path
+                          d="M 20 0 L 0 0 0 20"
+                          fill="none"
+                          stroke="rgba(241, 239, 232, 0.03)"
+                          strokeWidth="1"
+                        />
+                      </pattern>
+                    </defs>
+
+                    {/* Grid Background */}
+                    <rect width="400" height="120" fill="url(#grid)" />
+
+                    {/* Diagonal slope emotional line */}
+                    <line
+                      x1="50"
+                      y1="95"
+                      x2="350"
+                      y2={arrowY2}
+                      stroke="var(--color-text-primary)"
+                      strokeWidth="2"
+                      markerEnd="url(#arrow)"
+                    />
+
+                    {/* Labels */}
+                    <text x="50" y="112" className={styles.svgText} textAnchor="start">
+                      Положительные
+                    </text>
+                    <text x="350" y="18" className={styles.svgText} textAnchor="end">
+                      Негативные
+                    </text>
+                    <text x="200" y="70" className={styles.svgLabelText} textAnchor="middle">
+                      Эмоциональная линия
+                    </text>
+                  </svg>
+                </div>
+
+                <div className={styles.sliderControl}>
+                  <span className={styles.sliderLabel}>
+                    Уровень тренда: {activeSettings.emotionalTrend}%
+                  </span>
+                  <input
+                    type="range"
+                    min="-100"
+                    max="100"
+                    value={activeSettings.emotionalTrend}
+                    onChange={(e) =>
+                      updateNarrativeSettings(activeSceneId, {
+                        emotionalTrend: Number(e.target.value),
+                      })
+                    }
+                    className={styles.settingsSlider}
+                  />
+                </div>
+              </div>
+
+              {/* Right Column: Conflict selector (Конфликт) */}
+              <div className={styles.settingsCol}>
+                <div className={styles.columnHeader}>
+                  <i className="ti ti-swords" />
+                  <span>Тип и характер конфликта в сцене</span>
+                </div>
+
+                <div className={styles.conflictContainer}>
+                  <span className={styles.conflictTitle}>Конфликт</span>
+
+                  <div className={styles.conflictMatrix}>
+                    {/* Left side: Physical vs Psychological */}
+                    <div className={styles.conflictLeft}>
+                      <button
+                        className={cn(
+                          styles.conflictTypeBtn,
+                          activeSettings.conflictType === 'physical' && styles.conflictTypeBtnActive
+                        )}
+                        onClick={() =>
+                          updateNarrativeSettings(activeSceneId, { conflictType: 'physical' })
+                        }
+                      >
+                        <span className={styles.btnContent}>
+                          {activeSettings.conflictType === 'physical' && (
+                            <i className="ti ti-arrow-right" />
+                          )}
+                          Физический
+                        </span>
+                      </button>
+                      <button
+                        className={cn(
+                          styles.conflictTypeBtn,
+                          activeSettings.conflictType === 'psychological' &&
+                            styles.conflictTypeBtnActive
+                        )}
+                        onClick={() =>
+                          updateNarrativeSettings(activeSceneId, { conflictType: 'psychological' })
+                        }
+                      >
+                        <span className={styles.btnContent}>
+                          {activeSettings.conflictType === 'psychological' && (
+                            <i className="ti ti-arrow-right" />
+                          )}
+                          Психологический
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Right side: Targets */}
+                    <div className={styles.conflictRight}>
+                      <button
+                        className={cn(
+                          styles.conflictTargetBtn,
+                          activeSettings.conflictTarget === 'man_vs_man' &&
+                            styles.conflictTargetBtnActive
+                        )}
+                        onClick={() =>
+                          updateNarrativeSettings(activeSceneId, { conflictTarget: 'man_vs_man' })
+                        }
+                      >
+                        человек против человека
+                      </button>
+                      <button
+                        className={cn(
+                          styles.conflictTargetBtn,
+                          activeSettings.conflictTarget === 'man_vs_nature' &&
+                            styles.conflictTargetBtnActive
+                        )}
+                        onClick={() =>
+                          updateNarrativeSettings(activeSceneId, {
+                            conflictTarget: 'man_vs_nature',
+                          })
+                        }
+                      >
+                        человек против природы
+                      </button>
+                      <button
+                        className={cn(
+                          styles.conflictTargetBtn,
+                          activeSettings.conflictTarget === 'man_vs_society' &&
+                            styles.conflictTargetBtnActive
+                        )}
+                        onClick={() =>
+                          updateNarrativeSettings(activeSceneId, {
+                            conflictTarget: 'man_vs_society',
+                          })
+                        }
+                      >
+                        человек против общества
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Control panel buttons */}
@@ -573,7 +1016,6 @@ export function Timeline() {
           <span>Автомонтаж</span>
         </button>
 
-        {/* montage monitor button */}
         <button
           className={cn(styles.tbBtn, showMontageMonitor && styles.tbBtnActive)}
           onClick={() => setShowMontageMonitor(!showMontageMonitor)}

@@ -28,6 +28,43 @@
   color: var(--color-node-scene);
 }
 
+/* Timeline Tabs button styling */
+.tabHeaders {
+  display: flex;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+  margin-left: 14px;
+}
+
+.tabHeaderBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.tabHeaderBtn:hover {
+  color: var(--color-text-primary);
+}
+
+.tabHeaderBtnActive {
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
 .branchSelectWrapper {
   display: flex;
   align-items: center;
@@ -117,6 +154,15 @@
   white-space: pre-wrap;
 }
 
+/* Main Timeline Area Container */
+.mainTimelineArea {
+  position: relative;
+  min-height: 130px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 /* Time Ruler */
 .rulerContainer {
   position: relative;
@@ -148,6 +194,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  margin-top: 4px;
 }
 
 .btnGroup {
@@ -361,6 +408,213 @@
   background: var(--color-bg-accent);
   border-radius: 50%;
   box-shadow: 0 0 6px var(--color-bg-accent);
+}
+
+/* Tab 2: Synapses interactive network canvas styling */
+.canvasWrapper {
+  position: relative;
+  background: rgba(20, 19, 16, 0.6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  height: 125px;
+  overflow: hidden;
+}
+
+.synapsesCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.canvasLegend {
+  position: absolute;
+  bottom: 6px;
+  left: 12px;
+  font-size: 9px;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+/* Tab 3: Narrative settings UI wrapper styling */
+.settingsWrapper {
+  background: rgba(20, 19, 16, 0.6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  min-height: 125px;
+  box-sizing: border-box;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.settingsCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.columnHeader i {
+  color: var(--color-bg-accent);
+}
+
+.emotionalBox {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  height: 62px;
+}
+
+.emotionalSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.svgText {
+  fill: var(--color-text-tertiary);
+  font-size: 8px;
+  font-family: inherit;
+}
+
+.svgLabelText {
+  fill: var(--color-text-secondary);
+  font-size: 9px;
+  font-weight: 500;
+  font-family: inherit;
+  opacity: 0.5;
+}
+
+.sliderControl {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.sliderLabel {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.settingsSlider {
+  flex: 1;
+  accent-color: var(--color-bg-accent);
+  cursor: pointer;
+  height: 3px;
+}
+
+/* Conflict Selector layouts (Matrix) */
+.conflictContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+}
+
+.conflictTitle {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.conflictMatrix {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.conflictLeft {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border);
+}
+
+.conflictTypeBtn {
+  height: 28px;
+  background: var(--color-bg-primary);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  padding-left: 8px;
+  font-family: inherit;
+}
+
+.conflictTypeBtn:last-child {
+  border-bottom: none;
+}
+
+.conflictTypeBtn:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.conflictTypeBtnActive {
+  background: #73c850 !important; /* Premium green from conflict screenshot */
+  color: #000 !important;
+  font-weight: 600;
+}
+
+.btnContent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.conflictRight {
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 19, 16, 0.4);
+}
+
+.conflictTargetBtn {
+  height: 18.5px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 10.5px;
+  text-align: left;
+  padding-left: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.conflictTargetBtn:hover {
+  color: var(--color-text-primary);
+}
+
+.conflictTargetBtnActive {
+  color: var(--color-text-primary) !important;
+  font-weight: 600;
 }
 
 .spacer {

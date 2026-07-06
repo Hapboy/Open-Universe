@@ -184,6 +184,12 @@ function findPort(
   return ports?.find((p) => p.id === handleId)
 }
 
+export interface SceneNarrativeSettings {
+  emotionalTrend: number // slope percentage (-100 to 100)
+  conflictType: 'physical' | 'psychological'
+  conflictTarget: 'man_vs_man' | 'man_vs_nature' | 'man_vs_society'
+}
+
 interface GraphCtx {
   nodes: Node<NodeParams>[]
   edges: Edge[]
@@ -219,6 +225,9 @@ interface GraphCtx {
 
   showMontageMonitor: boolean
   setShowMontageMonitor: (v: boolean) => void
+
+  narrativeSettings: Record<string, SceneNarrativeSettings>
+  updateNarrativeSettings: (sceneId: string, patch: Partial<SceneNarrativeSettings>) => void
 }
 
 const Ctx = createContext<GraphCtx>(null!)
@@ -245,6 +254,38 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const [canonMode, setCanonMode] = useState<CanonMode>('canon')
   const [showMiniMap, setShowMiniMap] = useState<boolean>(true)
   const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false)
+
+  const [narrativeSettings, setNarrativeSettings] = useState<
+    Record<string, SceneNarrativeSettings>
+  >(() => {
+    try {
+      const raw = localStorage.getItem('hv_narrative_settings')
+      return raw ? JSON.parse(raw) : {}
+    } catch {
+      return {}
+    }
+  })
+
+  const updateNarrativeSettings = useCallback(
+    (sceneId: string, patch: Partial<SceneNarrativeSettings>) => {
+      setNarrativeSettings((prev) => {
+        const updated = {
+          ...prev,
+          [sceneId]: {
+            ...(prev[sceneId] || {
+              emotionalTrend: 0,
+              conflictType: 'physical',
+              conflictTarget: 'man_vs_man',
+            }),
+            ...patch,
+          },
+        }
+        localStorage.setItem('hv_narrative_settings', JSON.stringify(updated))
+        return updated
+      })
+    },
+    []
+  )
 
   // Clean query parameter from URL bar on mount
   useEffect(() => {
@@ -516,6 +557,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     setActiveSceneId,
     showMontageMonitor,
     setShowMontageMonitor,
+    narrativeSettings,
+    updateNarrativeSettings,
   }
 
   return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>
