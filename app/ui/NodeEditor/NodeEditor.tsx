@@ -30,6 +30,7 @@ function NodeEditorCanvas() {
     selectedNodeId,
     createNode,
     duplicateNode,
+    showMiniMap,
   } = useGraphContext()
   const { showToast } = useToastContext()
 
@@ -120,14 +121,16 @@ function NodeEditorCanvas() {
       >
         <Background gap={20} size={1} color="var(--color-border)" />
         <Controls />
-        <MiniMap
-          nodeColor={(n) => (n.data as NodeParams).color || '#888'}
-          style={{
-            background: 'var(--color-bg-card)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 6,
-          }}
-        />
+        {showMiniMap && (
+          <MiniMap
+            nodeColor={(n) => (n.data as NodeParams).color || '#888'}
+            style={{
+              background: 'var(--color-bg-card)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 6,
+            }}
+          />
+        )}
       </ReactFlow>
       <div className={styles.hint} id="hint" style={{ pointerEvents: 'none' }}>
         Перетащи ноду из палитры слева. Соедини выход одной ноды со совместимым входом другой —

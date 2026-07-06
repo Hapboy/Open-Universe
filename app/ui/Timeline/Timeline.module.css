@@ -1,0 +1,222 @@
+.timelineContainer {
+  background: rgba(27, 26, 22, 0.85);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--color-border);
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headerLeft i {
+  color: var(--color-node-scene);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+/* Playback bar and controls layout */
+.controlsBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btnGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tbBtn {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.tbBtn:hover {
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
+}
+
+.tbBtnActive {
+  background: rgba(239, 159, 39, 0.15);
+  color: var(--color-bg-accent);
+  border-color: var(--color-bg-accent);
+}
+
+.timeDisplay {
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    SF Mono,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Scrubber and Track Area */
+.tracksWrapper {
+  position: relative;
+  background: rgba(20, 19, 16, 0.6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  height: 106px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+}
+
+.trackRow {
+  position: relative;
+  height: 42px;
+  width: 100%;
+}
+
+.sceneCard {
+  position: absolute;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-sizing: border-box;
+  background-size: cover;
+  background-position: center;
+  border: 1.5px solid rgba(241, 239, 232, 0.15);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.sceneCard:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.sceneCardActive {
+  border-color: var(--color-node-scene) !important;
+  box-shadow: 0 0 8px rgba(29, 158, 117, 0.4);
+}
+
+.sceneCardCameraSelected {
+  border-color: var(--color-bg-accent) !important;
+  box-shadow: 0 0 8px rgba(239, 159, 39, 0.4);
+}
+
+.cardOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 30%, rgba(0, 0, 0, 0.2) 100%);
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #fff;
+  pointer-events: none;
+}
+
+.sceneNum {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
+.sceneTitle {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.camBtn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s;
+}
+
+.camBtn:hover {
+  background: var(--color-bg-accent);
+  border-color: var(--color-bg-accent);
+}
+
+.camBtnActive {
+  background: var(--color-bg-accent);
+  border-color: var(--color-bg-accent);
+  color: #000;
+}
+
+/* Scrubber Line */
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-bg-accent);
+  pointer-events: none;
+  z-index: 20;
+}
+
+.playheadHandle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: var(--color-bg-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--color-bg-accent);
+}

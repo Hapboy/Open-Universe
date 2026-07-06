@@ -67,6 +67,9 @@ interface GraphCtx {
 
   canonMode: CanonMode
   setCanonMode: (m: CanonMode) => void
+
+  showMiniMap: boolean
+  setShowMiniMap: (v: boolean) => void
 }
 
 const Ctx = createContext<GraphCtx>(null!)
@@ -79,6 +82,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const [edges, setEdges] = useState<Edge[]>(() => loadStoredGraph().edges)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [canonMode, setCanonMode] = useState<CanonMode>('canon')
+  const [showMiniMap, setShowMiniMap] = useState<boolean>(true)
 
   // ── React Flow handlers ─────────────────────────────────────────────────────
 
@@ -302,6 +306,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     loadPinterestPins,
     canonMode,
     setCanonMode,
+    showMiniMap,
+    setShowMiniMap,
   }
 
   return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>

@@ -3,6 +3,7 @@ import { useGraphContext } from './store/contexts/GraphContext.tsx'
 import { Topbar } from './ui/Topbar/Topbar.tsx'
 import { NodeEditor } from './ui/NodeEditor/NodeEditor.tsx'
 import { Palette } from './ui/Palette/Palette.tsx'
+import { Timeline } from './ui/Timeline/Timeline.tsx'
 import { Modals } from './ui/Modals/Modals.tsx'
 import { Toast } from './ui/Toast/Toast.tsx'
 import styles from './App.module.css'
@@ -17,6 +18,7 @@ function AppShell() {
           <NodeEditor />
         </main>
       </div>
+      <Timeline />
       <footer className={styles.statusbar}>
         <StatusBar />
       </footer>

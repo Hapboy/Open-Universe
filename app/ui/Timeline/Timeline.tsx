@@ -1,0 +1,385 @@
+import React, { useState, useEffect, useRef } from 'react'
+import cn from 'classnames'
+import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
+import { DEFAULT_SCENES, TimelineScene } from '../../data/scenes.ts'
+import styles from './Timeline.module.css'
+
+export function Timeline() {
+  const { showMiniMap, setShowMiniMap } = useGraphContext()
+
+  // Playback state
+  const [scenes, setScenes] = useState<TimelineScene[]>(DEFAULT_SCENES)
+  const [currentTime, setCurrentTime] = useState<number>(0)
+  const [isPlaying, setIsPlaying] = useState<boolean>(false)
+  const [playSpeed, setPlaySpeed] = useState<number>(1.0)
+  const [isMuted, setIsMuted] = useState<boolean>(false)
+  const [collapseEmptySpace, setCollapseEmptySpace] = useState<boolean>(false)
+  const [isAutoMontage, setIsAutoMontage] = useState<boolean>(false)
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef<boolean>(false)
+
+  // Speeds cycle list
+  const speedList = [0.5, 1.0, 1.5, 2.0]
+
+  // Calculate packed segments for collapsed mode
+  const uniqueStarts = Array.from(new Set(scenes.map((s) => s.start))).sort((a, b) => a - b)
+  const startDurations = uniqueStarts.map((start) => {
+    const activeScenesAtStart = scenes.filter((s) => s.start === start)
+    return Math.max(...activeScenesAtStart.map((s) => s.duration), 0)
+  })
+
+  const packedStarts: Record<number, number> = {}
+  let currentPackedTime = 0
+  for (let i = 0; i < uniqueStarts.length; i++) {
+    packedStarts[uniqueStarts[i]] = currentPackedTime
+    currentPackedTime += startDurations[i]
+  }
+
+  const totalDuration = 872 // 14:32 in seconds
+  const totalPackedDuration = currentPackedTime // Sum of all active segments
+
+  // Playback timer loop
+  useEffect(() => {
+    if (!isPlaying) return
+
+    let lastTime = performance.now()
+    let frameId: number
+
+    const tick = (now: number) => {
+      const delta = (now - lastTime) / 1000
+      lastTime = now
+
+      setCurrentTime((prevTime) => {
+        const nextTime = prevTime + delta * playSpeed
+        const maxTime = collapseEmptySpace ? totalPackedDuration : totalDuration
+        if (nextTime >= maxTime) {
+          setIsPlaying(false)
+          return maxTime
+        }
+        return nextTime
+      })
+
+      frameId = requestAnimationFrame(tick)
+    }
+
+    frameId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frameId)
+  }, [isPlaying, playSpeed, collapseEmptySpace, totalDuration, totalPackedDuration])
+
+  // Map absolute time of a scene to packed time
+  const getScenePosition = (scene: TimelineScene) => {
+    if (collapseEmptySpace) {
+      const left = (packedStarts[scene.start] / totalPackedDuration) * 100
+      const width = (scene.duration / totalPackedDuration) * 100
+      return { left: `${left}%`, width: `${width}%` }
+    } else {
+      const left = (scene.start / totalDuration) * 100
+      const width = (scene.duration / totalDuration) * 100
+      return { left: `${left}%`, width: `${width}%` }
+    }
+  }
+
+  // Format time (s) to MM:SS
+  const formatTime = (timeInSecs: number) => {
+    const m = Math.floor(timeInSecs / 60)
+    const s = Math.floor(timeInSecs % 60)
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+
+  // Toggle play/pause
+  const togglePlay = () => setIsPlaying(!isPlaying)
+
+  // Stop playback and reset
+  const stopPlay = () => {
+    setIsPlaying(false)
+    setCurrentTime(0)
+  }
+
+  // Cycle playback speed
+  const cycleSpeed = (forward = true) => {
+    const idx = speedList.indexOf(playSpeed)
+    let nextIdx = forward ? idx + 1 : idx - 1
+    if (nextIdx >= speedList.length) nextIdx = 0
+    if (nextIdx < 0) nextIdx = speedList.length - 1
+    setPlaySpeed(speedList[nextIdx])
+  }
+
+  // Next/Prev scene jumps
+  const jumpScene = (forward = true) => {
+    const starts = uniqueStarts
+    if (forward) {
+      const nextStart = starts.find((st) =>
+        collapseEmptySpace ? packedStarts[st] > currentTime : st > currentTime
+      )
+      if (nextStart !== undefined) {
+        setCurrentTime(collapseEmptySpace ? packedStarts[nextStart] : nextStart)
+      } else {
+        setCurrentTime(collapseEmptySpace ? totalPackedDuration : totalDuration)
+      }
+    } else {
+      const prevStarts = [...starts].reverse()
+      const prevStart = prevStarts.find((st) =>
+        collapseEmptySpace ? packedStarts[st] < currentTime - 1 : st < currentTime - 1
+      )
+      if (prevStart !== undefined) {
+        setCurrentTime(collapseEmptySpace ? packedStarts[prevStart] : prevStart)
+      } else {
+        setCurrentTime(0)
+      }
+    }
+  }
+
+  // Mute toggle
+  const toggleMute = () => setIsMuted(!isMuted)
+
+  // Minimap toggle
+  const toggleMiniMap = () => setShowMiniMap(!showMiniMap)
+
+  // Fullscreen toggle
+  const toggleFullscreen = () => {
+    const appEl = document.getElementById('app')
+    if (!appEl) return
+    if (!document.fullscreenElement) {
+      appEl.requestFullscreen().catch((err) => console.error(err))
+    } else {
+      document.exitFullscreen().catch((err) => console.error(err))
+    }
+  }
+
+  // Toggle camera active for parallel scenes
+  const toggleCamera = (sceneId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const targetScene = scenes.find((s) => s.id === sceneId)
+    if (!targetScene) return
+
+    setScenes((prevScenes) =>
+      prevScenes.map((s) => {
+        if (s.id === sceneId) {
+          return { ...s, cameraActive: !s.cameraActive }
+        }
+        // If not in auto-montage, deactivate other parallel scenes when selecting this one
+        if (!isAutoMontage && s.start === targetScene.start && s.id !== sceneId) {
+          return { ...s, cameraActive: false }
+        }
+        return s
+      })
+    )
+  }
+
+  // Scrubbing logic
+  const handleScrubStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    isDragging.current = true
+    handleScrub(e)
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+  }
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging.current || !containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const percent = Math.max(0, Math.min(1, x / rect.width))
+    setCurrentTime(percent * (collapseEmptySpace ? totalPackedDuration : totalDuration))
+  }
+
+  const handleMouseUp = () => {
+    isDragging.current = false
+    window.removeEventListener('mousemove', handleMouseMove)
+    window.removeEventListener('mouseup', handleMouseUp)
+  }
+
+  const handleScrub = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const percent = Math.max(0, Math.min(1, x / rect.width))
+    setCurrentTime(percent * (collapseEmptySpace ? totalPackedDuration : totalDuration))
+  }
+
+  // Check if a scene is active based on playhead time
+  const isSceneActive = (scene: TimelineScene) => {
+    if (collapseEmptySpace) {
+      const segmentStart = packedStarts[scene.start]
+      return currentTime >= segmentStart && currentTime < segmentStart + scene.duration
+    } else {
+      return currentTime >= scene.start && currentTime < scene.start + scene.duration
+    }
+  }
+
+  // Calculate current scrubber position percentage
+  const scrubberPercent =
+    (currentTime / (collapseEmptySpace ? totalPackedDuration : totalDuration)) * 100
+
+  // Track rows definition
+  const track1Scenes = scenes.filter((s) => s.track === 1)
+  const track2Scenes = scenes.filter((s) => s.track === 2)
+
+  return (
+    <div className={styles.timelineContainer}>
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <i className="ti ti-timeline" />
+          <span>Таймлайн фильма · ветка main</span>
+        </div>
+        <div className={styles.headerRight}>
+          <span>{scenes.length} сцен</span>
+          <span>·</span>
+          <span>{formatTime(collapseEmptySpace ? totalPackedDuration : totalDuration)}</span>
+        </div>
+      </div>
+
+      <div className={styles.tracksWrapper} ref={containerRef} onMouseDown={handleScrubStart}>
+        {/* Playhead vertical line */}
+        <div className={styles.playhead} style={{ left: `${scrubberPercent}%` }}>
+          <div className={styles.playheadHandle} />
+        </div>
+
+        {/* Track Row 1 */}
+        <div className={styles.trackRow}>
+          {track1Scenes.map((scene) => (
+            <div
+              key={scene.id}
+              className={cn(
+                styles.sceneCard,
+                isSceneActive(scene) && styles.sceneCardActive,
+                scene.cameraActive && styles.sceneCardCameraSelected
+              )}
+              style={{
+                ...getScenePosition(scene),
+                backgroundImage: `url(${scene.coverUrl})`,
+              }}
+            >
+              <div className={styles.cardOverlay}>
+                <span className={styles.sceneNum}>Scene {scene.num}</span>
+                <span className={styles.sceneTitle}>{scene.title}</span>
+              </div>
+              <button
+                className={cn(styles.camBtn, scene.cameraActive && styles.camBtnActive)}
+                onClick={(e) => toggleCamera(scene.id, e)}
+                title="Активировать камеру для рендера"
+              >
+                <i className="ti ti-video" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Track Row 2 */}
+        <div className={styles.trackRow}>
+          {track2Scenes.map((scene) => (
+            <div
+              key={scene.id}
+              className={cn(
+                styles.sceneCard,
+                isSceneActive(scene) && styles.sceneCardActive,
+                scene.cameraActive && styles.sceneCardCameraSelected
+              )}
+              style={{
+                ...getScenePosition(scene),
+                backgroundImage: `url(${scene.coverUrl})`,
+              }}
+            >
+              <div className={styles.cardOverlay}>
+                <span className={styles.sceneNum}>Scene {scene.num}</span>
+                <span className={styles.sceneTitle}>{scene.title}</span>
+              </div>
+              <button
+                className={cn(styles.camBtn, scene.cameraActive && styles.camBtnActive)}
+                onClick={(e) => toggleCamera(scene.id, e)}
+                title="Активировать камеру для рендера"
+              >
+                <i className="ti ti-video" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Control panel buttons */}
+      <div className={styles.controlsBar}>
+        <div className={styles.btnGroup}>
+          <button
+            className={styles.tbBtn}
+            onClick={() => jumpScene(false)}
+            title="Предыдущая сцена"
+          >
+            <i className="ti ti-player-skip-back" />
+          </button>
+          <button
+            className={styles.tbBtn}
+            onClick={togglePlay}
+            title={isPlaying ? 'Пауза' : 'Играть'}
+          >
+            <i className={cn(isPlaying ? 'ti ti-player-pause' : 'ti ti-player-play')} />
+          </button>
+          <button className={styles.tbBtn} onClick={stopPlay} title="Стоп">
+            <i className="ti ti-player-stop" />
+          </button>
+          <button className={styles.tbBtn} onClick={() => jumpScene(true)} title="Следующая сцена">
+            <i className="ti ti-player-skip-forward" />
+          </button>
+        </div>
+
+        <div className={styles.btnGroup}>
+          <button className={styles.tbBtn} onClick={() => cycleSpeed(false)} title="Замедлить">
+            <i className="ti ti-chevron-left" />
+          </button>
+          <button className={styles.tbBtn} onClick={() => cycleSpeed(true)} title="Ускорить">
+            <span>{playSpeed.toFixed(1)}x</span>
+          </button>
+          <button className={styles.tbBtn} onClick={() => cycleSpeed(true)} title="Ускорить">
+            <i className="ti ti-chevron-right" />
+          </button>
+        </div>
+
+        <button
+          className={cn(styles.tbBtn, isMuted && styles.tbBtnActive)}
+          onClick={toggleMute}
+          title={isMuted ? 'Включить звук' : 'Выключить звук'}
+        >
+          <i className={cn(isMuted ? 'ti ti-volume-off' : 'ti ti-volume')} />
+        </button>
+
+        <button
+          className={cn(styles.tbBtn, collapseEmptySpace && styles.tbBtnActive)}
+          onClick={() => setCollapseEmptySpace(!collapseEmptySpace)}
+          title="Смотреть подряд без пустых мест"
+        >
+          <i className="ti ti-arrows-minimize" />
+          <span>Стыковка сцен</span>
+        </button>
+
+        <button
+          className={cn(styles.tbBtn, isAutoMontage && styles.tbBtnActive)}
+          onClick={() => setIsAutoMontage(!isAutoMontage)}
+          title="Автоматический монтаж при параллельных сценах"
+        >
+          <i className="ti ti-git-fork" />
+          <span>Автомонтаж</span>
+        </button>
+
+        <span className={styles.spacer} />
+
+        <div className={styles.timeDisplay}>
+          {formatTime(currentTime)} /{' '}
+          {formatTime(collapseEmptySpace ? totalPackedDuration : totalDuration)}
+        </div>
+
+        <div className={styles.btnGroup}>
+          <button
+            className={cn(styles.tbBtn, showMiniMap && styles.tbBtnActive)}
+            onClick={toggleMiniMap}
+            title="Показать/скрыть миникарту холста"
+          >
+            <i className="ti ti-map-2" />
+            <span>Миникарта</span>
+          </button>
+          <button className={styles.tbBtn} onClick={toggleFullscreen} title="Полноэкранный режим">
+            <i className="ti ti-arrows-maximize" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
