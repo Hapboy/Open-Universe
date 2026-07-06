@@ -416,7 +416,7 @@
   background: rgba(20, 19, 16, 0.6);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  height: 125px;
+  height: 130px;
   overflow: hidden;
 }
 
@@ -435,37 +435,38 @@
   pointer-events: none;
 }
 
-/* Tab 3: Narrative settings UI wrapper styling */
-.settingsWrapper {
-  background: rgba(20, 19, 16, 0.6);
-  border: 1px solid var(--color-border);
+/* Tab 3: Narrative settings UI wrapper styling (Scene Arc) */
+.arcSettingsWrapper {
+  background: rgba(27, 26, 22, 0.45);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(239, 159, 39, 0.15);
   border-radius: var(--radius-md);
-  padding: 12px 18px;
-  min-height: 125px;
+  padding: 10px 14px;
+  min-height: 130px;
   box-sizing: border-box;
 }
 
 .settingsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
 }
 
-.settingsCol {
+.arcCol {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .columnHeader {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
   color: var(--color-text-secondary);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .columnHeader i {
@@ -496,18 +497,25 @@
   font-size: 9px;
   font-weight: 500;
   font-family: inherit;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
-.sliderControl {
+/* Horizontal sliders layout under Emotional line */
+.arcSlidersRow {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
   gap: 12px;
+  align-items: center;
+}
+
+.sliderBox {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .sliderLabel {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
@@ -519,102 +527,307 @@
   height: 3px;
 }
 
-/* Conflict Selector layouts (Matrix) */
-.conflictContainer {
+/* Tension level dynamic indicator overlay */
+.tensionSliderContainer {
+  position: relative;
+  height: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.tensionGlowBar {
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  height: 3px;
+  border-radius: 2px;
+  transition: all 0.2s;
+  pointer-events: none;
+}
+
+/* Story Beat steps progress layout (synapse-like beat line) */
+.storyBeatWrapper {
+  position: relative;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  height: 62px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.beatProgressLine {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  height: 2px;
+  background: rgba(241, 239, 232, 0.1);
+  top: 20px;
+  z-index: 1;
+}
+
+.beatSteps {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  z-index: 2;
+}
+
+.beatStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.beatNode {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2c2923;
+  border: 2px solid rgba(241, 239, 232, 0.3);
+  transition: all 0.2s;
+  position: relative;
+}
+
+.beatNodePulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-bg-accent);
+  animation: pulseBeat 1.5s infinite;
+}
+
+@keyframes pulseBeat {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.beatStepActive .beatNode {
+  background: var(--color-bg-accent) !important;
+  border-color: var(--color-bg-accent) !important;
+  box-shadow: 0 0 8px var(--color-bg-accent);
+}
+
+.beatLabel {
+  font-size: 8.5px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.beatStepActive .beatLabel {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* Pacing selection pills */
+.pacingContainer {
   display: flex;
   flex-direction: column;
   gap: 4px;
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
   padding: 6px 12px;
 }
 
-.conflictTitle {
-  font-size: 10px;
+.pacingTitle {
+  font-size: 9.5px;
   text-transform: uppercase;
   color: var(--color-text-tertiary);
   font-weight: 600;
   letter-spacing: 0.05em;
-  margin-bottom: 2px;
 }
 
-.conflictMatrix {
+.pacingPills {
+  display: flex;
+  gap: 6px;
+}
+
+.pacingPill {
+  flex: 1;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  padding: 3px 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.pacingPill:hover {
+  border-color: rgba(241, 239, 232, 0.3);
+  color: var(--color-text-primary);
+}
+
+.pacingPillActive {
+  background: rgba(239, 159, 39, 0.15) !important;
+  border-color: var(--color-bg-accent) !important;
+  color: var(--color-bg-accent) !important;
+  font-weight: 600;
+  box-shadow: 0 0 6px rgba(239, 159, 39, 0.2);
+}
+
+/* Custom Conflict Grid layout */
+.conflictMatrixWrapper {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  height: 62px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+}
+
+.conflictMatrixHeader {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.conflictMatrixGrid {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 96px 1fr;
   border: 1px solid var(--color-border);
   border-radius: 4px;
   overflow: hidden;
 }
 
-.conflictLeft {
+.conflictLeftCol {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--color-border);
 }
 
-.conflictTypeBtn {
-  height: 28px;
+.conflictBtnLeft {
+  height: 22px;
   background: var(--color-bg-primary);
   border: none;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
-  padding-left: 8px;
+  padding-left: 6px;
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.conflictTypeBtn:last-child {
+.conflictBtnLeft:last-child {
   border-bottom: none;
 }
 
-.conflictTypeBtn:hover {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-}
-
-.conflictTypeBtnActive {
+.conflictBtnLeftActive {
   background: #73c850 !important; /* Premium green from conflict screenshot */
   color: #000 !important;
   font-weight: 600;
 }
 
-.btnContent {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.conflictRight {
+.conflictRightCol {
   display: flex;
   flex-direction: column;
   background: rgba(20, 19, 16, 0.4);
 }
 
-.conflictTargetBtn {
-  height: 18.5px;
+.conflictBtnRight {
+  height: 14.5px;
   background: transparent;
   border: none;
   color: var(--color-text-secondary);
-  font-size: 10.5px;
+  font-size: 9px;
   text-align: left;
-  padding-left: 12px;
+  padding-left: 10px;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s;
 }
 
-.conflictTargetBtn:hover {
+.conflictBtnRight:hover {
   color: var(--color-text-primary);
 }
 
-.conflictTargetBtnActive {
+.conflictBtnRightActive {
   color: var(--color-text-primary) !important;
   font-weight: 600;
+}
+
+/* Lore checkbox badges */
+.loreWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 6px 12px;
+}
+
+.loreTitle {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.loreBadges {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.loreBadge {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-secondary);
+  font-size: 9.5px;
+  padding: 3px 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-align: left;
+}
+
+.loreBadgeActive {
+  border-color: var(--color-bg-accent) !important;
+  color: var(--color-text-primary) !important;
+  background: rgba(239, 159, 39, 0.08) !important;
+  box-shadow: 0 0 6px rgba(239, 159, 39, 0.15);
+}
+
+.loreBadge i {
+  font-size: 10.5px;
+  color: var(--color-text-tertiary);
+}
+
+.loreBadgeActive i {
+  color: var(--color-bg-accent) !important;
 }
 
 .spacer {

@@ -188,6 +188,10 @@ export interface SceneNarrativeSettings {
   emotionalTrend: number // slope percentage (-100 to 100)
   conflictType: 'physical' | 'psychological'
   conflictTarget: 'man_vs_man' | 'man_vs_nature' | 'man_vs_society'
+  storyPhase: 'exposition' | 'inciting' | 'rising' | 'climax' | 'resolution'
+  tensionLevel: number // 0 to 100
+  pacing: 'slow' | 'moderate' | 'fast' | 'action'
+  loreRevelations: string[] // array of tags
 }
 
 interface GraphCtx {
@@ -276,6 +280,10 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
               emotionalTrend: 0,
               conflictType: 'physical',
               conflictTarget: 'man_vs_man',
+              storyPhase: 'exposition',
+              tensionLevel: 30,
+              pacing: 'moderate',
+              loreRevelations: [],
             }),
             ...patch,
           },

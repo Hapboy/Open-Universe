@@ -305,19 +305,6 @@ export function Timeline() {
     }
   }
 
-  // Map absolute time of a scene to packed time
-  const getScenePosition = (scene: TimelineScene) => {
-    if (collapseEmptySpace) {
-      const left = (packedStarts[scene.start] / totalPackedDuration) * 100
-      const width = (scene.duration / totalPackedDuration) * 100
-      return { left: `${left}%`, width: `${width}%` }
-    } else {
-      const left = (scene.start / totalDuration) * 100
-      const width = (scene.duration / totalDuration) * 100
-      return { left: `${left}%`, width: `${width}%` }
-    }
-  }
-
   // Format time (s) to MM:SS
   const formatTime = (timeInSecs: number) => {
     const m = Math.floor(timeInSecs / 60)
@@ -558,12 +545,44 @@ export function Timeline() {
     emotionalTrend: 0,
     conflictType: 'physical',
     conflictTarget: 'man_vs_man',
+    storyPhase: 'exposition',
+    tensionLevel: 30,
+    pacing: 'moderate',
+    loreRevelations: [],
   }
 
-  // Calculate SVG arrow parameters
-  // Start is bottom-left (50, 95)
-  // End is top-right (350, y2) where y2 goes from 95 (flat) to 20 (steep)
+  // Calculate SVG arrow parameters for Emotional slope
   const arrowY2 = 95 - 75 * ((activeSettings.emotionalTrend + 100) / 200)
+
+  // Tension level dynamic visual styling
+  const getTensionColor = (level: number) => {
+    if (level < 30) return '#5DCAA5' // Green
+    if (level < 70) return '#EF9F27' // Amber
+    return '#D4537E' // Neon Red
+  }
+
+  // Story phases lists
+  const storyPhases = [
+    { key: 'exposition', label: 'Экспозиция' },
+    { key: 'inciting', label: 'Завязка' },
+    { key: 'rising', label: 'Развитие' },
+    { key: 'climax', label: 'Кульминация' },
+    { key: 'resolution', label: 'Развязка' },
+  ]
+
+  // Lore revelations checkmarks
+  const loreOptions = [
+    { key: 'ara_past', label: 'Прошлое Ары' },
+    { key: 'sevan_mystery', label: 'Секрет Севана' },
+    { key: 'kond_secret', label: 'Тайны Конда' },
+    { key: 'anomaly', label: 'Аномалия лора' },
+  ]
+
+  const toggleLoreRevelation = (key: string) => {
+    const list = activeSettings.loreRevelations || []
+    const updated = list.includes(key) ? list.filter((k) => k !== key) : [...list, key]
+    updateNarrativeSettings(activeSceneId, { loreRevelations: updated })
+  }
 
   return (
     <div className={styles.timelineContainer}>
@@ -602,7 +621,7 @@ export function Timeline() {
               onClick={() => setActiveTab('settings')}
             >
               <i className="ti ti-adjustments" />
-              <span>Настройки сцены</span>
+              <span>Scene Arc</span>
             </button>
           </div>
 
@@ -743,15 +762,13 @@ export function Timeline() {
         )}
 
         {activeTab === 'settings' && (
-          <div className={styles.settingsWrapper}>
+          <div className={styles.arcSettingsWrapper}>
             <div className={styles.settingsGrid}>
-              {/* Left Column: Emotional Line (Эмоциональная линия) */}
-              <div className={styles.settingsCol}>
+              {/* Column 1: Emotional Curve & Tension Gauge */}
+              <div className={styles.arcCol}>
                 <div className={styles.columnHeader}>
                   <i className="ti ti-trending-up" />
-                  <span>
-                    Эмоциональная линия сцены ({scenes.find((s) => s.id === activeSceneId)?.title})
-                  </span>
+                  <span>Эмоциональный тренд и Напряжение</span>
                 </div>
 
                 <div className={styles.emotionalBox}>
@@ -762,8 +779,8 @@ export function Timeline() {
                         viewBox="0 0 10 10"
                         refX="5"
                         refY="5"
-                        markerWidth="6"
-                        markerHeight="6"
+                        markerWidth="5"
+                        markerHeight="5"
                         orient="auto-start-reverse"
                       >
                         <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-text-primary)" />
@@ -777,11 +794,7 @@ export function Timeline() {
                         />
                       </pattern>
                     </defs>
-
-                    {/* Grid Background */}
                     <rect width="400" height="120" fill="url(#grid)" />
-
-                    {/* Diagonal slope emotional line */}
                     <line
                       x1="50"
                       y1="95"
@@ -791,8 +804,6 @@ export function Timeline() {
                       strokeWidth="2"
                       markerEnd="url(#arrow)"
                     />
-
-                    {/* Labels */}
                     <text x="50" y="112" className={styles.svgText} textAnchor="start">
                       Положительные
                     </text>
@@ -805,116 +816,212 @@ export function Timeline() {
                   </svg>
                 </div>
 
-                <div className={styles.sliderControl}>
-                  <span className={styles.sliderLabel}>
-                    Уровень тренда: {activeSettings.emotionalTrend}%
-                  </span>
-                  <input
-                    type="range"
-                    min="-100"
-                    max="100"
-                    value={activeSettings.emotionalTrend}
-                    onChange={(e) =>
-                      updateNarrativeSettings(activeSceneId, {
-                        emotionalTrend: Number(e.target.value),
-                      })
-                    }
-                    className={styles.settingsSlider}
-                  />
+                <div className={styles.arcSlidersRow}>
+                  <div className={styles.sliderBox}>
+                    <span className={styles.sliderLabel}>
+                      Угол: {activeSettings.emotionalTrend}%
+                    </span>
+                    <input
+                      type="range"
+                      min="-100"
+                      max="100"
+                      value={activeSettings.emotionalTrend}
+                      onChange={(e) =>
+                        updateNarrativeSettings(activeSceneId, {
+                          emotionalTrend: Number(e.target.value),
+                        })
+                      }
+                      className={styles.settingsSlider}
+                    />
+                  </div>
+
+                  <div className={styles.sliderBox}>
+                    <span className={styles.sliderLabel}>
+                      Напряжение:{' '}
+                      <span
+                        style={{
+                          color: getTensionColor(activeSettings.tensionLevel),
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        {activeSettings.tensionLevel}%
+                      </span>
+                    </span>
+                    <div className={styles.tensionSliderContainer}>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={activeSettings.tensionLevel}
+                        onChange={(e) =>
+                          updateNarrativeSettings(activeSceneId, {
+                            tensionLevel: Number(e.target.value),
+                          })
+                        }
+                        className={styles.settingsSlider}
+                      />
+                      <div
+                        className={styles.tensionGlowBar}
+                        style={{
+                          width: `${activeSettings.tensionLevel}%`,
+                          backgroundColor: getTensionColor(activeSettings.tensionLevel),
+                          boxShadow: `0 0 8px ${getTensionColor(activeSettings.tensionLevel)}`,
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Right Column: Conflict selector (Конфликт) */}
-              <div className={styles.settingsCol}>
+              {/* Column 2: Story Beat Steps & Pacing Chips */}
+              <div className={styles.arcCol}>
                 <div className={styles.columnHeader}>
-                  <i className="ti ti-swords" />
-                  <span>Тип и характер конфликта в сцене</span>
+                  <i className="ti ti-git-commit" />
+                  <span>Фаза сюжета и Ритм</span>
                 </div>
 
-                <div className={styles.conflictContainer}>
-                  <span className={styles.conflictTitle}>Конфликт</span>
+                {/* Horizontal Story Beat Steps selector */}
+                <div className={styles.storyBeatWrapper}>
+                  <div className={styles.beatProgressLine} />
+                  <div className={styles.beatSteps}>
+                    {storyPhases.map((phase) => {
+                      const isActive = activeSettings.storyPhase === phase.key
+                      return (
+                        <div
+                          key={phase.key}
+                          className={cn(styles.beatStep, isActive && styles.beatStepActive)}
+                          onClick={() =>
+                            updateNarrativeSettings(activeSceneId, {
+                              storyPhase: phase.key as
+                                'exposition' | 'inciting' | 'rising' | 'climax' | 'resolution',
+                            })
+                          }
+                        >
+                          <div className={styles.beatNode}>
+                            {isActive && <div className={styles.beatNodePulse} />}
+                          </div>
+                          <span className={styles.beatLabel}>{phase.label}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
 
-                  <div className={styles.conflictMatrix}>
-                    {/* Left side: Physical vs Psychological */}
-                    <div className={styles.conflictLeft}>
+                {/* Pacing selection pills */}
+                <div className={styles.pacingContainer}>
+                  <span className={styles.pacingTitle}>Ритм сцены (Pacing)</span>
+                  <div className={styles.pacingPills}>
+                    {(['slow', 'moderate', 'fast', 'action'] as const).map((mode) => {
+                      const labels = {
+                        slow: 'Медленный',
+                        moderate: 'Умеренный',
+                        fast: 'Быстрый',
+                        action: 'Динамичный',
+                      }
+                      const isActive = activeSettings.pacing === mode
+                      return (
+                        <button
+                          key={mode}
+                          className={cn(styles.pacingPill, isActive && styles.pacingPillActive)}
+                          onClick={() => updateNarrativeSettings(activeSceneId, { pacing: mode })}
+                        >
+                          {labels[mode]}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Column 3: Conflict Matrix & Lore Revelation Checkboxes */}
+              <div className={styles.arcCol}>
+                <div className={styles.columnHeader}>
+                  <i className="ti ti-git-fork" />
+                  <span>Конфликт и раскрытие Лор-тайн</span>
+                </div>
+
+                {/* Custom Conflict Grid layout */}
+                <div className={styles.conflictMatrixWrapper}>
+                  <div className={styles.conflictMatrixHeader}>Конфликт сцены</div>
+                  <div className={styles.conflictMatrixGrid}>
+                    <div className={styles.conflictLeftCol}>
                       <button
                         className={cn(
-                          styles.conflictTypeBtn,
-                          activeSettings.conflictType === 'physical' && styles.conflictTypeBtnActive
+                          styles.conflictBtnLeft,
+                          activeSettings.conflictType === 'physical' && styles.conflictBtnLeftActive
                         )}
                         onClick={() =>
                           updateNarrativeSettings(activeSceneId, { conflictType: 'physical' })
                         }
                       >
-                        <span className={styles.btnContent}>
-                          {activeSettings.conflictType === 'physical' && (
-                            <i className="ti ti-arrow-right" />
-                          )}
-                          Физический
-                        </span>
+                        {activeSettings.conflictType === 'physical' && (
+                          <i className="ti ti-arrow-right" />
+                        )}
+                        <span>Физический</span>
                       </button>
                       <button
                         className={cn(
-                          styles.conflictTypeBtn,
+                          styles.conflictBtnLeft,
                           activeSettings.conflictType === 'psychological' &&
-                            styles.conflictTypeBtnActive
+                            styles.conflictBtnLeftActive
                         )}
                         onClick={() =>
                           updateNarrativeSettings(activeSceneId, { conflictType: 'psychological' })
                         }
                       >
-                        <span className={styles.btnContent}>
-                          {activeSettings.conflictType === 'psychological' && (
-                            <i className="ti ti-arrow-right" />
-                          )}
-                          Психологический
-                        </span>
+                        {activeSettings.conflictType === 'psychological' && (
+                          <i className="ti ti-arrow-right" />
+                        )}
+                        <span>Психологический</span>
                       </button>
                     </div>
 
-                    {/* Right side: Targets */}
-                    <div className={styles.conflictRight}>
-                      <button
-                        className={cn(
-                          styles.conflictTargetBtn,
-                          activeSettings.conflictTarget === 'man_vs_man' &&
-                            styles.conflictTargetBtnActive
-                        )}
-                        onClick={() =>
-                          updateNarrativeSettings(activeSceneId, { conflictTarget: 'man_vs_man' })
+                    <div className={styles.conflictRightCol}>
+                      {(['man_vs_man', 'man_vs_nature', 'man_vs_society'] as const).map(
+                        (target) => {
+                          const labels = {
+                            man_vs_man: 'человек против человека',
+                            man_vs_nature: 'человек против природы',
+                            man_vs_society: 'человек против общества',
+                          }
+                          const isActive = activeSettings.conflictTarget === target
+                          return (
+                            <button
+                              key={target}
+                              className={cn(
+                                styles.conflictBtnRight,
+                                isActive && styles.conflictBtnRightActive
+                              )}
+                              onClick={() =>
+                                updateNarrativeSettings(activeSceneId, { conflictTarget: target })
+                              }
+                            >
+                              {labels[target]}
+                            </button>
+                          )
                         }
-                      >
-                        человек против человека
-                      </button>
-                      <button
-                        className={cn(
-                          styles.conflictTargetBtn,
-                          activeSettings.conflictTarget === 'man_vs_nature' &&
-                            styles.conflictTargetBtnActive
-                        )}
-                        onClick={() =>
-                          updateNarrativeSettings(activeSceneId, {
-                            conflictTarget: 'man_vs_nature',
-                          })
-                        }
-                      >
-                        человек против природы
-                      </button>
-                      <button
-                        className={cn(
-                          styles.conflictTargetBtn,
-                          activeSettings.conflictTarget === 'man_vs_society' &&
-                            styles.conflictTargetBtnActive
-                        )}
-                        onClick={() =>
-                          updateNarrativeSettings(activeSceneId, {
-                            conflictTarget: 'man_vs_society',
-                          })
-                        }
-                      >
-                        человек против общества
-                      </button>
+                      )}
                     </div>
+                  </div>
+                </div>
+
+                {/* Lore checkbox badges */}
+                <div className={styles.loreWrapper}>
+                  <span className={styles.loreTitle}>Открытия Лор-линий</span>
+                  <div className={styles.loreBadges}>
+                    {loreOptions.map((opt) => {
+                      const isChecked = (activeSettings.loreRevelations || []).includes(opt.key)
+                      return (
+                        <button
+                          key={opt.key}
+                          className={cn(styles.loreBadge, isChecked && styles.loreBadgeActive)}
+                          onClick={() => toggleLoreRevelation(opt.key)}
+                        >
+                          <i className={cn(isChecked ? 'ti ti-checkbox' : 'ti ti-square')} />
+                          <span>{opt.label}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
