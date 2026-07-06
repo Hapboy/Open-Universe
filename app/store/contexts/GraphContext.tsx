@@ -24,7 +24,10 @@ function loadStoredSceneGraphs(): Record<string, { nodes: Node<NodeParams>[]; ed
   try {
     const raw = localStorage.getItem(SCENE_GRAPHS_KEY)
     if (!raw) return {}
-    const parsed = JSON.parse(raw) as Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') {
+      return {}
+    }
 
     // Defensive check: if any graph has edges pointing to non-existent nodes,
     // clear the localStorage so it heals automatically.
@@ -32,9 +35,9 @@ function loadStoredSceneGraphs(): Record<string, { nodes: Node<NodeParams>[]; ed
     for (const key of Object.keys(parsed)) {
       const graph = parsed[key]
       if (graph?.nodes && graph?.edges) {
-        const nodeIds = new Set(graph.nodes.map((n) => n.id))
+        const nodeIds = new Set(graph.nodes.map((n) => n?.id).filter(Boolean))
         for (const edge of graph.edges) {
-          if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
+          if (!edge || !nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
             isCorrupted = true
             break
           }
@@ -68,20 +71,25 @@ function loadActiveSceneId(): string {
 
 // Params from the node template, deep-cloned, with overrides on top.
 function templateParams(type: string, overrides: Record<string, unknown> = {}) {
+  if (!type) return overrides || {}
   const template = NODE_TEMPLATES[type as keyof typeof NODE_TEMPLATES]
   const base = template
     ? (JSON.parse(JSON.stringify(template.params)) as Record<string, unknown>)
     : {}
-  return { ...base, ...overrides }
+  return { ...base, ...(overrides || {}) }
 }
 
 // Stored graphs may predate params added to templates later (e.g. character
 // coordinates) — merge template defaults under stored params so param editors
 // never receive undefined and a missing field can't crash the tree.
 function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
+  if (!Array.isArray(nodes)) return []
   return nodes.map((n) => ({
     ...n,
-    data: { ...n.data, params: templateParams(n.data.nodeType, n.data.params) },
+    data: {
+      ...n.data,
+      params: templateParams(n?.data?.nodeType, n?.data?.params),
+    },
   }))
 }
 
@@ -273,18 +281,20 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const updateNarrativeSettings = useCallback(
     (sceneId: string, patch: Partial<SceneNarrativeSettings>) => {
       setNarrativeSettings((prev) => {
+        const base = {
+          emotionalTrend: 0,
+          conflictType: 'physical' as const,
+          conflictTarget: 'man_vs_man' as const,
+          storyPhase: 'exposition' as const,
+          tensionLevel: 30,
+          pacing: 'moderate' as const,
+          loreRevelations: [] as string[],
+          ...(prev[sceneId] || {}),
+        }
         const updated = {
           ...prev,
           [sceneId]: {
-            ...(prev[sceneId] || {
-              emotionalTrend: 0,
-              conflictType: 'physical',
-              conflictTarget: 'man_vs_man',
-              storyPhase: 'exposition',
-              tensionLevel: 30,
-              pacing: 'moderate',
-              loreRevelations: [],
-            }),
+            ...base,
             ...patch,
           },
         }

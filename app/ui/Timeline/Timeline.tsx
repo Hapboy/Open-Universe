@@ -541,14 +541,15 @@ export function Timeline() {
   }
 
   // Active scene narrative settings
-  const activeSettings = narrativeSettings[activeSceneId] || {
+  const activeSettings = {
     emotionalTrend: 0,
-    conflictType: 'physical',
-    conflictTarget: 'man_vs_man',
-    storyPhase: 'exposition',
+    conflictType: 'physical' as const,
+    conflictTarget: 'man_vs_man' as const,
+    storyPhase: 'exposition' as const,
     tensionLevel: 30,
-    pacing: 'moderate',
-    loreRevelations: [],
+    pacing: 'moderate' as const,
+    loreRevelations: [] as string[],
+    ...(narrativeSettings[activeSceneId] || {}),
   }
 
   // Calculate SVG arrow parameters for Emotional slope
