@@ -98,6 +98,15 @@ export interface CharacterNodeParams extends Record<string, unknown> {
   birthPlace: WGS84Coordinates
   deathPlace: WGS84Coordinates
   currentPosition: WGS84Coordinates
+  name?: string
+  arcWho?: string
+  arcWants?: string
+  arcHow?: string
+  arcStake?: string
+  haircut?: string
+  tattoos?: string
+  accessories?: string
+  clothing?: string
 }
 
 export interface LocationNodeParams extends Record<string, unknown> {
