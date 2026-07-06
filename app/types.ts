@@ -79,6 +79,11 @@ export interface Palette {
 // selected again. The dropdown's option list is just `Object.keys(_presets)`.
 export type EntityPresets = Record<string, Record<string, unknown>>
 
+export interface WGS84Coordinates {
+  lat: number | null
+  lon: number | null
+}
+
 export interface CharacterNodeParams extends Record<string, unknown> {
   selectedItem: string
   inFrame: boolean
@@ -88,6 +93,11 @@ export interface CharacterNodeParams extends Record<string, unknown> {
   photos: string[]
   photoIdx: number
   pinterestUrl: string
+  lifetimeFrom: string
+  lifetimeTo: string
+  birthPlace: WGS84Coordinates
+  deathPlace: WGS84Coordinates
+  currentPosition: WGS84Coordinates
 }
 
 export interface LocationNodeParams extends Record<string, unknown> {

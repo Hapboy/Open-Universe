@@ -4,6 +4,9 @@ import { DatabaseSelect, InFrameToggle, usePresetDatabase } from '../shared.tsx'
 import type { EP } from '../shared.tsx'
 import { SelectField } from '../../../components/SelectField/SelectField.tsx'
 import { RangeField } from '../../../components/RangeField/RangeField.tsx'
+import { NumberField } from '../../../components/NumberField/NumberField.tsx'
+import { CoordinateField } from '../../../components/CoordinateField/CoordinateField.tsx'
+import { DateRangeField } from '../../../components/DateRangeField/DateRangeField.tsx'
 import type {
   CharacterNodeParams,
   LocationNodeParams,
@@ -58,8 +61,8 @@ export function CharacterParams({
         onAdd={onAdd}
         addLabel="Добавить персонажа"
       />
-      <RangeField
-        label={`Возраст (${params.age})`}
+      <NumberField
+        label="Возраст"
         min={10}
         max={90}
         step={1}
@@ -81,6 +84,28 @@ export function CharacterParams({
       <InFrameToggle
         value={params.inFrame}
         onChange={(v) => updateNodeParam(node.id, 'inFrame', v)}
+      />
+      <DateRangeField
+        label="Годы жизни"
+        from={params.lifetimeFrom}
+        to={params.lifetimeTo}
+        onChangeFrom={(v) => updateNodeParam(node.id, 'lifetimeFrom', v)}
+        onChangeTo={(v) => updateNodeParam(node.id, 'lifetimeTo', v)}
+      />
+      <CoordinateField
+        label="Место рождения"
+        value={params.birthPlace}
+        onChange={(v) => updateNodeParam(node.id, 'birthPlace', v)}
+      />
+      <CoordinateField
+        label="Место смерти"
+        value={params.deathPlace}
+        onChange={(v) => updateNodeParam(node.id, 'deathPlace', v)}
+      />
+      <CoordinateField
+        label="Текущие координаты"
+        value={params.currentPosition}
+        onChange={(v) => updateNodeParam(node.id, 'currentPosition', v)}
       />
       <div className={styles.fld}>
         <span>Фото персонажа ({photos.length})</span>
@@ -185,8 +210,8 @@ export function BuildingParams({
         onAdd={onAdd}
         addLabel="Добавить здание"
       />
-      <RangeField
-        label={`Этаж (${params.floor})`}
+      <NumberField
+        label="Этаж"
         min={1}
         max={10}
         step={1}
@@ -373,8 +398,8 @@ export function StoryboardParams({
         onAdd={onAdd}
         addLabel="Добавить версию"
       />
-      <RangeField
-        label={`Кадров (${params.shots})`}
+      <NumberField
+        label="Кадров"
         min={1}
         max={12}
         step={1}

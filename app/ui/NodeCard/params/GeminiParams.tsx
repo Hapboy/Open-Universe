@@ -4,7 +4,7 @@ import { GeminiService, type GeminiModelInfo } from '../../../core/services/gemi
 import { WirableTextField, type EEP } from './shared.tsx'
 import { SelectField } from '../../components/SelectField/SelectField.tsx'
 import { TextField } from '../../components/TextField/TextField.tsx'
-import styles from '../../../styles/shared.module.css'
+import { Switch } from '../../components/Switch/Switch.tsx'
 
 const FALLBACK_MODELS: GeminiModelInfo[] = [
   { id: 'gemini-flash-latest', displayName: 'Gemini Flash (latest)' },
@@ -211,21 +211,13 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
         onChange={(v) => updateNodeParam(node.id, 'language', v)}
         options={LANGUAGE_OPTIONS}
       />
-      <div
-        className={styles.fld}
-        style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+      <Switch
+        label="Улучшить промпт"
+        value={!!params.enhancePrompt}
+        onChange={() => {}}
+        disabled
         title={ENTERPRISE_ONLY_HINT}
-      >
-        <span style={{ minWidth: 100, margin: 0 }}>Улучшить промпт</span>
-        <div className={styles.segBtn} style={{ width: 'auto' }}>
-          <button disabled className={params.enhancePrompt ? styles.isOn : ''}>
-            да
-          </button>
-          <button disabled className={!params.enhancePrompt ? styles.isOn : ''}>
-            нет
-          </button>
-        </div>
-      </div>
+      />
     </>
   )
 }
@@ -300,36 +292,20 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
         options={VEO_PERSON_GENERATION_OPTIONS}
         title={VEO_PREVIEW_UNSUPPORTED_HINT}
       />
-      <div
-        className={styles.fld}
-        style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+      <Switch
+        label="Улучшить промпт"
+        value={!!params.enhancePrompt}
+        onChange={() => {}}
+        disabled
         title={VEO_PREVIEW_UNSUPPORTED_HINT}
-      >
-        <span style={{ minWidth: 100, margin: 0 }}>Улучшить промпт</span>
-        <div className={styles.segBtn} style={{ width: 'auto' }}>
-          <button disabled className={params.enhancePrompt ? styles.isOn : ''}>
-            да
-          </button>
-          <button disabled className={!params.enhancePrompt ? styles.isOn : ''}>
-            нет
-          </button>
-        </div>
-      </div>
-      <div
-        className={styles.fld}
-        style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+      />
+      <Switch
+        label="Звук"
+        value={!!params.generateAudio}
+        onChange={() => {}}
+        disabled
         title={ENTERPRISE_ONLY_HINT}
-      >
-        <span style={{ minWidth: 100, margin: 0 }}>Звук</span>
-        <div className={styles.segBtn} style={{ width: 'auto' }}>
-          <button disabled className={params.generateAudio ? styles.isOn : ''}>
-            да
-          </button>
-          <button disabled className={!params.generateAudio ? styles.isOn : ''}>
-            нет
-          </button>
-        </div>
-      </div>
+      />
     </>
   )
 }

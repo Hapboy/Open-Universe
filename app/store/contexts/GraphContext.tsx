@@ -54,6 +54,7 @@ interface GraphCtx {
   selectNode: (id: string | null) => void
 
   createNode: (type: string, x: number, y: number) => Node<NodeParams> | null
+  duplicateNode: (id: string) => void
   deleteNode: (id: string) => void
   renameNode: (nodeId: string, label: string) => void
   updateNodeParam: (nodeId: string, key: string, value: unknown) => void
@@ -150,6 +151,29 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
     setNodes((ns) => [...ns, newNode])
     return newNode
+  }, [])
+
+  const duplicateNode = useCallback((id: string) => {
+    setNodes((ns) => {
+      const source = ns.find((n) => n.id === id)
+      if (!source) return ns
+
+      const newId = `node_${Date.now()}_${++nodeCounter.current}`
+      const duplicated: Node<NodeParams> = {
+        ...source,
+        id: newId,
+        position: { x: source.position.x + 40, y: source.position.y + 40 },
+        data: {
+          ...structuredClone(source.data),
+          inputs: source.data.inputs.map((inp, i) => ({ ...inp, id: `${newId}_in_${i}` })),
+          outputs: source.data.outputs.map((out, i) => ({ ...out, id: `${newId}_out_${i}` })),
+        },
+        selected: false,
+      }
+
+      setSelectedNodeId(newId)
+      return [...ns, duplicated]
+    })
   }, [])
 
   const deleteNode = useCallback((id: string) => {
@@ -266,6 +290,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     selectedNodeId,
     selectNode,
     createNode,
+    duplicateNode,
     deleteNode,
     renameNode,
     updateNodeParam,

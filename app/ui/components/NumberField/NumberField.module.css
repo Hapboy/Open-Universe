@@ -1,0 +1,3 @@
+.fld {
+  composes: fld from '../../../styles/shared.module.css';
+}

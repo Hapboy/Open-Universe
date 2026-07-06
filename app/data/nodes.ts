@@ -240,6 +240,11 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       photos: [] as string[],
       photoIdx: 0,
       pinterestUrl: '',
+      lifetimeFrom: '',
+      lifetimeTo: '',
+      birthPlace: { lat: null, lon: null },
+      deathPlace: { lat: null, lon: null },
+      currentPosition: { lat: null, lon: null },
     },
   },
 

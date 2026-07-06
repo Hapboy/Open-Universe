@@ -3,6 +3,7 @@ import cn from 'classnames'
 import type { Edge } from '@xyflow/react'
 import type { NodeRef } from '../../../types.ts'
 import { usePresetLibraryContext } from '../../../store/contexts/PresetLibraryContext.tsx'
+import { Switch } from '../../components/Switch/Switch.tsx'
 import styles from '../../../styles/shared.module.css'
 
 export interface NodeParamsProps {
@@ -202,17 +203,5 @@ export function InFrameToggle({
   value: boolean
   onChange: (v: boolean) => void
 }) {
-  return (
-    <div className={styles.fld} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <span style={{ minWidth: 60, margin: 0 }}>в кадре</span>
-      <div className={styles.segBtn} style={{ width: 'auto' }}>
-        <button className={value ? styles.isOn : ''} onClick={() => onChange(true)}>
-          да
-        </button>
-        <button className={!value ? styles.isOn : ''} onClick={() => onChange(false)}>
-          нет
-        </button>
-      </div>
-    </div>
-  )
+  return <Switch label="в кадре" value={value} onChange={onChange} />
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -29,10 +29,33 @@ function NodeEditorCanvas() {
     selectNode,
     selectedNodeId,
     createNode,
+    duplicateNode,
   } = useGraphContext()
   const { showToast } = useToastContext()
 
   const { screenToFlowPosition } = useReactFlow()
+
+  const copiedIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return
+      const tag = (document.activeElement as HTMLElement | null)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+      if (e.key === 'c' || e.key === 'C') {
+        if (selectedNodeId) copiedIdRef.current = selectedNodeId
+      } else if (e.key === 'v' || e.key === 'V') {
+        const id = copiedIdRef.current
+        if (id && nodes.some((n) => n.id === id)) {
+          e.preventDefault()
+          duplicateNode(id)
+        }
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedNodeId, nodes, duplicateNode])
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {

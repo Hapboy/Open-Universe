@@ -7,6 +7,7 @@ import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
 import { CircleLoader } from '../components/CircleLoader/CircleLoader.tsx'
 import { MediaSlider } from './MediaSlider/MediaSlider.tsx'
 import { NodeParamsPanel } from './params/NodeParamsPanel.tsx'
+import { NodeMenu } from './NodeMenu/NodeMenu.tsx'
 import styles from './NodeCard.module.css'
 
 function portColor(type: PortType): string {
@@ -31,6 +32,7 @@ export const NodeCard = memo(function NodeCard({
     executeGraph,
     runNode,
     runningNodeIds,
+    duplicateNode,
     deleteNode,
     renameNode,
     selectNode,
@@ -101,18 +103,13 @@ export const NodeCard = memo(function NodeCard({
             )}
           </button>
         )}
-        <button
-          className={styles.deleteBtn}
-          onMouseDown={(e) => e.stopPropagation()}
-          title="Удалить ноду"
-          onClick={(e) => {
-            e.stopPropagation()
+        <NodeMenu
+          onDuplicate={() => duplicateNode(id)}
+          onDelete={() => {
             deleteNode(id)
             selectNode(null)
           }}
-        >
-          <i className="ti ti-trash" />
-        </button>
+        />
       </div>
 
       {generatedText && (

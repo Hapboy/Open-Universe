@@ -36,6 +36,8 @@
 }
 
 .fld input[type='text'],
+.fld input[type='number'],
+.fld input[type='datetime-local'],
 .fld select {
   width: 100%;
   padding: 8px 12px;
@@ -49,11 +51,15 @@
 }
 
 .fld input[type='text']:focus,
+.fld input[type='number']:focus,
+.fld input[type='datetime-local']:focus,
 .fld select:focus {
   border-color: var(--color-border-active);
 }
 
 .fld input[type='text']:disabled,
+.fld input[type='number']:disabled,
+.fld input[type='datetime-local']:disabled,
 .fld select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
