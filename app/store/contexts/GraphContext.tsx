@@ -23,7 +23,32 @@ const ACTIVE_SCENE_KEY = 'hv_active_scene_id'
 function loadStoredSceneGraphs(): Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }> {
   try {
     const raw = localStorage.getItem(SCENE_GRAPHS_KEY)
-    return raw ? JSON.parse(raw) : {}
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>
+
+    // Defensive check: if any graph has edges pointing to non-existent nodes,
+    // clear the localStorage so it heals automatically.
+    let isCorrupted = false
+    for (const key of Object.keys(parsed)) {
+      const graph = parsed[key]
+      if (graph?.nodes && graph?.edges) {
+        const nodeIds = new Set(graph.nodes.map((n) => n.id))
+        for (const edge of graph.edges) {
+          if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
+            isCorrupted = true
+            break
+          }
+        }
+      }
+      if (isCorrupted) break
+    }
+
+    if (isCorrupted) {
+      localStorage.removeItem(SCENE_GRAPHS_KEY)
+      return {}
+    }
+
+    return parsed
   } catch {
     return {}
   }
@@ -34,9 +59,9 @@ function loadActiveSceneId(): string {
 }
 
 function createDefaultSceneGraph(sceneId: string): { nodes: Node<NodeParams>[]; edges: Edge[] } {
-  const charId = `node_char_${sceneId}_${Date.now()}`
-  const locId = `node_loc_${sceneId}_${Date.now()}`
-  const outId = `node_out_${sceneId}_${Date.now()}`
+  const charId = `node_char_${sceneId}`
+  const locId = `node_loc_${sceneId}`
+  const outId = `node_out_${sceneId}`
 
   const defaultLoc =
     sceneId === 'sc1'

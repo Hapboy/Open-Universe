@@ -15,9 +15,11 @@ export function CoordinateField({
   onChange,
 }: {
   label: string
-  value: Coordinates
+  value?: Coordinates | null
   onChange: (value: Coordinates) => void
 }) {
+  // legacy graphs may miss the param entirely — never crash on undefined
+  const safe: Coordinates = value ?? { lat: null, lon: null }
   return (
     <div className={styles.fld}>
       <span>{label}</span>
@@ -28,8 +30,8 @@ export function CoordinateField({
           min={-90}
           max={90}
           step="any"
-          value={value.lat ?? ''}
-          onChange={(e) => onChange({ ...value, lat: parseCoord(e.target.value) })}
+          value={safe.lat ?? ''}
+          onChange={(e) => onChange({ ...safe, lat: parseCoord(e.target.value) })}
         />
         <input
           type="number"
@@ -37,8 +39,8 @@ export function CoordinateField({
           min={-180}
           max={180}
           step="any"
-          value={value.lon ?? ''}
-          onChange={(e) => onChange({ ...value, lon: parseCoord(e.target.value) })}
+          value={safe.lon ?? ''}
+          onChange={(e) => onChange({ ...safe, lon: parseCoord(e.target.value) })}
         />
       </div>
     </div>
