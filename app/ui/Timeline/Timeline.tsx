@@ -305,6 +305,19 @@ export function Timeline() {
     }
   }
 
+  // Map absolute time of a scene to packed time
+  const getScenePosition = (scene: TimelineScene) => {
+    if (collapseEmptySpace) {
+      const left = (packedStarts[scene.start] / totalPackedDuration) * 100
+      const width = (scene.duration / totalPackedDuration) * 100
+      return { left: `${left}%`, width: `${width}%` }
+    } else {
+      const left = (scene.start / totalDuration) * 100
+      const width = (scene.duration / totalDuration) * 100
+      return { left: `${left}%`, width: `${width}%` }
+    }
+  }
+
   // Format time (s) to MM:SS
   const formatTime = (timeInSecs: number) => {
     const m = Math.floor(timeInSecs / 60)
