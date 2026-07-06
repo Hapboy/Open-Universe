@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import cn from 'classnames'
 import type { Edge } from '@xyflow/react'
 import type { NodeRef } from '../../../types.ts'
@@ -80,14 +80,29 @@ export function WirableTextField({
 // in-memory params, and it must never be snapshotted into a new preset.
 const BOOKKEEPING_KEYS = ['selectedItem', '_presets']
 
+function buildPresetSnapshot(params: Record<string, unknown>) {
+  return Object.fromEntries(Object.entries(params).filter(([k]) => !BOOKKEEPING_KEYS.includes(k)))
+}
+
 // Manages an entity type's shared preset library (global, one per entity
 // type — see PresetLibraryContext.tsx): its keys are the dropdown's name
 // list, its values are each entity's own saved params. Selecting a name loads
 // its preset (if any) onto the node; adding a new name snapshots the node's
 // current params (everything but the bookkeeping keys above) as that entity's
-// preset. Edits made afterward stay local to the node — the shared preset
-// itself is only ever rewritten by `onAdd`, and never by editing a node that
-// merely has it selected.
+// preset.
+//
+// While a preset is selected, further edits to the node auto-save back into
+// that shared preset (debounced ~1s so slider drags don't write on every
+// tick) — see the effect below. This is write-only: it does NOT push the
+// update to other nodes that happen to have the same preset selected, since
+// each node only holds its own copy of the params, snapshotted at the moment
+// it was selected. A node picks up another node's edit only if the user
+// re-selects that preset on it (picking a different item then picking the
+// original back — a native <select> doesn't fire onChange for choosing its
+// already-selected value). Reloading the page doesn't help either, since a
+// node's params are restored as-is from storage, not rebuilt from the
+// library. Live cross-node sync is out of scope until there's a real
+// backend/multi-user story.
 export function usePresetDatabase(
   node: NodeRef,
   params: Record<string, unknown>,
@@ -97,6 +112,8 @@ export function usePresetDatabase(
   const entityType = node.data.nodeType
   const presets = library[entityType] ?? {}
   const db = Object.keys(presets)
+  const selectedName = params.selectedItem as string | undefined
+  const storedSnapshot = selectedName ? presets[selectedName] : undefined
 
   const onSelect = (name: string) => {
     updateNodeParams(node.id, { selectedItem: name, ...(presets[name] ?? {}) })
@@ -105,12 +122,24 @@ export function usePresetDatabase(
   const onAdd = (name: string) => {
     const existing = db.find((c) => c.toLowerCase() === name.toLowerCase())
     if (existing) return onSelect(existing)
-    const snapshot = Object.fromEntries(
-      Object.entries(params).filter(([k]) => !BOOKKEEPING_KEYS.includes(k))
-    )
-    addPreset(entityType, name, snapshot)
+    addPreset(entityType, name, buildPresetSnapshot(params))
     updateNodeParams(node.id, { selectedItem: name })
   }
+
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    if (!selectedName || !storedSnapshot) return
+    saveTimer.current = setTimeout(() => {
+      const snapshot = buildPresetSnapshot(params)
+      if (JSON.stringify(snapshot) !== JSON.stringify(storedSnapshot)) {
+        addPreset(entityType, selectedName, snapshot)
+      }
+    }, 1000)
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+    }
+  }, [params, entityType, selectedName, storedSnapshot, addPreset])
 
   return { db, onSelect, onAdd }
 }

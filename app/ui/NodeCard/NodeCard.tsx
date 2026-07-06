@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import cn from 'classnames'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import type { NodeParams, PortType } from '../../types.ts'
@@ -37,6 +37,8 @@ export const NodeCard = memo(function NodeCard({
     renameNode,
     selectNode,
   } = useGraphContext()
+
+  const [editingLabel, setEditingLabel] = useState(false)
 
   const photos = data.nodeType === 'character' ? (data.params.photos as string[]) || [] : []
   const photoIdx = (data.params.photoIdx as number) || 0
@@ -79,12 +81,26 @@ export const NodeCard = memo(function NodeCard({
 
       <div className={styles.header}>
         <i className={`ti ${data.icon}`} />
-        <input
-          type="text"
-          defaultValue={data.label}
-          onBlur={(e) => renameNode(id, e.target.value)}
-          className={cn(styles.labelInput, 'nodrag')}
-        />
+        {editingLabel ? (
+          <input
+            type="text"
+            autoFocus
+            defaultValue={data.label}
+            onBlur={(e) => {
+              renameNode(id, e.target.value)
+              setEditingLabel(false)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur()
+              if (e.key === 'Escape') setEditingLabel(false)
+            }}
+            className={cn(styles.labelInput, 'nodrag')}
+          />
+        ) : (
+          <span onDoubleClick={() => setEditingLabel(true)} title="Двойной клик — переименовать">
+            {data.label}
+          </span>
+        )}
         {isAiModel && (
           <button
             className={styles.runBtn}
