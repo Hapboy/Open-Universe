@@ -58,6 +58,25 @@ function loadActiveSceneId(): string {
   return localStorage.getItem(ACTIVE_SCENE_KEY) || 'sc1'
 }
 
+// Params from the node template, deep-cloned, with overrides on top.
+function templateParams(type: string, overrides: Record<string, unknown> = {}) {
+  const template = NODE_TEMPLATES[type as keyof typeof NODE_TEMPLATES]
+  const base = template
+    ? (JSON.parse(JSON.stringify(template.params)) as Record<string, unknown>)
+    : {}
+  return { ...base, ...overrides }
+}
+
+// Stored graphs may predate params added to templates later (e.g. character
+// coordinates) — merge template defaults under stored params so param editors
+// never receive undefined and a missing field can't crash the tree.
+function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
+  return nodes.map((n) => ({
+    ...n,
+    data: { ...n.data, params: templateParams(n.data.nodeType, n.data.params) },
+  }))
+}
+
 function createDefaultSceneGraph(sceneId: string): { nodes: Node<NodeParams>[]; edges: Edge[] } {
   const charId = `node_char_${sceneId}`
   const locId = `node_loc_${sceneId}`
@@ -86,15 +105,7 @@ function createDefaultSceneGraph(sceneId: string): { nodes: Node<NodeParams>[]; 
         color: 'var(--color-node-higgsfield)',
         inputs: [{ id: `${charId}_in_0`, name: 'Clothing', type: 'any' }],
         outputs: [{ id: `${charId}_out_0`, name: 'Character Out', type: 'any' }],
-        params: {
-          selectedItem: 'Ара Гехецик',
-          inFrame: true,
-          age: 34,
-          emotion: 'спокойствие',
-          stylist: 'Без стилиста',
-          photos: [],
-          photoIdx: 0,
-        },
+        params: templateParams('character', { selectedItem: 'Ара Гехецик' }),
       },
     },
     {
@@ -108,13 +119,11 @@ function createDefaultSceneGraph(sceneId: string): { nodes: Node<NodeParams>[]; 
         color: 'var(--color-node-scene)',
         inputs: [],
         outputs: [{ id: `${locId}_out_0`, name: 'Location Out', type: 'any' }],
-        params: {
+        params: templateParams('location', {
           selectedItem: defaultLoc,
           weather: 'солнце',
           timeOfDay: 'день',
-          interiorExterior: 'Экстерьер',
-          damageLevel: 0,
-        },
+        }),
       },
     },
     {
@@ -217,7 +226,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const [nodes, setNodes] = useState<Node<NodeParams>[]>(() => {
     const activeId = loadActiveSceneId()
     const graphs = loadStoredSceneGraphs()
-    return graphs[activeId]?.nodes || createDefaultSceneGraph(activeId).nodes
+    return withTemplateDefaults(graphs[activeId]?.nodes || createDefaultSceneGraph(activeId).nodes)
   })
   const [edges, setEdges] = useState<Edge[]>(() => {
     const activeId = loadActiveSceneId()
@@ -231,30 +240,27 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
   const setActiveSceneId = useCallback(
     (nextId: string) => {
-      setActiveSceneIdState((prevId) => {
-        // Save current graph to the old activeSceneId
-        setSceneGraphs((prevGraphs) => {
-          const updated = {
-            ...prevGraphs,
-            [prevId]: { nodes, edges },
-          }
-          localStorage.setItem(SCENE_GRAPHS_KEY, JSON.stringify(updated))
-          return updated
-        })
-
-        // Load graph for nextId
-        setSceneGraphs((prevGraphs) => {
-          const nextGraph = prevGraphs[nextId] || createDefaultSceneGraph(nextId)
-          setNodes(nextGraph.nodes)
-          setEdges(nextGraph.edges)
-          return prevGraphs
-        })
-
-        localStorage.setItem(ACTIVE_SCENE_KEY, nextId)
-        return nextId
-      })
+      if (nextId === activeSceneId) return
+      // Persist the current scene graph, then swap in the next one. All state
+      // setters are called directly from the event handler (no setState inside
+      // another updater — React 19 runs updaters twice in dev and drops such
+      // nested side effects, which left scenes never opening).
+      const stored = loadStoredSceneGraphs()
+      const updated = { ...stored, [activeSceneId]: { nodes, edges } }
+      const nextGraph = updated[nextId] || createDefaultSceneGraph(nextId)
+      try {
+        localStorage.setItem(SCENE_GRAPHS_KEY, JSON.stringify(updated))
+      } catch {
+        showToast('Не удалось сохранить граф сцены (превышен лимит хранилища)')
+      }
+      localStorage.setItem(ACTIVE_SCENE_KEY, nextId)
+      setSceneGraphs(updated)
+      setNodes(withTemplateDefaults(nextGraph.nodes))
+      setEdges(nextGraph.edges)
+      setSelectedNodeId(null)
+      setActiveSceneIdState(nextId)
     },
-    [nodes, edges]
+    [activeSceneId, nodes, edges, showToast]
   )
 
   // ── React Flow handlers ─────────────────────────────────────────────────────
