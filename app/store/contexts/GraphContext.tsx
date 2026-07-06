@@ -17,17 +17,118 @@ import { NODE_TEMPLATES } from '../../data/nodes.ts'
 import type { CanonMode, NodeParams, NodeRef, Port } from '../../types.ts'
 import { useToastContext } from './ToastContext.tsx'
 
-const GRAPH_STORAGE_KEY = 'hv_graph'
+const SCENE_GRAPHS_KEY = 'hv_scene_graphs'
+const ACTIVE_SCENE_KEY = 'hv_active_scene_id'
 
-function loadStoredGraph(): { nodes: Node<NodeParams>[]; edges: Edge[] } {
+function loadStoredSceneGraphs(): Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }> {
   try {
-    const raw = localStorage.getItem(GRAPH_STORAGE_KEY)
-    if (!raw) return { nodes: [], edges: [] }
-    const parsed = JSON.parse(raw)
-    return { nodes: parsed.nodes ?? [], edges: parsed.edges ?? [] }
+    const raw = localStorage.getItem(SCENE_GRAPHS_KEY)
+    return raw ? JSON.parse(raw) : {}
   } catch {
-    return { nodes: [], edges: [] }
+    return {}
   }
+}
+
+function loadActiveSceneId(): string {
+  return localStorage.getItem(ACTIVE_SCENE_KEY) || 'sc1'
+}
+
+function createDefaultSceneGraph(sceneId: string): { nodes: Node<NodeParams>[]; edges: Edge[] } {
+  const charId = `node_char_${sceneId}_${Date.now()}`
+  const locId = `node_loc_${sceneId}_${Date.now()}`
+  const outId = `node_out_${sceneId}_${Date.now()}`
+
+  const defaultLoc =
+    sceneId === 'sc1'
+      ? 'Севан'
+      : sceneId === 'sc2'
+        ? 'Дорога'
+        : sceneId === 'sc3'
+          ? 'Вернисаж'
+          : sceneId.includes('sc4')
+            ? 'Старый Конд'
+            : 'Мастерская'
+
+  const nodes: Node<NodeParams>[] = [
+    {
+      id: charId,
+      type: 'custom',
+      position: { x: 50, y: 80 },
+      data: {
+        nodeType: 'character',
+        label: 'Персонаж',
+        icon: 'ti-user',
+        color: 'var(--color-node-higgsfield)',
+        inputs: [{ id: `${charId}_in_0`, name: 'Clothing', type: 'any' }],
+        outputs: [{ id: `${charId}_out_0`, name: 'Character Out', type: 'any' }],
+        params: {
+          selectedItem: 'Ара Гехецик',
+          inFrame: true,
+          age: 34,
+          emotion: 'спокойствие',
+          stylist: 'Без стилиста',
+          photos: [],
+          photoIdx: 0,
+        },
+      },
+    },
+    {
+      id: locId,
+      type: 'custom',
+      position: { x: 50, y: 260 },
+      data: {
+        nodeType: 'location',
+        label: 'Локация',
+        icon: 'ti-map-pin',
+        color: 'var(--color-node-scene)',
+        inputs: [],
+        outputs: [{ id: `${locId}_out_0`, name: 'Location Out', type: 'any' }],
+        params: {
+          selectedItem: defaultLoc,
+          weather: 'солнце',
+          timeOfDay: 'день',
+          interiorExterior: 'Экстерьер',
+          damageLevel: 0,
+        },
+      },
+    },
+    {
+      id: outId,
+      type: 'custom',
+      position: { x: 420, y: 180 },
+      data: {
+        nodeType: 'output_scene',
+        label: 'Выходная Сцена',
+        icon: 'ti-movie',
+        color: 'var(--color-node-scene)',
+        inputs: [
+          { id: `${outId}_in_0`, name: 'Visual Render', type: 'Image' },
+          { id: `${outId}_in_1`, name: 'Motion Render', type: 'Video' },
+        ],
+        outputs: [],
+        params: { renderingEngine: 'Hayverse Realtime Veo 3' },
+      },
+    },
+  ]
+
+  const edges: Edge[] = [
+    {
+      id: `edge_${sceneId}_c_o`,
+      source: charId,
+      sourceHandle: `${charId}_out_0`,
+      target: outId,
+      targetHandle: `${outId}_in_0`,
+    },
+    {
+      id: `edge_${sceneId}_l_o`,
+      source: locId,
+      sourceHandle: `${locId}_out_0`,
+      target: outId,
+      targetHandle: `${outId}_in_1`,
+    },
+  ]
+
+  return { nodes, edges }
 }
 
 function findPort(
@@ -70,6 +171,12 @@ interface GraphCtx {
 
   showMiniMap: boolean
   setShowMiniMap: (v: boolean) => void
+
+  activeSceneId: string
+  setActiveSceneId: (id: string) => void
+
+  showMontageMonitor: boolean
+  setShowMontageMonitor: (v: boolean) => void
 }
 
 const Ctx = createContext<GraphCtx>(null!)
@@ -78,11 +185,52 @@ export const useGraphContext = () => useContext(Ctx)
 export function GraphProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToastContext()
 
-  const [nodes, setNodes] = useState<Node<NodeParams>[]>(() => loadStoredGraph().nodes)
-  const [edges, setEdges] = useState<Edge[]>(() => loadStoredGraph().edges)
+  const [activeSceneId, setActiveSceneIdState] = useState<string>(loadActiveSceneId)
+  const [, setSceneGraphs] =
+    useState<Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>>(loadStoredSceneGraphs)
+
+  const [nodes, setNodes] = useState<Node<NodeParams>[]>(() => {
+    const activeId = loadActiveSceneId()
+    const graphs = loadStoredSceneGraphs()
+    return graphs[activeId]?.nodes || createDefaultSceneGraph(activeId).nodes
+  })
+  const [edges, setEdges] = useState<Edge[]>(() => {
+    const activeId = loadActiveSceneId()
+    const graphs = loadStoredSceneGraphs()
+    return graphs[activeId]?.edges || createDefaultSceneGraph(activeId).edges
+  })
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [canonMode, setCanonMode] = useState<CanonMode>('canon')
   const [showMiniMap, setShowMiniMap] = useState<boolean>(true)
+  const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false)
+
+  const setActiveSceneId = useCallback(
+    (nextId: string) => {
+      setActiveSceneIdState((prevId) => {
+        // Save current graph to the old activeSceneId
+        setSceneGraphs((prevGraphs) => {
+          const updated = {
+            ...prevGraphs,
+            [prevId]: { nodes, edges },
+          }
+          localStorage.setItem(SCENE_GRAPHS_KEY, JSON.stringify(updated))
+          return updated
+        })
+
+        // Load graph for nextId
+        setSceneGraphs((prevGraphs) => {
+          const nextGraph = prevGraphs[nextId] || createDefaultSceneGraph(nextId)
+          setNodes(nextGraph.nodes)
+          setEdges(nextGraph.edges)
+          return prevGraphs
+        })
+
+        localStorage.setItem(ACTIVE_SCENE_KEY, nextId)
+        return nextId
+      })
+    },
+    [nodes, edges]
+  )
 
   // ── React Flow handlers ─────────────────────────────────────────────────────
 
@@ -116,7 +264,14 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current)
     graphSaveTimer.current = setTimeout(() => {
       try {
-        localStorage.setItem(GRAPH_STORAGE_KEY, JSON.stringify({ nodes, edges }))
+        setSceneGraphs((prevGraphs) => {
+          const updated = {
+            ...prevGraphs,
+            [activeSceneId]: { nodes, edges },
+          }
+          localStorage.setItem(SCENE_GRAPHS_KEY, JSON.stringify(updated))
+          return updated
+        })
       } catch {
         showToast('Не удалось сохранить граф локально (превышен лимит хранилища)')
       }
@@ -124,7 +279,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     return () => {
       if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current)
     }
-  }, [nodes, edges, showToast])
+  }, [nodes, edges, activeSceneId, showToast])
 
   // ── Graph actions ───────────────────────────────────────────────────────────
 
@@ -308,6 +463,10 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     setCanonMode,
     showMiniMap,
     setShowMiniMap,
+    activeSceneId,
+    setActiveSceneId,
+    showMontageMonitor,
+    setShowMontageMonitor,
   }
 
   return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>

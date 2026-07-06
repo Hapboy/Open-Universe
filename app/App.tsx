@@ -4,6 +4,7 @@ import { Topbar } from './ui/Topbar/Topbar.tsx'
 import { NodeEditor } from './ui/NodeEditor/NodeEditor.tsx'
 import { Palette } from './ui/Palette/Palette.tsx'
 import { Timeline } from './ui/Timeline/Timeline.tsx'
+import { MontageMonitor } from './ui/MontageMonitor/MontageMonitor.tsx'
 import { Modals } from './ui/Modals/Modals.tsx'
 import { Toast } from './ui/Toast/Toast.tsx'
 import styles from './App.module.css'
@@ -22,6 +23,7 @@ function AppShell() {
       <footer className={styles.statusbar}>
         <StatusBar />
       </footer>
+      <MontageMonitor />
       <Modals />
       <Toast />
     </div>
