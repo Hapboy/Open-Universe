@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Синапсы судеб — нейронная сеть лора · Hayverse</title>
+<style>
+:root{
+  --bg:#151412;--panel:#1b1a16;--card:#2c2923;--border:rgba(241,239,232,.12);
+  --tx:#f1efe8;--tx2:#b4b2a9;--tx3:#7d7a71;--accent:#ef9f27;--accent2:#fcd599;
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:var(--sans)}
+#wrap{position:relative;width:100%;height:100%}
+canvas#net{position:absolute;inset:0;display:block;cursor:crosshair}
+
+.topbar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px 14px;z-index:5;pointer-events:none}
+.topbar>*{pointer-events:auto}
+.brand{font-size:14px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.brand i{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.brand span{color:var(--tx3);font-weight:400;font-size:11px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:12px}
+.chip{border:1px solid var(--border);background:rgba(27,26,22,.75);color:var(--tx2);font-size:11px;padding:4px 10px;border-radius:20px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;backdrop-filter:blur(6px)}
+.chip .dot{width:7px;height:7px;border-radius:50%}
+.chip.on{border-color:var(--accent);color:var(--accent2)}
+.chip:hover{border-color:rgba(241,239,232,.3)}
+.spacer{flex:1}
+#mvBtn.on{border-color:#AFA9EC;color:#CECBF6}
+
+#statePanel{position:absolute;top:46px;right:14px;width:250px;background:rgba(27,26,22,.88);border:1px solid var(--border);border-radius:10px;padding:10px 12px;z-index:5;backdrop-filter:blur(8px)}
+#statePanel h3{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);margin-bottom:6px;display:flex;justify-content:space-between}
+#statePanel h3 b{color:var(--accent);font-family:var(--mono)}
+#stateJson{font-family:var(--mono);font-size:10.5px;line-height:1.55;white-space:pre;color:var(--tx2)}
+#stateJson .k{color:#85B7EB}#stateJson .v{color:#F0D99B}#stateJson .b{color:#5DCAA5}
+
+.panel{position:absolute;left:0;right:0;bottom:0;height:58px;background:rgba(27,26,22,.92);border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;padding:0 14px;z-index:6;backdrop-filter:blur(10px)}
+.pbtn{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--tx);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:background .15s}
+.pbtn:hover{background:var(--card)}
+.pbtn.on{border-color:var(--accent);color:var(--accent)}
+.pbtn svg{width:16px;height:16px;fill:currentColor}
+#scrub{flex:1;height:26px;position:relative;cursor:pointer;margin:0 8px}
+#scrubTrack{position:absolute;top:12px;left:0;right:0;height:3px;background:rgba(241,239,232,.14);border-radius:2px}
+#scrubFill{position:absolute;top:12px;left:0;height:3px;background:var(--accent);border-radius:2px;width:0}
+#scrubHandle{position:absolute;top:6px;width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(239,159,39,.6);margin-left:-7px}
+#tLabel{font-family:var(--mono);font-size:11px;color:var(--tx2);min-width:88px;text-align:center}
+
+#minimap{position:absolute;right:14px;bottom:70px;width:230px;height:92px;background:rgba(27,26,22,.9);border:1px solid var(--border);border-radius:8px;z-index:5;display:none}
+#minimap.show{display:block}
+#minimap canvas{width:100%;height:100%;display:block;border-radius:8px}
+
+#popup{position:absolute;display:none;width:270px;background:var(--panel);border:1px solid rgba(241,239,232,.22);border-radius:10px;padding:12px;z-index:8;box-shadow:0 12px 40px rgba(0,0,0,.55)}
+#popup h4{font-size:12px;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+#popup h4 .tag{font-size:9px;padding:2px 6px;border-radius:5px;background:var(--card);color:var(--tx3);font-weight:400}
+#popup p{font-size:11px;color:var(--tx2);line-height:1.5;margin-bottom:8px}
+#popup .prov{font-family:var(--mono);font-size:9.5px;color:var(--tx3);margin-bottom:8px}
+#popup .row{display:flex;gap:6px}
+#popup button{flex:1;border:1px solid var(--border);background:var(--card);color:var(--tx);font-size:11px;padding:6px;border-radius:7px;cursor:pointer;font-family:inherit}
+#popup button.pri{background:var(--accent);border-color:var(--accent);color:#151412;font-weight:600}
+#popup .x{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--tx3);cursor:pointer;font-size:13px;flex:none;width:auto;padding:2px}
+
+#toast{position:absolute;left:50%;bottom:72px;transform:translateX(-50%) translateY(200%);background:var(--tx);color:var(--bg);font-size:12px;padding:9px 16px;border-radius:20px;transition:transform .25s;z-index:9;max-width:80%}
+#toast.show{transform:translateX(-50%) translateY(0)}
+.legendHint{position:absolute;bottom:70px;left:14px;font-size:10.5px;color:var(--tx3);z-index:4;background:rgba(21,20,18,.7);padding:5px 9px;border-radius:7px;backdrop-filter:blur(4px)}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="net"></canvas>
+
+  <div class="topbar">
+    <div class="brand"><i></i>Синапсы судеб <span>· нейронная сеть лора · Hayverse</span></div>
+    <div class="chips" id="follow"></div>
+    <div class="spacer"></div>
+    <button class="chip" id="mvBtn">⑂ Мультивселенная</button>
+  </div>
+
+  <div id="statePanel">
+    <h3>Состояние вселенной <b id="stT">00:00</b></h3>
+    <div id="stateJson"></div>
+  </div>
+
+  <div class="legendHint">━ судьба персонажа · ⬤ синапс (пересечение) · ┄ генеративный мост ИИ (клик) · перетащи по полю — скраббер</div>
+
+  <div id="minimap"><canvas id="mmc"></canvas></div>
+
+  <div id="popup"></div>
+  <div id="toast"></div>
+
+  <div class="panel">
+    <button class="pbtn" id="bPrev" title="Предыдущая сцена"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM13 2v12L6 8z"/></svg></button>
+    <button class="pbtn" id="bPlay" title="Плей/пауза"><svg viewBox="0 0 16 16" id="playIco"><path d="M4 2l9 6-9 6z"/></svg></button>
+    <button class="pbtn" id="bStop" title="Стоп"><svg viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10"/></svg></button>
+    <button class="pbtn" id="bNext" title="Следующая сцена"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM3 2l7 6-7 6z"/></svg></button>
+    <span id="tLabel">00:00 / 14:32</span>
+    <div id="scrub"><div id="scrubTrack"></div><div id="scrubFill"></div><div id="scrubHandle"></div></div>
+    <button class="pbtn" id="bSound" title="Общий звук"><svg viewBox="0 0 16 16"><path d="M2 6v4h3l4 3V3L5 6z"/><path id="sndWave" d="M11 5c1.5 1.5 1.5 4.5 0 6" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0"/></svg></button>
+    <button class="pbtn" id="bMap" title="Миникарта"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="8" y="8" width="4" height="4"/></svg></button>
+    <button class="pbtn" id="bFull" title="Во весь экран"><svg viewBox="0 0 16 16"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ── Данные лора ──────────────────────────────────────────────────────────────
+const DURATION = 872; // сек, 14:32 — как у фильма
+const COLUMNS = [
+  { name: 'Пролог · Севан',      year: 2026, weather: 'ясно'   },
+  { name: 'Северный проспект',   year: 2027, weather: 'дождь'  },
+  { name: 'Старый Конд',         year: 2029, weather: 'туман'  },
+  { name: 'Здание бывшего МИД',  year: 2032, weather: 'гроза'  },
+  { name: 'Вернисаж',            year: 2036, weather: 'солнце' },
+  { name: 'Каскад · Финал',      year: 2041, weather: 'закат'  },
+];
+const JACKETS = ['Taraz (нац.)','Anna K SS27','Tigran Avetisyan FW29','Loom Weaving','Tigran Avetisyan SS36','Куртка финала · капсула'];
+const LANES = 5;
+// slots[i] — «порт» персонажа в колонке i (0..4) или null (персонажа там нет)
+const CHARS = [
+  { name: 'Ара Гехецик', color: '#EF9F27', born: 1995, line: 'Восхождение',   slots: [2, 1, 1, 2, 3, 2] },
+  { name: 'Анаит',       color: '#D4537E', born: 1998, line: 'Память дома',   slots: [0, 1, 2, 2, 1, 2] },
+  { name: 'Вардан',      color: '#5DCAA5', born: 1968, line: 'Хранитель',     slots: [4, 3, 1, 2, 3, 2] },
+  { name: 'Цовинар',     color: '#85B7EB', born: 2003, line: 'Голос моря',    slots: [3, 4, 4, 2, 0, 2] },
+  { name: 'Вреж · dev',  color: '#AFA9EC', born: 1990, line: 'Разработчик в кадре', slots: [1, 0, 3, 4, 4, 2] },
+];
+// Форк мультивселенной: расщепление после Конда (col 2)
+const FORK = {
+  fromCol: 2, label: 'форк @moct · «Конд в тумане» · PR #12', color: '#CECBF6',
+  paths: { 'Ара Гехецик': [null,null,1,0,0,0], 'Вардан': [null,null,1,1,0,0] },
+};
+
+// ── Состояние ────────────────────────────────────────────────────────────────
+const S = { t: 180, playing: false, sound: false, follow: null, multiverse: false, minimap: false, dragging: false };
+let nodes = [], bridges = [], colX = [], laneY = [];
+
+// ── Утилиты ──────────────────────────────────────────────────────────────────
+const $ = (s) => document.querySelector(s);
+const fmt = (s) => { s = Math.max(0, Math.round(s)); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); };
+const colT = (i) => i * DURATION / (COLUMNS.length - 1);
+const tX = (t) => colX[0] + (t / DURATION) * (colX[colX.length-1] - colX[0]);
+function toast(msg){ const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('show'), 3000); }
+
+// ── Геометрия ────────────────────────────────────────────────────────────────
+const cv = $('#net'), ctx = cv.getContext('2d');
+function layout(){
+  const dpr = window.devicePixelRatio || 1;
+  const W = window.innerWidth, H = window.innerHeight - 58;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W+'px'; cv.style.height = H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  // на узких экранах панель состояния перекрывает поле — не резервируем под неё место
+  const mL = W > 900 ? 90 : 24, mR = W > 900 ? 300 : 32, mT = 96, mB = 60;
+  colX = COLUMNS.map((_,i) => mL + i * (W - mL - mR) / (COLUMNS.length - 1));
+  laneY = Array.from({length: LANES}, (_,i) => mT + i * (H - mT - mB) / (LANES - 1));
+  buildGraph();
+}
+function buildGraph(){
+  nodes = []; bridges = [];
+  const byCell = {};
+  CHARS.forEach((c) => c.slots.forEach((s, i) => {
+    if (s == null) return;
+    const k = i + ':' + s;
+    (byCell[k] = byCell[k] || { col: i, slot: s, chars: [] }).chars.push(c);
+  }));
+  for (const k in byCell){
+    const cell = byCell[k];
+    nodes.push({ x: colX[cell.col], y: laneY[cell.slot], col: cell.col, slot: cell.slot, chars: cell.chars, r: 5 + cell.chars.length * 2.6 });
+  }
+  CHARS.forEach((c) => {
+    for (let i = 0; i < COLUMNS.length - 1; i++){
+      const a = c.slots[i], b = c.slots[i+1];
+      if (a == null || b == null) continue;
+      if (Math.abs(b - a) >= 2){
+        bridges.push({ char: c, from: i, mx: (colX[i]+colX[i+1])/2, my: (laneY[a]+laneY[b])/2 - Math.abs(b-a)*6, seed: 1000 + i*137 + c.name.length });
+      }
+    }
+  });
+}
+
+// ── Рисование ────────────────────────────────────────────────────────────────
+function threadPath(g, xs, ys){
+  g.beginPath();
+  g.moveTo(xs[0], ys[0]);
+  for (let i = 1; i < xs.length; i++){
+    const mx = (xs[i-1] + xs[i]) / 2;
+    g.bezierCurveTo(mx, ys[i-1], mx, ys[i], xs[i], ys[i]);
+  }
+}
+function drawChar(g, c, time){
+  const xs = [], ys = [];
+  c.slots.forEach((s, i) => { if (s != null){ xs.push(colX[i]); ys.push(laneY[s]); } });
+  if (xs.length < 2) return;
+  const followed = !S.follow || S.follow === c.name;
+  g.save();
+  g.lineWidth = followed ? 2.4 : 1.2;
+  g.strokeStyle = c.color;
+  g.globalAlpha = followed ? 0.95 : 0.16;
+  if (followed){ g.shadowColor = c.color; g.shadowBlur = 14; }
+  threadPath(g, xs, ys); g.stroke();
+  g.restore();
+}
+function drawBridges(g, time){
+  g.save();
+  bridges.forEach((b) => {
+    const c = b.char;
+    const followed = !S.follow || S.follow === c.name;
+    if (!followed && S.follow) { return; }
+    const a = c.slots[b.from], d = c.slots[b.from+1];
+    const x1 = colX[b.from], y1 = laneY[a], x2 = colX[b.from+1], y2 = laneY[d];
+    g.setLineDash([5, 7]);
+    g.lineDashOffset = -time * 22;
+    g.lineWidth = 1.4;
+    g.globalAlpha = 0.5 + 0.3 * Math.sin(time * 3 + b.seed);
+    g.strokeStyle = '#fcd599';
+    g.beginPath();
+    const mx = (x1 + x2) / 2;
+    g.bezierCurveTo && g.moveTo(x1, y1);
+    g.bezierCurveTo(mx, y1, mx, y2, x2, y2);
+    g.stroke();
+    g.setLineDash([]);
+    g.globalAlpha = 0.9;
+    g.fillStyle = '#fcd599';
+    g.font = '10px sans-serif';
+    g.fillText('✦', b.mx - 4, b.my + 3);
+  });
+  g.restore();
+}
+function drawFork(g, time){
+  if (!S.multiverse) return;
+  g.save();
+  for (const name in FORK.paths){
+    const base = CHARS.find((c) => c.name === name);
+    const slots = FORK.paths[name];
+    const xs = [], ys = [];
+    slots.forEach((s, i) => { if (s != null){ xs.push(colX[i]); ys.push(laneY[s] - 14); } });
+    if (xs.length < 2) continue;
+    g.setLineDash([8, 5]);
+    g.lineWidth = 1.6;
+    g.strokeStyle = FORK.color;
+    g.globalAlpha = 0.55 + 0.15 * Math.sin(time * 2);
+    g.shadowColor = FORK.color; g.shadowBlur = 8;
+    threadPath(g, xs, ys); g.stroke();
+  }
+  g.setLineDash([]);
+  g.globalAlpha = 0.9; g.shadowBlur = 0;
+  g.fillStyle = FORK.color; g.font = '10px sans-serif';
+  g.fillText('⑂ ' + FORK.label, colX[FORK.fromCol] + 10, laneY[0] - 34);
+  const fx = colX[FORK.fromCol], fy = laneY[CHARS[0].slots[FORK.fromCol]];
+  g.beginPath(); g.arc(fx, fy, 11 + Math.sin(time*3)*1.5, 0, 7); g.strokeStyle = FORK.color; g.globalAlpha = .6; g.stroke();
+  g.restore();
+}
+function drawNodes(g, time){
+  nodes.forEach((n, i) => {
+    const involved = !S.follow || n.chars.some((c) => c.name === S.follow);
+    const pulse = Math.sin(time * 2 + i) * 1.4;
+    g.save();
+    g.globalAlpha = involved ? 1 : 0.2;
+    // кольца по цветам участников
+    n.chars.forEach((c, j) => {
+      g.beginPath();
+      g.arc(n.x, n.y, n.r + pulse + j * 2.4, (j / n.chars.length) * 7, ((j + 1) / n.chars.length) * 7);
+      g.strokeStyle = c.color; g.lineWidth = 2.2;
+      g.shadowColor = c.color; g.shadowBlur = involved ? 10 : 0;
+      g.stroke();
+    });
+    g.beginPath();
+    g.arc(n.x, n.y, Math.max(2.5, n.r - 3), 0, 7);
+    g.fillStyle = n.chars.length > 1 ? '#fff6e0' : '#e8e4d8';
+    g.shadowColor = '#fff', g.shadowBlur = n.chars.length > 1 ? 16 : 6;
+    g.fill();
+    g.restore();
+  });
+}
+function drawColumns(g){
+  g.save();
+  g.font = '11px sans-serif';
+  COLUMNS.forEach((c, i) => {
+    g.strokeStyle = 'rgba(241,239,232,.07)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(colX[i], 70); g.lineTo(colX[i], laneY[LANES-1] + 30); g.stroke();
+    g.fillStyle = '#b4b2a9'; g.textAlign = 'center';
+    g.fillText(c.name, colX[i], 52);
+    g.fillStyle = '#7d7a71'; g.font = '10px ui-monospace,monospace';
+    g.fillText(String(c.year), colX[i], 66);
+    g.font = '11px sans-serif';
+  });
+  g.restore();
+}
+function drawPlayhead(g){
+  const x = tX(S.t);
+  g.save();
+  g.strokeStyle = '#ef9f27'; g.lineWidth = 1.6;
+  g.shadowColor = '#ef9f27'; g.shadowBlur = 10;
+  g.beginPath(); g.moveTo(x, 42); g.lineTo(x, laneY[LANES-1] + 34); g.stroke();
+  g.shadowBlur = 0;
+  g.fillStyle = '#ef9f27';
+  g.beginPath(); g.moveTo(x - 5, 42); g.lineTo(x + 5, 42); g.lineTo(x, 50); g.closePath(); g.fill();
+  g.restore();
+}
+let last = performance.now(), crossedPrevT = S.t;
+function frame(now){
+  const dt = (now - last) / 1000; last = now;
+  const time = now / 1000;
+  if (S.playing){
+    const prev = S.t;
+    S.t += dt * 6;
+    if (S.t >= DURATION){ S.t = DURATION; setPlaying(false); }
+    checkCross(prev, S.t);
+  }
+  const W = cv.clientWidth, H = cv.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  drawColumns(ctx);
+  CHARS.forEach((c) => drawChar(ctx, c, time));
+  drawBridges(ctx, time);
+  drawFork(ctx, time);
+  drawNodes(ctx, time);
+  drawPlayhead(ctx);
+  updateHud();
+  if (S.minimap) drawMinimap(time);
+  requestAnimationFrame(frame);
+}
+
+// ── Панель состояния (скраббер состояний) ────────────────────────────────────
+function stateAt(t){
+  const seg = Math.min(COLUMNS.length - 2, Math.floor(t / (DURATION / (COLUMNS.length - 1))));
+  const frac = (t - colT(seg)) / (colT(seg+1) - colT(seg));
+  const col = frac < 0.5 ? COLUMNS[seg] : COLUMNS[seg+1];
+  const colIdx = frac < 0.5 ? seg : seg + 1;
+  const hero = S.follow ? CHARS.find((c) => c.name === S.follow) : CHARS[0];
+  return {
+    t: fmt(t), epoch: col.year, location: col.name, weather: col.weather,
+    hero: hero.name, age: col.year - hero.born, jacket: JACKETS[colIdx],
+    line: hero.line, branch: S.multiverse && colIdx > FORK.fromCol ? 'fork @moct' : 'main',
+  };
+}
+function updateHud(){
+  const st = stateAt(S.t);
+  $('#stT').textContent = st.t;
+  $('#stateJson').innerHTML =
+    '{\n' +
+    '  <span class="k">"эпоха"</span>:   <span class="v">' + st.epoch + '</span>,\n' +
+    '  <span class="k">"локация"</span>: <span class="v">"' + st.location + '"</span>,\n' +
+    '  <span class="k">"погода"</span>:  <span class="v">"' + st.weather + '"</span>,\n' +
+    '  <span class="k">"ветка"</span>:   <span class="b">"' + st.branch + '"</span>,\n' +
+    '  <span class="k">"фокус"</span>:   <span class="v">"' + st.hero + '"</span>,\n' +
+    '  <span class="k">"возраст"</span>: <span class="v">' + st.age + '</span>,\n' +
+    '  <span class="k">"одежда"</span>:  <span class="v">"' + st.jacket + '"</span>,\n' +
+    '  <span class="k">"линия"</span>:   <span class="v">"' + st.line + '"</span>\n' +
+    '}';
+  $('#tLabel').textContent = fmt(S.t) + ' / ' + fmt(DURATION);
+  const pct = (S.t / DURATION) * 100;
+  $('#scrubFill').style.width = pct + '%';
+  $('#scrubHandle').style.left = pct + '%';
+}
+
+// ── Звук ─────────────────────────────────────────────────────────────────────
+let AC = null, droneGain = null;
+function audio(){
+  if (AC) return AC;
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  const o1 = AC.createOscillator(), o2 = AC.createOscillator();
+  o1.frequency.value = 55; o2.frequency.value = 82.5; o2.type = 'triangle';
+  droneGain = AC.createGain(); droneGain.gain.value = 0;
+  o1.connect(droneGain); o2.connect(droneGain); droneGain.connect(AC.destination);
+  o1.start(); o2.start();
+  return AC;
+}
+function blip(freq){
+  if (!S.sound || !AC) return;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.frequency.value = freq; o.type = 'sine';
+  g.gain.setValueAtTime(0.12, AC.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + 0.35);
+  o.connect(g); g.connect(AC.destination);
+  o.start(); o.stop(AC.currentTime + 0.4);
+}
+function checkCross(t0, t1){
+  nodes.forEach((n) => {
+    const tc = colT(n.col);
+    if (tc > t0 && tc <= t1){
+      if (!S.follow || n.chars.some((c) => c.name === S.follow)) blip(220 + n.slot * 55 + n.chars.length * 30);
+    }
+  });
+}
+
+// ── Миникарта ────────────────────────────────────────────────────────────────
+const mm = $('#mmc'), mg = mm.getContext('2d');
+function drawMinimap(time){
+  const w = mm.clientWidth, h = mm.clientHeight;
+  if (mm.width !== w) { mm.width = w; mm.height = h; }
+  mg.clearRect(0, 0, w, h);
+  const sx = (x) => 8 + (x - colX[0]) / (colX[colX.length-1] - colX[0]) * (w - 16);
+  const sy = (y) => 10 + (y - laneY[0]) / (laneY[LANES-1] - laneY[0]) * (h - 20);
+  CHARS.forEach((c) => {
+    mg.beginPath(); mg.strokeStyle = c.color; mg.lineWidth = 1;
+    mg.globalAlpha = !S.follow || S.follow === c.name ? 0.9 : 0.2;
+    let first = true;
+    c.slots.forEach((s, i) => { if (s == null) return; const X = sx(colX[i]), Y = sy(laneY[s]); first ? mg.moveTo(X, Y) : mg.lineTo(X, Y); first = false; });
+    mg.stroke();
+  });
+  mg.globalAlpha = 1;
+  const px = 8 + (S.t / DURATION) * (w - 16);
+  mg.strokeStyle = '#ef9f27'; mg.lineWidth = 1.4;
+  mg.beginPath(); mg.moveTo(px, 4); mg.lineTo(px, h - 4); mg.stroke();
+}
+
+// ── Управление ───────────────────────────────────────────────────────────────
+function setPlaying(v){
+  S.playing = v;
+  $('#playIco').innerHTML = v ? '<path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z"/>' : '<path d="M4 2l9 6-9 6z"/>';
+  $('#bPlay').classList.toggle('on', v);
+  if (droneGain && AC) droneGain.gain.linearRampToValueAtTime(v && S.sound ? 0.035 : 0, AC.currentTime + 0.4);
+}
+$('#bPlay').onclick = () => { if (S.sound) audio(); setPlaying(!S.playing); };
+$('#bStop').onclick = () => { setPlaying(false); S.t = 0; };
+$('#bPrev').onclick = () => { const i = Math.max(0, Math.ceil(S.t / (DURATION/(COLUMNS.length-1))) - 1); S.t = colT(Math.max(0, S.t <= colT(i) + 1 ? i - 1 : i)); toast('Сцена: ' + COLUMNS[Math.round(S.t/(DURATION/(COLUMNS.length-1)))].name); };
+$('#bNext').onclick = () => { const i = Math.min(COLUMNS.length - 1, Math.floor(S.t / (DURATION/(COLUMNS.length-1))) + 1); S.t = colT(i); toast('Сцена: ' + COLUMNS[i].name); };
+$('#bSound').onclick = function(){
+  S.sound = !S.sound;
+  if (S.sound){ audio(); if (AC.state === 'suspended') AC.resume(); }
+  this.classList.toggle('on', S.sound);
+  $('#sndWave').setAttribute('opacity', S.sound ? '1' : '0');
+  if (droneGain && AC) droneGain.gain.linearRampToValueAtTime(S.playing && S.sound ? 0.035 : 0, AC.currentTime + 0.3);
+  toast(S.sound ? 'Звук включён' : 'Звук выключен');
+};
+$('#bMap').onclick = function(){ S.minimap = !S.minimap; $('#minimap').classList.toggle('show', S.minimap); this.classList.toggle('on', S.minimap); };
+$('#bFull').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen() : toast('Fullscreen недоступен');
+  else document.exitFullscreen();
+};
+
+// скраббер в панели
+const scrub = $('#scrub');
+function scrubTo(e){ const r = scrub.getBoundingClientRect(); S.t = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * DURATION; }
+scrub.addEventListener('pointerdown', (e) => { scrub.setPointerCapture(e.pointerId); scrubTo(e); S._sd = true; });
+scrub.addEventListener('pointermove', (e) => { if (S._sd) scrubTo(e); });
+scrub.addEventListener('pointerup', () => S._sd = false);
+
+// director track — чипы
+const followBox = $('#follow');
+function renderChips(){
+  followBox.innerHTML = '';
+  const all = document.createElement('button');
+  all.className = 'chip' + (!S.follow ? ' on' : ''); all.textContent = 'Все линии';
+  all.onclick = () => { S.follow = null; renderChips(); };
+  followBox.appendChild(all);
+  CHARS.forEach((c) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (S.follow === c.name ? ' on' : '');
+    b.innerHTML = '<span class="dot" style="background:' + c.color + '"></span>' + c.name;
+    b.onclick = () => { S.follow = S.follow === c.name ? null : c.name; renderChips(); };
+    followBox.appendChild(b);
+  });
+}
+$('#mvBtn').onclick = function(){ S.multiverse = !S.multiverse; this.classList.toggle('on', S.multiverse); toast(S.multiverse ? 'Мультивселенная видима: форки поверх канона' : 'Только канон (main)'); };
+
+// клики по полю: ноды, мосты, скраб перетаскиванием
+const popup = $('#popup');
+function openPopup(x, y, html){
+  popup.innerHTML = '<button class="x" onclick="this.parentNode.style.display=\'none\'">✕</button>' + html;
+  popup.style.display = 'block';
+  const W = window.innerWidth, H = window.innerHeight;
+  popup.style.left = Math.min(W - 290, Math.max(10, x + 14)) + 'px';
+  popup.style.top = Math.min(H - 220, Math.max(10, y - 20)) + 'px';
+}
+cv.addEventListener('pointerdown', (e) => {
+  const x = e.clientX, y = e.clientY;
+  const n = nodes.find((n) => Math.hypot(n.x - x, n.y - y) < n.r + 7);
+  if (n){
+    const st = COLUMNS[n.col];
+    openPopup(x, y,
+      '<h4>⬤ Синапс · ' + st.name + ' <span class="tag">' + st.year + '</span></h4>' +
+      '<p>Пересечение судеб: <b>' + n.chars.map((c) => c.name).join(', ') + '</b>. ' +
+      (n.chars.length > 1 ? 'Каждое взаимодействие создаёт новый синапс в памяти вселенной.' : 'Одиночное событие линии.') + '</p>' +
+      '<div class="prov">state: t=' + fmt(colT(n.col)) + ' · погода: ' + st.weather + ' · ветка: main</div>' +
+      '<div class="row"><button class="pri" onclick="window.__act(\'Открываю сцену «' + st.name + '» (' + n.chars.length + ' перс.)\')">Открыть сцену</button>' +
+      '<button onclick="window.__act(\'Форк узла «' + st.name + '» → мультивселенная\')">⑂ Форк</button></div>');
+    return;
+  }
+  const b = bridges.find((b) => Math.hypot(b.mx - x, b.my - y) < 16);
+  if (b){
+    const from = COLUMNS[b.from], to = COLUMNS[b.from + 1];
+    openPopup(x, y,
+      '<h4>✦ Генеративный мост <span class="tag">ИИ-интерполяция</span></h4>' +
+      '<p><b>' + b.char.name + '</b>: ' + from.name + ' → ' + to.name + '. ИИ просчитывает, как герой прошёл этот путь. Сгенерированный фрагмент:</p>' +
+      '<p style="font-style:italic;color:#d8d4c8">«' + genFragment(b) + '»</p>' +
+      '<div class="prov">model: gemini-flash · seed: ' + b.seed + ' · cost: ~0.2¢</div>' +
+      '<div class="row"><button class="pri" onclick="window.__act(\'Принимаю фрагмент в канон (PR)\')">В канон</button>' +
+      '<button onclick="window.__act(\'Регенерация фрагмента, seed=' + (b.seed + 1) + '\')">↻ Ещё вариант</button></div>');
+    return;
+  }
+  popup.style.display = 'none';
+  S.dragging = true; cv.setPointerCapture(e.pointerId);
+  S.t = Math.max(0, Math.min(DURATION, (x - colX[0]) / (colX[colX.length-1] - colX[0]) * DURATION));
+});
+cv.addEventListener('pointermove', (e) => {
+  if (S.dragging){ S.t = Math.max(0, Math.min(DURATION, (e.clientX - colX[0]) / (colX[colX.length-1] - colX[0]) * DURATION)); return; }
+  const hovers = nodes.some((n) => Math.hypot(n.x - e.clientX, n.y - e.clientY) < n.r + 7) ||
+                 bridges.some((b) => Math.hypot(b.mx - e.clientX, b.my - e.clientY) < 16);
+  cv.style.cursor = hovers ? 'pointer' : 'crosshair';
+});
+cv.addEventListener('pointerup', () => S.dragging = false);
+window.__act = (m) => { popup.style.display = 'none'; toast(m); };
+function genFragment(b){
+  const F = [
+    'Он шёл вдоль трамвайных путей, и город менял его быстрее, чем он успевал меняться сам',
+    'Три года уместились в одну ночь на вокзале: письмо, билет и обещание вернуться',
+    'Путь лежал через дворы, где каждая стена помнила его имя',
+    'Она добиралась дольше всех — потому что несла с собой всё, что нельзя оставить',
+  ];
+  return F[b.seed % F.length];
+}
+
+// ── Старт ────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', layout);
+layout();
+renderChips();
+requestAnimationFrame((n) => { last = n; frame(n); });
+</script>
+</body>
+</html>
