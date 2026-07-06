@@ -1,30 +1,30 @@
 import { useState } from 'react'
 import cn from 'classnames'
-import type { Edge, Node } from '@xyflow/react'
-import type { NodeParams } from '../../types.ts'
-import styles from '../../styles/shared.module.css'
+import type { Edge } from '@xyflow/react'
+import type { NodeRef } from '../../../types.ts'
+import { usePresetLibraryContext } from '../../../store/contexts/PresetLibraryContext.tsx'
+import styles from '../../../styles/shared.module.css'
 
 export interface NodeParamsProps {
-  node: Node<NodeParams>
+  node: NodeRef
   edges: Edge[]
   resolved: Record<string, unknown>
   updateNodeParam: (id: string, key: string, value: unknown) => void
   updateNodeParams: (id: string, patch: Record<string, unknown>) => void
-  loadPinterestBoards: (node: Node<NodeParams>) => Promise<void>
-  loadPinterestPins: (node: Node<NodeParams>, boardId: string) => Promise<void>
+  loadPinterestBoards: (node: NodeRef) => Promise<void>
+  loadPinterestPins: (node: NodeRef, boardId: string) => Promise<void>
   executeGraph: () => Promise<void>
-  showToast: (msg: string) => void
 }
 
 export type EP<P extends Record<string, unknown>> = {
-  node: Node<NodeParams>
+  node: NodeRef
   params: P
   updateNodeParam: NodeParamsProps['updateNodeParam']
   updateNodeParams: NodeParamsProps['updateNodeParams']
 }
 
 export type EEP = {
-  node: Node<NodeParams>
+  node: NodeRef
   params: Record<string, unknown>
   edges: Edge[]
   resolved: Record<string, unknown>
@@ -45,7 +45,7 @@ export function WirableTextField({
   updateNodeParam,
 }: {
   label: string
-  node: Node<NodeParams>
+  node: NodeRef
   paramKey: string
   params: Record<string, unknown>
   wired: boolean
@@ -73,20 +73,28 @@ export function WirableTextField({
   )
 }
 
+// `_presets` is bookkept here for backward compatibility: nodes loaded from
+// a graph saved before presets became a shared library (see
+// PresetLibraryContext.tsx) may still carry a stray `_presets` key in their
+// in-memory params, and it must never be snapshotted into a new preset.
 const BOOKKEEPING_KEYS = ['selectedItem', '_presets']
 
-// Manages an entity node's `_presets` map: its keys are the dropdown's name
+// Manages an entity type's shared preset library (global, one per entity
+// type — see PresetLibraryContext.tsx): its keys are the dropdown's name
 // list, its values are each entity's own saved params. Selecting a name loads
 // its preset (if any) onto the node; adding a new name snapshots the node's
 // current params (everything but the bookkeeping keys above) as that entity's
-// preset. Edits made afterward stay local to the node — the preset itself is
-// only ever rewritten by `onAdd`.
+// preset. Edits made afterward stay local to the node — the shared preset
+// itself is only ever rewritten by `onAdd`, and never by editing a node that
+// merely has it selected.
 export function usePresetDatabase(
-  node: Node<NodeParams>,
+  node: NodeRef,
   params: Record<string, unknown>,
   updateNodeParams: NodeParamsProps['updateNodeParams']
 ) {
-  const presets = (params._presets as Record<string, Record<string, unknown>>) || {}
+  const { library, addPreset } = usePresetLibraryContext()
+  const entityType = node.data.nodeType
+  const presets = library[entityType] ?? {}
   const db = Object.keys(presets)
 
   const onSelect = (name: string) => {
@@ -99,10 +107,8 @@ export function usePresetDatabase(
     const snapshot = Object.fromEntries(
       Object.entries(params).filter(([k]) => !BOOKKEEPING_KEYS.includes(k))
     )
-    updateNodeParams(node.id, {
-      _presets: { ...presets, [name]: snapshot },
-      selectedItem: name,
-    })
+    addPreset(entityType, name, snapshot)
+    updateNodeParams(node.id, { selectedItem: name })
   }
 
   return { db, onSelect, onAdd }

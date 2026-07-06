@@ -2,8 +2,8 @@ import { useRef } from 'react'
 import cn from 'classnames'
 import { DatabaseSelect, InFrameToggle, usePresetDatabase } from '../shared.tsx'
 import type { EP } from '../shared.tsx'
-import { SelectField } from '../../components/SelectField/SelectField.tsx'
-import { RangeField } from '../../components/RangeField/RangeField.tsx'
+import { SelectField } from '../../../components/SelectField/SelectField.tsx'
+import { RangeField } from '../../../components/RangeField/RangeField.tsx'
 import type {
   CharacterNodeParams,
   LocationNodeParams,
@@ -15,7 +15,7 @@ import type {
   ScriptNodeParams,
   StoryboardNodeParams,
   TransportNodeParams,
-} from '../../../types.ts'
+} from '../../../../types.ts'
 import styles from './EntityParams.module.css'
 
 export function CharacterParams({

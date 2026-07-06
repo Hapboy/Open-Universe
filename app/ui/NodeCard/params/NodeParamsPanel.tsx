@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
-import type { NodeParamsProps } from '../shared.tsx'
-import { PinterestParams } from '../PinterestParams/PinterestParams.tsx'
-import { SoulParams, CameraParams, SpeakParams } from '../HiggsFieldParams.tsx'
+import type { NodeParamsProps } from './shared.tsx'
+import { PinterestParams } from './PinterestParams/PinterestParams.tsx'
+import { SoulParams, CameraParams, SpeakParams } from './HiggsFieldParams.tsx'
 import {
   GeminiTextParams,
   GeminiVisionParams,
@@ -9,7 +9,7 @@ import {
   GeminiVeoParams,
   GeminiNanoBananaParams,
   GeminiLyriaParams,
-} from '../GeminiParams.tsx'
+} from './GeminiParams.tsx'
 import {
   CharacterParams,
   LocationParams,
@@ -21,8 +21,8 @@ import {
   ScriptParams,
   StoryboardParams,
   TransportParams,
-} from '../EntityParams/EntityParams.tsx'
-import { OutputParams, TextParams } from '../UtilParams.tsx'
+} from './EntityParams/EntityParams.tsx'
+import { OutputParams, TextParams } from './UtilParams.tsx'
 import type {
   CharacterNodeParams,
   LocationNodeParams,
@@ -35,7 +35,6 @@ import type {
   StoryboardNodeParams,
   TransportNodeParams,
 } from '../../../types.ts'
-import styles from './NodeParams.module.css'
 
 export function NodeParamsPanel({
   node,
@@ -58,9 +57,7 @@ export function NodeParamsPanel({
   }, [node, nodeType, loadPinterestBoards])
 
   return (
-    <div className={styles.inspSection}>
-      <h5>Параметры ноды</h5>
-      <br />
+    <>
       {nodeType === 'pinterest_board' && (
         <PinterestParams
           node={node}
@@ -259,6 +256,6 @@ export function NodeParamsPanel({
           updateNodeParams={updateNodeParams}
         />
       )}
-    </div>
+    </>
   )
 }

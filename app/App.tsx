@@ -2,7 +2,6 @@ import { AppProviders } from './store/AppProviders.tsx'
 import { useGraphContext } from './store/contexts/GraphContext.tsx'
 import { Topbar } from './ui/Topbar/Topbar.tsx'
 import { NodeEditor } from './ui/NodeEditor/NodeEditor.tsx'
-import { Inspector } from './ui/inspector/index.tsx'
 import { Palette } from './ui/Palette/Palette.tsx'
 import { Modals } from './ui/Modals/Modals.tsx'
 import { Toast } from './ui/Toast/Toast.tsx'
@@ -17,7 +16,6 @@ function AppShell() {
         <main className={styles.stage}>
           <NodeEditor />
         </main>
-        <Inspector />
       </div>
       <footer className={styles.statusbar}>
         <StatusBar />

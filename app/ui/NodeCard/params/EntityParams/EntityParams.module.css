@@ -1,0 +1,26 @@
+.fld {
+  composes: fld from '../../../../styles/shared.module.css';
+}
+
+.btn {
+  composes: btn from '../../../../styles/shared.module.css';
+}
+
+.segBtn {
+  composes: segBtn from '../../../../styles/shared.module.css';
+}
+
+.isOn {
+  composes: isOn from '../../../../styles/shared.module.css';
+}
+
+.charPhotoActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  align-items: center;
+}
+.charPhotoActions input[type='text'] {
+  flex: 1;
+  min-width: 0;
+}

@@ -1,9 +1,9 @@
-import { edgeInput } from '../../core/graph.ts'
-import { HIGGSFIELD_PRESETS } from '../../data/presets.ts'
+import { edgeInput } from '../../../core/graph.ts'
+import { HIGGSFIELD_PRESETS } from '../../../data/presets.ts'
 import { WirableTextField, type EEP } from './shared.tsx'
-import { SelectField } from '../components/SelectField/SelectField.tsx'
-import { TextField } from '../components/TextField/TextField.tsx'
-import { RangeField } from '../components/RangeField/RangeField.tsx'
+import { SelectField } from '../../components/SelectField/SelectField.tsx'
+import { TextField } from '../../components/TextField/TextField.tsx'
+import { RangeField } from '../../components/RangeField/RangeField.tsx'
 
 export function SoulParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
   const prompt = edgeInput(node.data, edges, resolved, 1)

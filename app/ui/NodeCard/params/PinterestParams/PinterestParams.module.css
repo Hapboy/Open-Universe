@@ -1,5 +1,5 @@
 .fld {
-  composes: fld from '../../../styles/shared.module.css';
+  composes: fld from '../../../../styles/shared.module.css';
 }
 
 .pinterestPinsGrid {

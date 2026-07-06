@@ -1,6 +1,6 @@
 import type { EEP } from './shared.tsx'
-import { SelectField } from '../components/SelectField/SelectField.tsx'
-import { TextField } from '../components/TextField/TextField.tsx'
+import { SelectField } from '../../components/SelectField/SelectField.tsx'
+import { TextField } from '../../components/TextField/TextField.tsx'
 
 export function OutputParams({ node, params, updateNodeParam }: EEP) {
   const ENGINES = ['Hayverse Realtime Veo 3', 'Hayverse Draft', 'Hayverse Cinema 4K']

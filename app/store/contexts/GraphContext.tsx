@@ -14,7 +14,7 @@ import {
   type OnNodesChange,
 } from '@xyflow/react'
 import { NODE_TEMPLATES } from '../../data/nodes.ts'
-import type { CanonMode, NodeParams, Port } from '../../types.ts'
+import type { CanonMode, NodeParams, NodeRef, Port } from '../../types.ts'
 import { useToastContext } from './ToastContext.tsx'
 
 const GRAPH_STORAGE_KEY = 'hv_graph'
@@ -55,13 +55,14 @@ interface GraphCtx {
 
   createNode: (type: string, x: number, y: number) => Node<NodeParams> | null
   deleteNode: (id: string) => void
+  renameNode: (nodeId: string, label: string) => void
   updateNodeParam: (nodeId: string, key: string, value: unknown) => void
   updateNodeParams: (nodeId: string, patch: Record<string, unknown>) => void
   executeGraph: () => Promise<void>
   runNode: (nodeId: string) => Promise<void>
   runningNodeIds: Set<string>
-  loadPinterestBoards: (node: Node<NodeParams>) => Promise<void>
-  loadPinterestPins: (node: Node<NodeParams>, boardId: string) => Promise<void>
+  loadPinterestBoards: (node: NodeRef) => Promise<void>
+  loadPinterestPins: (node: NodeRef, boardId: string) => Promise<void>
 
   canonMode: CanonMode
   setCanonMode: (m: CanonMode) => void
@@ -157,6 +158,10 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     setSelectedNodeId(null)
   }, [])
 
+  const renameNode = useCallback((nodeId: string, label: string) => {
+    setNodes((ns) => ns.map((n) => (n.id !== nodeId ? n : { ...n, data: { ...n.data, label } })))
+  }, [])
+
   const updateNodeParam = useCallback((nodeId: string, key: string, value: unknown) => {
     setNodes((ns) =>
       ns.map((n) =>
@@ -176,7 +181,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const loadPinterestBoards = useCallback(
-    async (node: Node<NodeParams>) => {
+    async (node: NodeRef) => {
       const { PinterestService } = await import('../../core/services/index.ts')
       const boards = await PinterestService.fetchBoards(showToast)
       setNodes((ns) =>
@@ -194,7 +199,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     [showToast]
   )
 
-  const loadPinterestPins = useCallback(async (node: Node<NodeParams>, boardId: string) => {
+  const loadPinterestPins = useCallback(async (node: NodeRef, boardId: string) => {
     const { PinterestService } = await import('../../core/services/index.ts')
     const pins = await PinterestService.fetchPins(boardId)
     const selectedPin = pins.length
@@ -262,6 +267,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     selectNode,
     createNode,
     deleteNode,
+    renameNode,
     updateNodeParam,
     updateNodeParams,
     executeGraph,

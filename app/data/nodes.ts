@@ -133,7 +133,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       guidanceScale: '',
       language: 'auto',
       // Vertex/Enterprise-only fields — this browser app can only reach the Gemini
-      // Developer API, which rejects these. Kept (disabled) in the inspector for
+      // Developer API, which rejects these. Kept (disabled) on the node card for
       // when a backend proxy adds Vertex support.
       negativePrompt: '',
       seed: '',
@@ -237,44 +237,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       age: 34,
       emotion: 'спокойствие',
       stylist: 'Без стилиста',
-      _presets: {
-        'Ара Гехецик': {
-          inFrame: true,
-          age: 34,
-          emotion: 'спокойствие',
-          stylist: 'Без стилиста',
-          photos: [] as string[],
-          photoIdx: 0,
-          pinterestUrl: '',
-        },
-        'Анаит Багратуни': {
-          inFrame: true,
-          age: 34,
-          emotion: 'спокойствие',
-          stylist: 'Без стилиста',
-          photos: [] as string[],
-          photoIdx: 0,
-          pinterestUrl: '',
-        },
-        'Вардан Майриг': {
-          inFrame: true,
-          age: 34,
-          emotion: 'спокойствие',
-          stylist: 'Без стилиста',
-          photos: [] as string[],
-          photoIdx: 0,
-          pinterestUrl: '',
-        },
-        Цовинар: {
-          inFrame: true,
-          age: 34,
-          emotion: 'спокойствие',
-          stylist: 'Без стилиста',
-          photos: [] as string[],
-          photoIdx: 0,
-          pinterestUrl: '',
-        },
-      },
       photos: [] as string[],
       photoIdx: 0,
       pinterestUrl: '',
@@ -294,32 +256,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       timeOfDay: 'рассвет',
       interiorExterior: 'Экстерьер',
       damageLevel: 0,
-      _presets: {
-        'Старый Конд': {
-          weather: 'туман',
-          timeOfDay: 'рассвет',
-          interiorExterior: 'Экстерьер',
-          damageLevel: 0,
-        },
-        Каскад: {
-          weather: 'туман',
-          timeOfDay: 'рассвет',
-          interiorExterior: 'Экстерьер',
-          damageLevel: 0,
-        },
-        Гарни: {
-          weather: 'туман',
-          timeOfDay: 'рассвет',
-          interiorExterior: 'Экстерьер',
-          damageLevel: 0,
-        },
-        Севан: {
-          weather: 'туман',
-          timeOfDay: 'рассвет',
-          interiorExterior: 'Экстерьер',
-          damageLevel: 0,
-        },
-      },
     },
   },
 
@@ -337,12 +273,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       selectedItem: 'Дом с эркером',
       inFrame: true,
       floor: 2,
-      _presets: {
-        'Дом с эркером': { inFrame: true, floor: 2 },
-        Чайхана: { inFrame: true, floor: 2 },
-        Мастерская: { inFrame: true, floor: 2 },
-        'Двор-колодец': { inFrame: true, floor: 2 },
-      },
     },
   },
 
@@ -357,12 +287,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       selectedItem: 'Tigran Avetisyan',
       season: 'FW26',
       wear: 12,
-      _presets: {
-        'Tigran Avetisyan': { season: 'FW26', wear: 12 },
-        'Anna K': { season: 'FW26', wear: 12 },
-        'Loom Weaving': { season: 'FW26', wear: 12 },
-        'Taraz (нац.)': { season: 'FW26', wear: 12 },
-      },
     },
   },
 
@@ -377,12 +301,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       selectedItem: 'Минас Аветисян',
       inFrame: true,
       scale: 120,
-      _presets: {
-        'Минас Аветисян': { inFrame: true, scale: 120 },
-        Сарьян: { inFrame: true, scale: 120 },
-        'Параджанов коллаж': { inFrame: true, scale: 120 },
-        Хачкар: { inFrame: true, scale: 120 },
-      },
     },
   },
 
@@ -397,12 +315,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       selectedItem: 'Тахта + ковёр',
       inFrame: true,
       density: 5,
-      _presets: {
-        'Тахта + ковёр': { inFrame: true, density: 5 },
-        'Резной буфет': { inFrame: true, density: 5 },
-        Тонет: { inFrame: true, density: 5 },
-        Минимал: { inFrame: true, density: 5 },
-      },
     },
   },
 
@@ -416,12 +328,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     params: {
       selectedItem: 'Армянский дудук',
       mood: 'элегия',
-      _presets: {
-        'Армянский дудук': { mood: 'элегия' },
-        'Джаз-квартет': { mood: 'элегия' },
-        'Электронный минимал': { mood: 'элегия' },
-        Тишина: { mood: 'элегия' },
-      },
     },
   },
 
@@ -435,12 +341,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     params: {
       selectedItem: 'Сцена 04: Утро в Конде',
       tone: 'драма',
-      _presets: {
-        'Сцена 04: Утро в Конде': { tone: 'драма' },
-        'Пролог · Севан': { tone: 'драма' },
-        Вернисаж: { tone: 'драма' },
-        Финал: { tone: 'драма' },
-      },
     },
   },
 
@@ -454,11 +354,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     params: {
       selectedItem: 'Утро в Конде v4',
       shots: 6,
-      _presets: {
-        'Утро в Конде v4': { shots: 6 },
-        'Вернисаж v2': { shots: 6 },
-        'Финал · одна сцена': { shots: 6 },
-      },
     },
   },
 
@@ -472,12 +367,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     params: {
       selectedItem: 'Советский Москвич',
       inFrame: false,
-      _presets: {
-        'Советский Москвич': { inFrame: false },
-        'Арба конная': { inFrame: false },
-        'Велосипед ретро': { inFrame: false },
-        Маршрутка: { inFrame: false },
-      },
     },
   },
 }

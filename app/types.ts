@@ -1,6 +1,4 @@
 export type PortType = 'Image' | 'Video' | 'Audio' | 'Text' | 'any'
-export type PlayerMode = 'film' | 'game'
-export type CamMode = 'classic' | 'top' | 'side' | 'one'
 export type CanonMode = 'canon' | 'mv'
 
 export interface Port {
@@ -19,6 +17,14 @@ export interface NodeParams {
   outputs: Port[]
   params: Record<string, unknown>
   [key: string]: unknown
+}
+
+// Minimal node reference for param-editing code that only ever needs id/data
+// (e.g. NodeCard, a custom React Flow node renderer, only receives these two
+// as separate props — never a full `Node<NodeParams>` with position/type/etc).
+export interface NodeRef {
+  id: string
+  data: NodeParams
 }
 
 export interface Scene {
@@ -74,7 +80,6 @@ export interface Palette {
 export type EntityPresets = Record<string, Record<string, unknown>>
 
 export interface CharacterNodeParams extends Record<string, unknown> {
-  _presets: EntityPresets
   selectedItem: string
   inFrame: boolean
   age: number
@@ -86,7 +91,6 @@ export interface CharacterNodeParams extends Record<string, unknown> {
 }
 
 export interface LocationNodeParams extends Record<string, unknown> {
-  _presets: EntityPresets
   selectedItem: string
   weather: string
   timeOfDay: string
@@ -95,66 +99,45 @@ export interface LocationNodeParams extends Record<string, unknown> {
 }
 
 export interface BuildingNodeParams extends Record<string, unknown> {
-  _presets: EntityPresets
   selectedItem: string
   inFrame: boolean
   floor: number
 }
 
 export interface ClothingNodeParams extends Record<string, unknown> {
-  _presets: EntityPresets
   selectedItem: string
   season: string
   wear: number
 }
 
 export interface ArtworkNodeParams extends Record<string, unknown> {
-  _presets: EntityPresets
   selectedItem: string
   inFrame: boolean
   scale: number
 }
 
 export interface FurnitureNodeParams extends Record<string, unknown> {
-  _presets: EntityPresets
   selectedItem: string
   inFrame: boolean
   density: number
 }
 
 export interface MusicNodeParams extends Record<string, unknown> {
-  _presets: EntityPresets
   selectedItem: string
   mood: string
 }
 
 export interface ScriptNodeParams extends Record<string, unknown> {
-  _presets: EntityPresets
   selectedItem: string
   tone: string
 }
 
 export interface StoryboardNodeParams extends Record<string, unknown> {
-  _presets: EntityPresets
   selectedItem: string
   shots: number
 }
 
 export interface TransportNodeParams extends Record<string, unknown> {
-  _presets: EntityPresets
   selectedItem: string
   inFrame: boolean
-}
-
-export interface PlayerState {
-  isPlaying: boolean
-  movieTime: number
-  activeSceneIndex: number
-  playerMode: PlayerMode
-  cam: CamMode
-  pal: number
-  dlg: boolean
-  tempo: number
-  gameAv: { x: number; y: number }
-  gameSavedT: number
 }

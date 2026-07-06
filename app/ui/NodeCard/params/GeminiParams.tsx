@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { edgeInput } from '../../core/graph.ts'
-import { GeminiService, type GeminiModelInfo } from '../../core/services/gemini.ts'
+import { edgeInput } from '../../../core/graph.ts'
+import { GeminiService, type GeminiModelInfo } from '../../../core/services/gemini.ts'
 import { WirableTextField, type EEP } from './shared.tsx'
-import { SelectField } from '../components/SelectField/SelectField.tsx'
-import { TextField } from '../components/TextField/TextField.tsx'
-import styles from '../../styles/shared.module.css'
+import { SelectField } from '../../components/SelectField/SelectField.tsx'
+import { TextField } from '../../components/TextField/TextField.tsx'
+import styles from '../../../styles/shared.module.css'
 
 const FALLBACK_MODELS: GeminiModelInfo[] = [
   { id: 'gemini-flash-latest', displayName: 'Gemini Flash (latest)' },

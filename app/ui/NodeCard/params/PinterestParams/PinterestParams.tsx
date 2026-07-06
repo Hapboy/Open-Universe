@@ -1,8 +1,7 @@
 import cn from 'classnames'
-import type { Node } from '@xyflow/react'
-import type { NodeParams, PinItem, BoardItem } from '../../../types.ts'
+import type { NodeRef, PinItem, BoardItem } from '../../../../types.ts'
 import type { NodeParamsProps } from '../shared.tsx'
-import { SelectField } from '../../components/SelectField/SelectField.tsx'
+import { SelectField } from '../../../components/SelectField/SelectField.tsx'
 import styles from './PinterestParams.module.css'
 
 export function PinterestParams({
@@ -11,7 +10,7 @@ export function PinterestParams({
   updateNodeParam,
   loadPinterestPins,
 }: {
-  node: Node<NodeParams>
+  node: NodeRef
   params: Record<string, unknown>
   updateNodeParam: NodeParamsProps['updateNodeParam']
   loadPinterestPins: NodeParamsProps['loadPinterestPins']

@@ -6,6 +6,7 @@ import { AI_MODEL_NODE_TYPES } from '../../data/nodes.ts'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
 import { CircleLoader } from '../components/CircleLoader/CircleLoader.tsx'
 import { MediaSlider } from './MediaSlider/MediaSlider.tsx'
+import { NodeParamsPanel } from './params/NodeParamsPanel.tsx'
 import styles from './NodeCard.module.css'
 
 function portColor(type: PortType): string {
@@ -15,56 +16,25 @@ function portColor(type: PortType): string {
   return 'var(--color-text-tertiary)'
 }
 
-function nodeDisplayValue(data: NodeParams, generatedText?: string): string {
-  const p = data.params
-  switch (data.nodeType) {
-    case 'pinterest_board':
-      return (p.boardName as string) || ''
-    case 'higgsfield_soul':
-      return (p.prompt as string) || ''
-    case 'higgsfield_camera':
-      return (p.motionPreset as string) || ''
-    case 'higgsfield_speak':
-      return (p.expression as string) || ''
-    case 'text_prompt':
-      return (p.text as string) || ''
-    case 'character':
-      return (p.selectedItem as string) || ''
-    case 'location': {
-      const typeStr = (p.interiorExterior as string) || 'Экстерьер'
-      const dmg = p.damageLevel !== undefined ? ` · ${p.damageLevel}%` : ''
-      return `${p.selectedItem} (${typeStr})${dmg}`
-    }
-    case 'building':
-      return (p.selectedItem as string) || ''
-    case 'clothing':
-      return `${p.selectedItem} ${p.season}`
-    case 'artwork':
-      return (p.selectedItem as string) || ''
-    case 'furniture':
-      return (p.selectedItem as string) || ''
-    case 'music':
-      return (p.selectedItem as string) || ''
-    case 'script':
-      return (p.selectedItem as string) || ''
-    case 'storyboard':
-      return (p.selectedItem as string) || ''
-    case 'transport':
-      return (p.selectedItem as string) || ''
-    case 'gemini_text':
-    case 'gemini_vision':
-      return generatedText || ''
-    default:
-      return (p.renderingEngine as string) || ''
-  }
-}
-
 export const NodeCard = memo(function NodeCard({
   id,
   data,
   selected,
 }: NodeProps<Node<NodeParams>>) {
-  const { updateNodeParam, runNode, runningNodeIds, resolved } = useGraphContext()
+  const {
+    edges,
+    resolved,
+    updateNodeParam,
+    updateNodeParams,
+    loadPinterestBoards,
+    loadPinterestPins,
+    executeGraph,
+    runNode,
+    runningNodeIds,
+    deleteNode,
+    renameNode,
+    selectNode,
+  } = useGraphContext()
 
   const photos = data.nodeType === 'character' ? (data.params.photos as string[]) || [] : []
   const photoIdx = (data.params.photoIdx as number) || 0
@@ -107,7 +77,12 @@ export const NodeCard = memo(function NodeCard({
 
       <div className={styles.header}>
         <i className={`ti ${data.icon}`} />
-        <span>{data.label}</span>
+        <input
+          type="text"
+          defaultValue={data.label}
+          onBlur={(e) => renameNode(id, e.target.value)}
+          className={cn(styles.labelInput, 'nodrag')}
+        />
         {isAiModel && (
           <button
             className={styles.runBtn}
@@ -126,16 +101,39 @@ export const NodeCard = memo(function NodeCard({
             )}
           </button>
         )}
-      </div>
-      <div className={styles.body}>
-        <div
-          className={cn(
-            styles.titleVal,
-            generatedText && [styles.titleValFull, 'nodrag', 'nowheel']
-          )}
+        <button
+          className={styles.deleteBtn}
+          onMouseDown={(e) => e.stopPropagation()}
+          title="Удалить ноду"
+          onClick={(e) => {
+            e.stopPropagation()
+            deleteNode(id)
+            selectNode(null)
+          }}
         >
-          {nodeDisplayValue(data, generatedText)}
+          <i className="ti ti-trash" />
+        </button>
+      </div>
+
+      {generatedText && (
+        <div className={styles.body}>
+          <div className={cn(styles.titleVal, styles.titleValFull, 'nodrag', 'nowheel')}>
+            {generatedText}
+          </div>
         </div>
+      )}
+
+      <div className={cn(styles.paramsWrap, 'nodrag', 'nowheel')}>
+        <NodeParamsPanel
+          node={{ id, data }}
+          edges={edges}
+          resolved={resolved}
+          updateNodeParam={updateNodeParam}
+          updateNodeParams={updateNodeParams}
+          loadPinterestBoards={loadPinterestBoards}
+          loadPinterestPins={loadPinterestPins}
+          executeGraph={executeGraph}
+        />
       </div>
 
       {generatedImage && <MediaSlider items={[{ url: generatedImage, type: 'image' }]} />}
