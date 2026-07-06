@@ -200,6 +200,7 @@ export interface SceneNarrativeSettings {
   tensionLevel: number // 0 to 100
   pacing: 'slow' | 'moderate' | 'fast' | 'action'
   loreRevelations: string[] // array of tags
+  curveType: 'linear' | 'ease_in' | 'ease_out' | 'ease_in_out'
 }
 
 interface GraphCtx {
@@ -289,6 +290,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
           tensionLevel: 30,
           pacing: 'moderate' as const,
           loreRevelations: [] as string[],
+          curveType: 'linear' as const,
           ...(prev[sceneId] || {}),
         }
         const updated = {

@@ -562,11 +562,33 @@ export function Timeline() {
     tensionLevel: 30,
     pacing: 'moderate' as const,
     loreRevelations: [] as string[],
+    curveType: 'linear' as const,
     ...(narrativeSettings[activeSceneId] || {}),
   }
 
-  // Calculate SVG arrow parameters for Emotional slope
-  const arrowY2 = 95 - 75 * ((activeSettings.emotionalTrend + 100) / 200)
+  // Calculate dynamic curve path rotating around center (225, 55)
+  const getCurvePath = () => {
+    const angleRad = (activeSettings.emotionalTrend * Math.PI) / 400
+    const dx = 150 * Math.cos(angleRad)
+    const dy = 150 * Math.sin(angleRad)
+    const cx = 225
+    const cy = 55
+    const x1 = cx - dx
+    const y1 = cy + dy
+    const x2 = cx + dx
+    const y2 = cy - dy
+
+    if (activeSettings.curveType === 'ease_in') {
+      return `M ${x1} ${y1} C ${x1 + (x2 - x1) * 0.55} ${y1}, ${x2 - (x2 - x1) * 0.15} ${y2 - (y2 - y1) * 0.1}, ${x2} ${y2}`
+    }
+    if (activeSettings.curveType === 'ease_out') {
+      return `M ${x1} ${y1} C ${x1 + (x2 - x1) * 0.15} ${y1 + (y2 - y1) * 0.1}, ${x2 - (x2 - x1) * 0.55} ${y2}, ${x2} ${y2}`
+    }
+    if (activeSettings.curveType === 'ease_in_out') {
+      return `M ${x1} ${y1} C ${x1 + (x2 - x1) * 0.45} ${y1}, ${x2 - (x2 - x1) * 0.45} ${y2}, ${x2} ${y2}`
+    }
+    return `M ${x1} ${y1} L ${x2} ${y2}`
+  }
 
   // Tension level dynamic visual styling
   const getTensionColor = (level: number) => {
@@ -786,7 +808,7 @@ export function Timeline() {
                 </div>
 
                 <div className={styles.emotionalBox}>
-                  <svg className={styles.emotionalSvg} viewBox="0 0 400 120">
+                  <svg className={styles.emotionalSvg} viewBox="0 0 450 110">
                     <defs>
                       <marker
                         id="arrow"
@@ -795,7 +817,7 @@ export function Timeline() {
                         refY="5"
                         markerWidth="5"
                         markerHeight="5"
-                        orient="auto-start-reverse"
+                        orient="auto"
                       >
                         <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-text-primary)" />
                       </marker>
@@ -808,23 +830,21 @@ export function Timeline() {
                         />
                       </pattern>
                     </defs>
-                    <rect width="400" height="120" fill="url(#grid)" />
-                    <line
-                      x1="50"
-                      y1="95"
-                      x2="350"
-                      y2={arrowY2}
+                    <rect width="450" height="110" fill="url(#grid)" />
+                    <path
+                      d={getCurvePath()}
                       stroke="var(--color-text-primary)"
-                      strokeWidth="2"
+                      strokeWidth="2.5"
                       markerEnd="url(#arrow)"
+                      fill="none"
                     />
-                    <text x="50" y="112" className={styles.svgText} textAnchor="start">
+                    <text x="25" y="100" className={styles.svgText} textAnchor="start">
                       Положительные
                     </text>
-                    <text x="350" y="18" className={styles.svgText} textAnchor="end">
+                    <text x="425" y="18" className={styles.svgText} textAnchor="end">
                       Негативные
                     </text>
-                    <text x="200" y="70" className={styles.svgLabelText} textAnchor="middle">
+                    <text x="225" y="60" className={styles.svgLabelText} textAnchor="middle">
                       Эмоциональная линия
                     </text>
                   </svg>
@@ -833,7 +853,7 @@ export function Timeline() {
                 <div className={styles.arcSlidersRow}>
                   <div className={styles.sliderBox}>
                     <span className={styles.sliderLabel}>
-                      Угол: {activeSettings.emotionalTrend}%
+                      Угол тренда: {activeSettings.emotionalTrend}%
                     </span>
                     <input
                       type="range"
@@ -850,39 +870,58 @@ export function Timeline() {
                   </div>
 
                   <div className={styles.sliderBox}>
-                    <span className={styles.sliderLabel}>
-                      Напряжение:{' '}
-                      <span
-                        style={{
-                          color: getTensionColor(activeSettings.tensionLevel),
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        {activeSettings.tensionLevel}%
-                      </span>
+                    <span className={styles.sliderLabel}>Форма кривой:</span>
+                    <select
+                      value={activeSettings.curveType}
+                      onChange={(e) =>
+                        updateNarrativeSettings(activeSceneId, {
+                          curveType: e.target.value as
+                            'linear' | 'ease_in' | 'ease_out' | 'ease_in_out',
+                        })
+                      }
+                      className={styles.curveSelect}
+                    >
+                      <option value="linear">Линейная</option>
+                      <option value="ease_in">Ускорение</option>
+                      <option value="ease_out">Замедление</option>
+                      <option value="ease_in_out">S-образная</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className={styles.sliderBox} style={{ marginTop: '2px' }}>
+                  <span className={styles.sliderLabel}>
+                    Напряжение:{' '}
+                    <span
+                      style={{
+                        color: getTensionColor(activeSettings.tensionLevel),
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {activeSettings.tensionLevel}%
                     </span>
-                    <div className={styles.tensionSliderContainer}>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={activeSettings.tensionLevel}
-                        onChange={(e) =>
-                          updateNarrativeSettings(activeSceneId, {
-                            tensionLevel: Number(e.target.value),
-                          })
-                        }
-                        className={styles.settingsSlider}
-                      />
-                      <div
-                        className={styles.tensionGlowBar}
-                        style={{
-                          width: `${activeSettings.tensionLevel}%`,
-                          backgroundColor: getTensionColor(activeSettings.tensionLevel),
-                          boxShadow: `0 0 8px ${getTensionColor(activeSettings.tensionLevel)}`,
-                        }}
-                      />
-                    </div>
+                  </span>
+                  <div className={styles.tensionSliderContainer}>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={activeSettings.tensionLevel}
+                      onChange={(e) =>
+                        updateNarrativeSettings(activeSceneId, {
+                          tensionLevel: Number(e.target.value),
+                        })
+                      }
+                      className={styles.settingsSlider}
+                    />
+                    <div
+                      className={styles.tensionGlowBar}
+                      style={{
+                        width: `${activeSettings.tensionLevel}%`,
+                        backgroundColor: getTensionColor(activeSettings.tensionLevel),
+                        boxShadow: `0 0 8px ${getTensionColor(activeSettings.tensionLevel)}`,
+                      }}
+                    />
                   </div>
                 </div>
               </div>
