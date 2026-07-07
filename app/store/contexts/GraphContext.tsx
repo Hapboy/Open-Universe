@@ -21,8 +21,16 @@ import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from '../../core/br
 const SCENE_GRAPHS_KEY = 'hv_scene_graphs'
 const ACTIVE_SCENE_KEY = 'hv_active_scene_id'
 const LEGACY_GRAPH_KEY = 'hv_graph'
+const TIMELINE_DURATION_KEY = 'hv_timeline_duration'
+const DEFAULT_TOTAL_DURATION = 872 // 14:32 in seconds
 
 type SceneGraphs = Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>
+
+function loadStoredTotalDuration(): number {
+  const raw = readRaw(TIMELINE_DURATION_KEY)
+  const parsed = raw ? Number(raw) : NaN
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TOTAL_DURATION
+}
 
 // A stored scene graph is corrupted if any edge points at a node id that no
 // longer exists in that same scene's node list.
@@ -255,6 +263,9 @@ interface GraphCtx {
 
   showMontageMonitor: boolean
   setShowMontageMonitor: (v: boolean) => void
+
+  totalDuration: number
+  setTotalDuration: (seconds: number) => void
 }
 
 const Ctx = createContext<GraphCtx>(null!)
@@ -276,6 +287,18 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const [canonMode, setCanonMode] = useState<CanonMode>('canon')
   const [showMiniMap, setShowMiniMap] = useState<boolean>(true)
   const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false)
+
+  const [totalDuration, setTotalDurationState] = useState<number>(loadStoredTotalDuration)
+  const setTotalDuration = useCallback(
+    (seconds: number) => {
+      const clamped = Math.max(1, Math.round(seconds))
+      setTotalDurationState(clamped)
+      writeRaw(TIMELINE_DURATION_KEY, String(clamped), () =>
+        showToast('Не удалось сохранить длительность фильма (превышен лимит хранилища)')
+      )
+    },
+    [showToast]
+  )
 
   // Clean query parameter from URL bar on mount
   useEffect(() => {
@@ -537,6 +560,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     setActiveSceneId,
     showMontageMonitor,
     setShowMontageMonitor,
+    totalDuration,
+    setTotalDuration,
   }
 
   return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>

@@ -8,6 +8,7 @@ import { SceneTrackView } from './SceneTrackView/SceneTrackView.tsx'
 import { SynapsesCanvas } from './SynapsesCanvas/SynapsesCanvas.tsx'
 import { SceneArcSettings } from './SceneArcSettings/SceneArcSettings.tsx'
 import { StateDebugger } from './StateDebugger/StateDebugger.tsx'
+import { DurationEditor } from './DurationEditor/DurationEditor.tsx'
 import styles from './Timeline.module.css'
 
 const SPEED_LIST = [0.5, 1.0, 1.5, 2.0]
@@ -21,6 +22,8 @@ export function Timeline() {
     setActiveSceneId,
     showMontageMonitor,
     setShowMontageMonitor,
+    totalDuration,
+    setTotalDuration,
   } = useGraphContext()
 
   // Tab State
@@ -87,8 +90,6 @@ export function Timeline() {
     }
     return { uniqueStarts, packedStarts, totalPackedDuration: currentPackedTime }
   }, [scenes])
-
-  const totalDuration = 872 // 14:32 in seconds
 
   // Playback timer loop
   useEffect(() => {
@@ -264,7 +265,7 @@ export function Timeline() {
           </button>
           <span>{scenes.length} сцен</span>
           <span>·</span>
-          <span>{formatTime(maxTime)}</span>
+          <DurationEditor totalDuration={totalDuration} onChange={setTotalDuration} />
         </div>
       </div>
 
