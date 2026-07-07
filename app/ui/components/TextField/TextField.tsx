@@ -13,7 +13,7 @@ export function TextField({
   placeholder,
   title,
 }: {
-  label: string
+  label?: string
   value?: string
   defaultValue?: string
   onChange?: (value: string) => void
@@ -24,7 +24,7 @@ export function TextField({
 }) {
   return (
     <div className={styles.fld} title={title}>
-      <span>{label}</span>
+      {label && <span>{label}</span>}
       <input
         type="text"
         disabled={disabled}

@@ -26,7 +26,8 @@
   min-width: 0;
 }
 
-/* Category Tabs and Search UI */
+/* Category Tabs and Search UI (tags/search inputs themselves live in the
+   shared CategoryTagGroup/SearchField components) */
 .searchContainer {
   display: flex;
   flex-direction: column;
@@ -34,110 +35,6 @@
   margin-bottom: 12px;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 10px;
-}
-
-.searchBar {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.searchBar i {
-  position: absolute;
-  left: 8px;
-  color: var(--color-text-tertiary);
-  font-size: 13px;
-  pointer-events: none;
-}
-
-.searchInput {
-  width: 100%;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 5px 8px 5px 26px;
-  color: var(--color-text-primary);
-  font-size: 11.5px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.searchInput:focus {
-  border-color: var(--color-text-secondary);
-}
-
-.tagsContainer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.tagBtn {
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  color: var(--color-text-secondary);
-  font-size: 11px;
-  padding: 3px 8px;
-  cursor: pointer;
-  font-family: inherit;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.tagBtn:hover {
-  background: var(--color-bg-card);
-  color: var(--color-text-primary);
-}
-
-.tagBtnActive {
-  background: rgba(239, 159, 39, 0.1) !important;
-  border-color: var(--color-bg-accent) !important;
-  color: var(--color-bg-accent) !important;
-}
-
-.tagBtnActiveAll {
-  background: #007fff !important; /* Accent blue category from reference */
-  border-color: #007fff !important;
-  color: #fff !important;
-  box-shadow: 0 0 6px rgba(0, 127, 255, 0.3);
-}
-
-/* Custom Text and Textarea inputs */
-.txtInput {
-  width: 100%;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 5px 8px;
-  color: var(--color-text-primary);
-  font-size: 12px;
-  font-family: inherit;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.txtInput:focus {
-  border-color: var(--color-bg-accent);
-}
-
-.txtArea {
-  width: 100%;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 5px 8px;
-  color: var(--color-text-primary);
-  font-size: 12px;
-  font-family: inherit;
-  outline: none;
-  resize: vertical;
-  box-sizing: border-box;
-}
-
-.txtArea:focus {
-  border-color: var(--color-bg-accent);
 }
 
 /* Cover & Thumbnails Gallery */
@@ -187,8 +84,8 @@
   transform: scale(1.08);
 }
 
-.thumbCellActive {
-  border-color: var(--color-bg-accent) !important;
+.thumbCell.thumbCellActive {
+  border-color: var(--color-bg-accent);
   box-shadow: 0 0 6px var(--color-bg-accent);
 }
 
@@ -273,8 +170,8 @@
   background: var(--color-bg-tertiary);
 }
 
-.selectOptionActive {
-  background: rgba(239, 159, 39, 0.08) !important;
+.selectOption.selectOptionActive {
+  background: rgba(239, 159, 39, 0.08);
 }
 
 .optionText {

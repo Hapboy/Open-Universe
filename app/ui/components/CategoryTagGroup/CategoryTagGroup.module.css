@@ -1,0 +1,38 @@
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tagBtn {
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tagBtn:hover {
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+}
+
+/* Compound selectors (not !important) win over :hover by coming later in
+   source order at equal specificity. */
+.tagBtn.tagBtnActive {
+  background: rgba(239, 159, 39, 0.1);
+  border-color: var(--color-bg-accent);
+  color: var(--color-bg-accent);
+}
+
+.tagBtn.tagBtnActiveAll {
+  background: var(--color-node-character);
+  border-color: var(--color-node-character);
+  color: #fff;
+  box-shadow: 0 0 6px rgba(55, 138, 221, 0.3);
+}

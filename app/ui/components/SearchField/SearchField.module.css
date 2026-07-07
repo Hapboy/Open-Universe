@@ -1,0 +1,45 @@
+.wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.wrap :global(.fld) {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.wrap :global(.fld) input[type='text'] {
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 8px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.clearBtn {
+  position: absolute;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.clearBtn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+}
