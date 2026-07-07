@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import cn from 'classnames'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
+import { useNarrativeContext } from '../../store/contexts/NarrativeContext.tsx'
 import { DEFAULT_SCENES, TimelineScene } from '../../data/scenes.ts'
 import styles from './Timeline.module.css'
 
@@ -13,9 +14,8 @@ export function Timeline() {
     setActiveSceneId,
     showMontageMonitor,
     setShowMontageMonitor,
-    narrativeSettings,
-    updateNarrativeSettings,
   } = useGraphContext()
+  const { getSceneNarrativeSettings, updateNarrativeSettings } = useNarrativeContext()
 
   // Tab State
   const [activeTab, setActiveTab] = useState<'scenes' | 'synapses' | 'settings'>('scenes')
@@ -554,17 +554,7 @@ export function Timeline() {
   }
 
   // Active scene narrative settings
-  const activeSettings = {
-    emotionalTrend: 0,
-    conflictType: 'physical' as const,
-    conflictTarget: 'man_vs_man' as const,
-    storyPhase: 'exposition' as const,
-    tensionLevel: 30,
-    pacing: 'moderate' as const,
-    loreRevelations: [] as string[],
-    curveType: 'linear' as const,
-    ...(narrativeSettings[activeSceneId] || {}),
-  }
+  const activeSettings = getSceneNarrativeSettings(activeSceneId)
 
   // Calculate dynamic curve path rotating around center (225, 55)
   const getCurvePath = () => {

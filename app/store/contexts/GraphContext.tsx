@@ -20,7 +20,6 @@ import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from '../../core/br
 
 const SCENE_GRAPHS_KEY = 'hv_scene_graphs'
 const ACTIVE_SCENE_KEY = 'hv_active_scene_id'
-const NARRATIVE_SETTINGS_KEY = 'hv_narrative_settings'
 const LEGACY_GRAPH_KEY = 'hv_graph'
 
 type SceneGraphs = Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>
@@ -221,28 +220,6 @@ function findPort(
   return ports?.find((p) => p.id === handleId)
 }
 
-export interface SceneNarrativeSettings {
-  emotionalTrend: number // slope percentage (-100 to 100)
-  conflictType: 'physical' | 'psychological'
-  conflictTarget: 'man_vs_man' | 'man_vs_nature' | 'man_vs_society'
-  storyPhase: 'exposition' | 'inciting' | 'rising' | 'climax' | 'resolution'
-  tensionLevel: number // 0 to 100
-  pacing: 'slow' | 'moderate' | 'fast' | 'action'
-  loreRevelations: string[] // array of tags
-  curveType: 'linear' | 'ease_in' | 'ease_out' | 'ease_in_out'
-}
-
-export const DEFAULT_NARRATIVE_SETTINGS: SceneNarrativeSettings = {
-  emotionalTrend: 0,
-  conflictType: 'physical',
-  conflictTarget: 'man_vs_man',
-  storyPhase: 'exposition',
-  tensionLevel: 30,
-  pacing: 'moderate',
-  loreRevelations: [],
-  curveType: 'linear',
-}
-
 interface GraphCtx {
   nodes: Node<NodeParams>[]
   edges: Edge[]
@@ -278,9 +255,6 @@ interface GraphCtx {
 
   showMontageMonitor: boolean
   setShowMontageMonitor: (v: boolean) => void
-
-  narrativeSettings: Record<string, SceneNarrativeSettings>
-  updateNarrativeSettings: (sceneId: string, patch: Partial<SceneNarrativeSettings>) => void
 }
 
 const Ctx = createContext<GraphCtx>(null!)
@@ -302,22 +276,6 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const [canonMode, setCanonMode] = useState<CanonMode>('canon')
   const [showMiniMap, setShowMiniMap] = useState<boolean>(true)
   const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false)
-
-  const [narrativeSettings, setNarrativeSettings] = useState<
-    Record<string, SceneNarrativeSettings>
-  >(() => readJSON(NARRATIVE_SETTINGS_KEY, {} as Record<string, SceneNarrativeSettings>))
-
-  const updateNarrativeSettings = useCallback(
-    (sceneId: string, patch: Partial<SceneNarrativeSettings>) => {
-      const base = { ...DEFAULT_NARRATIVE_SETTINGS, ...narrativeSettings[sceneId] }
-      const updated = { ...narrativeSettings, [sceneId]: { ...base, ...patch } }
-      writeJSON(NARRATIVE_SETTINGS_KEY, updated, () =>
-        showToast('Не удалось сохранить настройки сцены (превышен лимит хранилища)')
-      )
-      setNarrativeSettings(updated)
-    },
-    [narrativeSettings, showToast]
-  )
 
   // Clean query parameter from URL bar on mount
   useEffect(() => {
@@ -579,8 +537,6 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     setActiveSceneId,
     showMontageMonitor,
     setShowMontageMonitor,
-    narrativeSettings,
-    updateNarrativeSettings,
   }
 
   return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>
