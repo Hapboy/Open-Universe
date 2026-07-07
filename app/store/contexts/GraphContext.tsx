@@ -21,6 +21,7 @@ import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from '../../core/br
 const SCENE_GRAPHS_KEY = 'hv_scene_graphs'
 const ACTIVE_SCENE_KEY = 'hv_active_scene_id'
 const NARRATIVE_SETTINGS_KEY = 'hv_narrative_settings'
+const LEGACY_GRAPH_KEY = 'hv_graph'
 
 type SceneGraphs = Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>
 
@@ -46,16 +47,29 @@ function loadStoredSceneGraphs(): SceneGraphs {
   )
 }
 
+// A pure read: the URL param is honored immediately for the initial render,
+// but persisting it is the mount effect's job (see "Clean query parameter"
+// below) — this function has no side effects, so it's safe to call from a
+// lazy initializer.
 function loadActiveSceneId(): string {
   if (typeof window !== 'undefined') {
-    const params = new URLSearchParams(window.location.search)
-    const sceneParam = params.get('scene')
-    if (sceneParam) {
-      writeRaw(ACTIVE_SCENE_KEY, sceneParam)
-      return sceneParam
-    }
+    const sceneParam = new URLSearchParams(window.location.search).get('scene')
+    if (sceneParam) return sceneParam
   }
   return readRaw(ACTIVE_SCENE_KEY) || 'sc1'
+}
+
+// One-time recovery of a graph saved before scenes existed (the old single
+// `hv_graph`), so upgrading to per-scene storage doesn't silently drop what
+// a user already built. Never deletes `hv_graph` itself — PresetLibraryContext
+// still reads it for its own legacy-preset recovery.
+function recoverLegacyGraph(): { nodes: Node<NodeParams>[]; edges: Edge[] } | null {
+  const parsed = readJSON<{ nodes?: unknown[]; edges?: unknown[] }>(LEGACY_GRAPH_KEY, {})
+  if (!Array.isArray(parsed.nodes) || parsed.nodes.length === 0) return null
+  return {
+    nodes: parsed.nodes as Node<NodeParams>[],
+    edges: Array.isArray(parsed.edges) ? (parsed.edges as Edge[]) : [],
+  }
 }
 
 // Params from the node template, deep-cloned, with overrides on top.
@@ -170,6 +184,32 @@ function createDefaultSceneGraph(sceneId: string): { nodes: Node<NodeParams>[]; 
   return { nodes, edges }
 }
 
+interface InitialGraphState {
+  activeSceneId: string
+  sceneGraphs: SceneGraphs
+  nodes: Node<NodeParams>[]
+  edges: Edge[]
+}
+
+// Parses localStorage exactly once for the initial render (the old code read
+// `loadActiveSceneId`/`loadStoredSceneGraphs` independently up to 3 times on
+// mount — once per lazy initializer — each re-parsing the same blob).
+function loadInitialGraphState(): InitialGraphState {
+  const activeSceneId = loadActiveSceneId()
+  let sceneGraphs = loadStoredSceneGraphs()
+  if (Object.keys(sceneGraphs).length === 0) {
+    const legacy = recoverLegacyGraph()
+    if (legacy) sceneGraphs = { [activeSceneId]: legacy }
+  }
+  const activeGraph = sceneGraphs[activeSceneId] || createDefaultSceneGraph(activeSceneId)
+  return {
+    activeSceneId,
+    sceneGraphs,
+    nodes: withTemplateDefaults(activeGraph.nodes),
+    edges: activeGraph.edges,
+  }
+}
+
 function findPort(
   nodes: Node<NodeParams>[],
   nodeId: string | null | undefined,
@@ -190,6 +230,17 @@ export interface SceneNarrativeSettings {
   pacing: 'slow' | 'moderate' | 'fast' | 'action'
   loreRevelations: string[] // array of tags
   curveType: 'linear' | 'ease_in' | 'ease_out' | 'ease_in_out'
+}
+
+export const DEFAULT_NARRATIVE_SETTINGS: SceneNarrativeSettings = {
+  emotionalTrend: 0,
+  conflictType: 'physical',
+  conflictTarget: 'man_vs_man',
+  storyPhase: 'exposition',
+  tensionLevel: 30,
+  pacing: 'moderate',
+  loreRevelations: [],
+  curveType: 'linear',
 }
 
 interface GraphCtx {
@@ -238,20 +289,15 @@ export const useGraphContext = () => useContext(Ctx)
 export function GraphProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToastContext()
 
-  const [activeSceneId, setActiveSceneIdState] = useState<string>(loadActiveSceneId)
-  const [, setSceneGraphs] =
-    useState<Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>>(loadStoredSceneGraphs)
+  const [initialGraphState] = useState(loadInitialGraphState)
+  const [activeSceneId, setActiveSceneIdState] = useState<string>(initialGraphState.activeSceneId)
+  // Not reactive state — nothing reads it, it only exists to accumulate the
+  // in-memory scene-graph cache between saves/switches, so a ref (not
+  // useState) avoids forcing a re-render on every write.
+  const sceneGraphsRef = useRef<SceneGraphs>(initialGraphState.sceneGraphs)
 
-  const [nodes, setNodes] = useState<Node<NodeParams>[]>(() => {
-    const activeId = loadActiveSceneId()
-    const graphs = loadStoredSceneGraphs()
-    return withTemplateDefaults(graphs[activeId]?.nodes || createDefaultSceneGraph(activeId).nodes)
-  })
-  const [edges, setEdges] = useState<Edge[]>(() => {
-    const activeId = loadActiveSceneId()
-    const graphs = loadStoredSceneGraphs()
-    return graphs[activeId]?.edges || createDefaultSceneGraph(activeId).edges
-  })
+  const [nodes, setNodes] = useState<Node<NodeParams>[]>(initialGraphState.nodes)
+  const [edges, setEdges] = useState<Edge[]>(initialGraphState.edges)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [canonMode, setCanonMode] = useState<CanonMode>('canon')
   const [showMiniMap, setShowMiniMap] = useState<boolean>(true)
@@ -263,30 +309,14 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
   const updateNarrativeSettings = useCallback(
     (sceneId: string, patch: Partial<SceneNarrativeSettings>) => {
-      setNarrativeSettings((prev) => {
-        const base = {
-          emotionalTrend: 0,
-          conflictType: 'physical' as const,
-          conflictTarget: 'man_vs_man' as const,
-          storyPhase: 'exposition' as const,
-          tensionLevel: 30,
-          pacing: 'moderate' as const,
-          loreRevelations: [] as string[],
-          curveType: 'linear' as const,
-          ...(prev[sceneId] || {}),
-        }
-        const updated = {
-          ...prev,
-          [sceneId]: {
-            ...base,
-            ...patch,
-          },
-        }
-        writeJSON(NARRATIVE_SETTINGS_KEY, updated)
-        return updated
-      })
+      const base = { ...DEFAULT_NARRATIVE_SETTINGS, ...narrativeSettings[sceneId] }
+      const updated = { ...narrativeSettings, [sceneId]: { ...base, ...patch } }
+      writeJSON(NARRATIVE_SETTINGS_KEY, updated, () =>
+        showToast('Не удалось сохранить настройки сцены (превышен лимит хранилища)')
+      )
+      setNarrativeSettings(updated)
     },
-    []
+    [narrativeSettings, showToast]
   )
 
   // Clean query parameter from URL bar on mount
@@ -302,18 +332,17 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const setActiveSceneId = useCallback(
     (nextId: string) => {
       if (nextId === activeSceneId) return
-      // Persist the current scene graph, then swap in the next one. All state
-      // setters are called directly from the event handler (no setState inside
-      // another updater — React 19 runs updaters twice in dev and drops such
-      // nested side effects, which left scenes never opening).
-      const stored = loadStoredSceneGraphs()
-      const updated = { ...stored, [activeSceneId]: { nodes, edges } }
+      // Persist the current scene graph, then swap in the next one. State
+      // setters are called directly, one after another — not from inside
+      // another setState's updater function — so this stays a plain
+      // synchronous sequence with no nested-updater purity concerns.
+      const updated = { ...sceneGraphsRef.current, [activeSceneId]: { nodes, edges } }
       const nextGraph = updated[nextId] || createDefaultSceneGraph(nextId)
       writeJSON(SCENE_GRAPHS_KEY, updated, () =>
         showToast('Не удалось сохранить граф сцены (превышен лимит хранилища)')
       )
       writeRaw(ACTIVE_SCENE_KEY, nextId)
-      setSceneGraphs(updated)
+      sceneGraphsRef.current = updated
       setNodes(withTemplateDefaults(nextGraph.nodes))
       setEdges(nextGraph.edges)
       setSelectedNodeId(null)
@@ -353,16 +382,11 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current)
     graphSaveTimer.current = setTimeout(() => {
-      setSceneGraphs((prevGraphs) => {
-        const updated = {
-          ...prevGraphs,
-          [activeSceneId]: { nodes, edges },
-        }
-        writeJSON(SCENE_GRAPHS_KEY, updated, () =>
-          showToast('Не удалось сохранить граф локально (превышен лимит хранилища)')
-        )
-        return updated
-      })
+      const updated = { ...sceneGraphsRef.current, [activeSceneId]: { nodes, edges } }
+      writeJSON(SCENE_GRAPHS_KEY, updated, () =>
+        showToast('Не удалось сохранить граф локально (превышен лимит хранилища)')
+      )
+      sceneGraphsRef.current = updated
     }, 400)
     return () => {
       if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current)

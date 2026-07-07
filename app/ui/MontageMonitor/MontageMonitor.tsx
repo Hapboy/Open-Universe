@@ -1,7 +1,16 @@
-import React, { useState, useRef } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
 import { DEFAULT_SCENES } from '../../data/scenes.ts'
 import styles from './MontageMonitor.module.css'
+
+function readResolvedUrl(
+  resolved: Record<string, unknown>,
+  outId: string | undefined
+): string | null {
+  if (!outId) return null
+  const value = resolved[outId]
+  return typeof value === 'string' ? value : null
+}
 
 export function MontageMonitor() {
   const { nodes, resolved, activeSceneId, showMontageMonitor, setShowMontageMonitor } =
@@ -10,6 +19,7 @@ export function MontageMonitor() {
   const [position, setPosition] = useState({ x: window.innerWidth - 460, y: 80 })
   const [size] = useState({ width: 420, height: 280 })
   const dragRef = useRef({ isDragging: false, startX: 0, startY: 0, startPos: { x: 0, y: 0 } })
+  const dragAbortRef = useRef<AbortController | null>(null)
 
   const monitorRef = useRef<HTMLDivElement>(null)
 
@@ -23,18 +33,12 @@ export function MontageMonitor() {
     )
     const veoNode = nodes.find((n) => n.data.nodeType === 'gemini_veo')
 
-    if (veoNode) {
-      const outId = veoNode.data.outputs[0]?.id
-      if (outId && resolved[outId]) {
-        return { url: resolved[outId] as string, type: 'video' }
-      }
-    }
-    if (imagenNode) {
-      const outId = imagenNode.data.outputs[0]?.id
-      if (outId && resolved[outId]) {
-        return { url: resolved[outId] as string, type: 'image' }
-      }
-    }
+    const veoUrl = veoNode ? readResolvedUrl(resolved, veoNode.data.outputs[0]?.id) : null
+    if (veoUrl) return { url: veoUrl, type: 'video' }
+
+    const imagenUrl = imagenNode ? readResolvedUrl(resolved, imagenNode.data.outputs[0]?.id) : null
+    if (imagenUrl) return { url: imagenUrl, type: 'image' }
+
     // Fallback to default scene cover
     return { url: activeScene.coverUrl, type: 'image' }
   }
@@ -42,6 +46,43 @@ export function MontageMonitor() {
   const media = getMontageMedia()
 
   // Dragging event handlers
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!dragRef.current.isDragging) return
+      const dx = e.clientX - dragRef.current.startX
+      const dy = e.clientY - dragRef.current.startY
+      setPosition({
+        x: Math.max(0, Math.min(window.innerWidth - size.width, dragRef.current.startPos.x + dx)),
+        y: Math.max(0, Math.min(window.innerHeight - size.height, dragRef.current.startPos.y + dy)),
+      })
+    },
+    [size.width, size.height]
+  )
+
+  // A single AbortController per drag removes both listeners together via
+  // one .abort() call, instead of pairing addEventListener/removeEventListener
+  // by function identity (which breaks easily once handlers are memoized).
+  const stopDragging = useCallback(() => {
+    dragRef.current.isDragging = false
+    dragAbortRef.current?.abort()
+    dragAbortRef.current = null
+  }, [])
+
+  // This component is always mounted (App.tsx renders it unconditionally;
+  // `showMontageMonitor` only toggles it between rendering its window and
+  // returning null), so closing it mid-drag doesn't unmount it — but the
+  // drag listeners still need to come off, otherwise they keep calling
+  // setPosition on a component that's no longer showing anything. Also
+  // clean up on a genuine unmount, in case rendering ever becomes
+  // conditional (e.g. behind a portal) later.
+  useEffect(() => {
+    if (!showMontageMonitor) stopDragging()
+  }, [showMontageMonitor, stopDragging])
+
+  useEffect(() => {
+    return () => stopDragging()
+  }, [stopDragging])
+
   const handleMouseDown = (e: React.MouseEvent) => {
     // Don't drag if clicking buttons
     if ((e.target as HTMLElement).closest('button')) return
@@ -51,24 +92,10 @@ export function MontageMonitor() {
       startY: e.clientY,
       startPos: { ...position },
     }
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-  }
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!dragRef.current.isDragging) return
-    const dx = e.clientX - dragRef.current.startX
-    const dy = e.clientY - dragRef.current.startY
-    setPosition({
-      x: Math.max(0, Math.min(window.innerWidth - size.width, dragRef.current.startPos.x + dx)),
-      y: Math.max(0, Math.min(window.innerHeight - size.height, dragRef.current.startPos.y + dy)),
-    })
-  }
-
-  const handleMouseUp = () => {
-    dragRef.current.isDragging = false
-    window.removeEventListener('mousemove', handleMouseMove)
-    window.removeEventListener('mouseup', handleMouseUp)
+    const controller = new AbortController()
+    dragAbortRef.current = controller
+    window.addEventListener('mousemove', handleMouseMove, { signal: controller.signal })
+    window.addEventListener('mouseup', stopDragging, { signal: controller.signal })
   }
 
   // Toggle fullscreen on the monitor element itself

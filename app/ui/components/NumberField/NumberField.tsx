@@ -10,13 +10,15 @@ export function NumberField({
   disabled,
 }: {
   label: string
-  value: number
+  value?: number | null
   min?: number
   max?: number
   step?: number
   onChange: (value: number) => void
   disabled?: boolean
 }) {
+  // legacy graphs may miss the param entirely — never crash on undefined
+  const safe = value ?? 0
   return (
     <div className={styles.fld}>
       <span>{label}</span>
@@ -25,7 +27,7 @@ export function NumberField({
         min={min}
         max={max}
         step={step}
-        value={value}
+        value={safe}
         disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
       />

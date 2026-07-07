@@ -1112,9 +1112,9 @@ export function Timeline() {
           <button className={styles.tbBtn} onClick={() => cycleSpeed(false)} title="Замедлить">
             <i className="ti ti-chevron-left" />
           </button>
-          <button className={styles.tbBtn} onClick={() => cycleSpeed(true)} title="Скорость">
-            <span>{playSpeed.toFixed(1)}x</span>
-          </button>
+          <span className={styles.tbBtn} title="Текущая скорость воспроизведения">
+            {playSpeed.toFixed(1)}x
+          </span>
           <button className={styles.tbBtn} onClick={() => cycleSpeed(true)} title="Ускорить">
             <i className="ti ti-chevron-right" />
           </button>

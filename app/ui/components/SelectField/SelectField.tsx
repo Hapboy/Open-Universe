@@ -15,16 +15,18 @@ export function SelectField({
   title,
 }: {
   label: string
-  value: string
+  value?: string | null
   onChange: (value: string) => void
   options: readonly SelectOption[]
   disabled?: boolean
   title?: string
 }) {
+  // legacy graphs may miss the param entirely — never crash on undefined
+  const safe = value ?? ''
   return (
     <div className={styles.fld} title={title}>
       <span>{label}</span>
-      <select disabled={disabled} value={value} onChange={(e) => onChange(e.target.value)}>
+      <select disabled={disabled} value={safe} onChange={(e) => onChange(e.target.value)}>
         {options.map(normalize).map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

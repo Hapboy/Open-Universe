@@ -12,12 +12,14 @@ export function RangeField({
   onChange,
 }: {
   label: string
-  value: number
+  value?: number | null
   min: number
   max: number
   step?: number
   onChange: (value: number) => void
 }) {
+  // legacy graphs may miss the param entirely — never crash on undefined
+  const safe = value ?? min
   return (
     <div className={styles.fld}>
       <span>{label}</span>
@@ -26,7 +28,7 @@ export function RangeField({
         min={min}
         max={max}
         step={step}
-        value={value}
+        value={safe}
         onChange={(e) => onChange(Number(e.target.value))}
       />
     </div>
