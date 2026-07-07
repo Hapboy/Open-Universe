@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { ENTITY_PRESET_SEEDS } from '../../data/presets.ts'
 import type { EntityPresets } from '../../types.ts'
 import { useToastContext } from './ToastContext.tsx'
+import { readJSON, writeJSON } from '../../core/browserStorage.ts'
 
 const LIBRARY_STORAGE_KEY = 'hv_preset_library'
 const LEGACY_GRAPH_STORAGE_KEY = 'hv_graph'
@@ -12,30 +13,23 @@ type PresetLibrary = Record<string, EntityPresets>
 // `params._presets`) before presets became a shared library, so upgrading
 // doesn't silently drop anything a user already created.
 function recoverLegacyPresets(): PresetLibrary {
-  try {
-    const raw = localStorage.getItem(LEGACY_GRAPH_STORAGE_KEY)
-    if (!raw) return {}
-    const nodes = JSON.parse(raw)?.nodes ?? []
-    const recovered: PresetLibrary = {}
-    for (const n of nodes) {
-      const entityType = n?.data?.nodeType
-      const legacyPresets = n?.data?.params?._presets
-      if (!entityType || !legacyPresets || typeof legacyPresets !== 'object') continue
-      recovered[entityType] = { ...(recovered[entityType] ?? {}), ...legacyPresets }
+  const parsed = readJSON<{ nodes?: unknown[] }>(LEGACY_GRAPH_STORAGE_KEY, {})
+  const nodes = parsed.nodes ?? []
+  const recovered: PresetLibrary = {}
+  for (const n of nodes as { data?: { nodeType?: string; params?: { _presets?: unknown } } }[]) {
+    const entityType = n?.data?.nodeType
+    const legacyPresets = n?.data?.params?._presets
+    if (!entityType || !legacyPresets || typeof legacyPresets !== 'object') continue
+    recovered[entityType] = {
+      ...(recovered[entityType] ?? {}),
+      ...(legacyPresets as EntityPresets),
     }
-    return recovered
-  } catch {
-    return {}
   }
+  return recovered
 }
 
 function loadStoredLibrary(): PresetLibrary {
-  let stored: PresetLibrary
-  try {
-    stored = JSON.parse(localStorage.getItem(LIBRARY_STORAGE_KEY) || '{}')
-  } catch {
-    stored = {}
-  }
+  const stored = readJSON<PresetLibrary>(LIBRARY_STORAGE_KEY, {})
   const seeds = JSON.parse(JSON.stringify(ENTITY_PRESET_SEEDS)) as PresetLibrary
   const legacy = recoverLegacyPresets()
   const merged: PresetLibrary = {}
@@ -69,11 +63,9 @@ export function PresetLibraryProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      try {
-        localStorage.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(library))
-      } catch {
+      writeJSON(LIBRARY_STORAGE_KEY, library, () =>
         showToast('Не удалось сохранить пресеты локально (превышен лимит хранилища)')
-      }
+      )
     }, 400)
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current)

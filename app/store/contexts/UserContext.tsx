@@ -1,5 +1,8 @@
 import { createContext, useCallback, useContext, useState } from 'react'
 import type { CurrentUser, TeamMember } from '../../types.ts'
+import { readJSON, writeJSON } from '../../core/browserStorage.ts'
+
+const CURRENT_USER_KEY = 'hv_current_user'
 
 const INITIAL_TEAM: TeamMember[] = [
   { name: 'Арам', charName: 'Аракс', side: 'moct', role: 'Разработчик', isMe: false },
@@ -17,12 +20,12 @@ const Ctx = createContext<UserCtx>(null!)
 export const useUserContext = () => useContext(Ctx)
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUserBase] = useState<CurrentUser | null>(
-    JSON.parse(localStorage.getItem('hv_current_user') || 'null')
+  const [currentUser, setCurrentUserBase] = useState<CurrentUser | null>(() =>
+    readJSON<CurrentUser | null>(CURRENT_USER_KEY, null)
   )
 
   const setCurrentUser = useCallback((u: CurrentUser) => {
-    localStorage.setItem('hv_current_user', JSON.stringify(u))
+    writeJSON(CURRENT_USER_KEY, u)
     setCurrentUserBase(u)
   }, [])
 

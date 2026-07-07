@@ -16,45 +16,34 @@ import {
 import { NODE_TEMPLATES } from '../../data/nodes.ts'
 import type { CanonMode, NodeParams, NodeRef, Port } from '../../types.ts'
 import { useToastContext } from './ToastContext.tsx'
+import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from '../../core/browserStorage.ts'
 
 const SCENE_GRAPHS_KEY = 'hv_scene_graphs'
 const ACTIVE_SCENE_KEY = 'hv_active_scene_id'
+const NARRATIVE_SETTINGS_KEY = 'hv_narrative_settings'
 
-function loadStoredSceneGraphs(): Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }> {
-  try {
-    const raw = localStorage.getItem(SCENE_GRAPHS_KEY)
-    if (!raw) return {}
-    const parsed = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object') {
-      return {}
-    }
+type SceneGraphs = Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>
 
-    // Defensive check: if any graph has edges pointing to non-existent nodes,
-    // clear the localStorage so it heals automatically.
-    let isCorrupted = false
-    for (const key of Object.keys(parsed)) {
-      const graph = parsed[key]
-      if (graph?.nodes && graph?.edges) {
-        const nodeIds = new Set(graph.nodes.map((n) => n?.id).filter(Boolean))
-        for (const edge of graph.edges) {
-          if (!edge || !nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
-            isCorrupted = true
-            break
-          }
-        }
+// A stored scene graph is corrupted if any edge points at a node id that no
+// longer exists in that same scene's node list.
+function isValidSceneGraphs(value: unknown): value is SceneGraphs {
+  if (!value || typeof value !== 'object') return false
+  for (const key of Object.keys(value as Record<string, unknown>)) {
+    const graph = (value as Record<string, { nodes?: unknown; edges?: unknown }>)[key]
+    if (graph?.nodes && graph?.edges) {
+      const nodeIds = new Set((graph.nodes as { id?: string }[]).map((n) => n?.id).filter(Boolean))
+      for (const edge of graph.edges as { source?: string; target?: string }[]) {
+        if (!edge || !nodeIds.has(edge.source) || !nodeIds.has(edge.target)) return false
       }
-      if (isCorrupted) break
     }
-
-    if (isCorrupted) {
-      localStorage.removeItem(SCENE_GRAPHS_KEY)
-      return {}
-    }
-
-    return parsed
-  } catch {
-    return {}
   }
+  return true
+}
+
+function loadStoredSceneGraphs(): SceneGraphs {
+  return readJSON(SCENE_GRAPHS_KEY, {} as SceneGraphs, isValidSceneGraphs, () =>
+    removeKey(SCENE_GRAPHS_KEY)
+  )
 }
 
 function loadActiveSceneId(): string {
@@ -62,11 +51,11 @@ function loadActiveSceneId(): string {
     const params = new URLSearchParams(window.location.search)
     const sceneParam = params.get('scene')
     if (sceneParam) {
-      localStorage.setItem(ACTIVE_SCENE_KEY, sceneParam)
+      writeRaw(ACTIVE_SCENE_KEY, sceneParam)
       return sceneParam
     }
   }
-  return localStorage.getItem(ACTIVE_SCENE_KEY) || 'sc1'
+  return readRaw(ACTIVE_SCENE_KEY) || 'sc1'
 }
 
 // Params from the node template, deep-cloned, with overrides on top.
@@ -270,14 +259,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
   const [narrativeSettings, setNarrativeSettings] = useState<
     Record<string, SceneNarrativeSettings>
-  >(() => {
-    try {
-      const raw = localStorage.getItem('hv_narrative_settings')
-      return raw ? JSON.parse(raw) : {}
-    } catch {
-      return {}
-    }
-  })
+  >(() => readJSON(NARRATIVE_SETTINGS_KEY, {} as Record<string, SceneNarrativeSettings>))
 
   const updateNarrativeSettings = useCallback(
     (sceneId: string, patch: Partial<SceneNarrativeSettings>) => {
@@ -300,7 +282,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
             ...patch,
           },
         }
-        localStorage.setItem('hv_narrative_settings', JSON.stringify(updated))
+        writeJSON(NARRATIVE_SETTINGS_KEY, updated)
         return updated
       })
     },
@@ -327,12 +309,10 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
       const stored = loadStoredSceneGraphs()
       const updated = { ...stored, [activeSceneId]: { nodes, edges } }
       const nextGraph = updated[nextId] || createDefaultSceneGraph(nextId)
-      try {
-        localStorage.setItem(SCENE_GRAPHS_KEY, JSON.stringify(updated))
-      } catch {
+      writeJSON(SCENE_GRAPHS_KEY, updated, () =>
         showToast('Не удалось сохранить граф сцены (превышен лимит хранилища)')
-      }
-      localStorage.setItem(ACTIVE_SCENE_KEY, nextId)
+      )
+      writeRaw(ACTIVE_SCENE_KEY, nextId)
       setSceneGraphs(updated)
       setNodes(withTemplateDefaults(nextGraph.nodes))
       setEdges(nextGraph.edges)
@@ -373,18 +353,16 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current)
     graphSaveTimer.current = setTimeout(() => {
-      try {
-        setSceneGraphs((prevGraphs) => {
-          const updated = {
-            ...prevGraphs,
-            [activeSceneId]: { nodes, edges },
-          }
-          localStorage.setItem(SCENE_GRAPHS_KEY, JSON.stringify(updated))
-          return updated
-        })
-      } catch {
-        showToast('Не удалось сохранить граф локально (превышен лимит хранилища)')
-      }
+      setSceneGraphs((prevGraphs) => {
+        const updated = {
+          ...prevGraphs,
+          [activeSceneId]: { nodes, edges },
+        }
+        writeJSON(SCENE_GRAPHS_KEY, updated, () =>
+          showToast('Не удалось сохранить граф локально (превышен лимит хранилища)')
+        )
+        return updated
+      })
     }, 400)
     return () => {
       if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current)
