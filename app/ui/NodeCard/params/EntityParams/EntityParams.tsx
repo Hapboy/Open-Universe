@@ -448,7 +448,11 @@ export function CharacterParams({
   updateNodeParam,
   updateNodeParams,
 }: EP<CharacterNodeParams>) {
-  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
+  const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    node,
+    params,
+    updateNodeParams
+  )
   const photos = params.photos || []
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -563,6 +567,8 @@ export function CharacterParams({
           selected={params.selectedItem}
           onSelect={onSelect}
           onAdd={onAdd}
+          onUpdate={onUpdate}
+          hasUnsavedChanges={hasUnsavedChanges}
           addLabel="Добавить персонажа"
         />
       )}
@@ -778,7 +784,11 @@ export function LocationParams({
   updateNodeParam,
   updateNodeParams,
 }: EP<LocationNodeParams>) {
-  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
+  const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    node,
+    params,
+    updateNodeParams
+  )
 
   return (
     <>
@@ -788,6 +798,8 @@ export function LocationParams({
         selected={params.selectedItem}
         onSelect={onSelect}
         onAdd={onAdd}
+        onUpdate={onUpdate}
+        hasUnsavedChanges={hasUnsavedChanges}
         addLabel="Добавить локацию"
       />
       <SelectField
@@ -836,7 +848,11 @@ export function BuildingParams({
   updateNodeParam,
   updateNodeParams,
 }: EP<BuildingNodeParams>) {
-  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
+  const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    node,
+    params,
+    updateNodeParams
+  )
   return (
     <>
       <DatabaseSelect
@@ -845,6 +861,8 @@ export function BuildingParams({
         selected={params.selectedItem}
         onSelect={onSelect}
         onAdd={onAdd}
+        onUpdate={onUpdate}
+        hasUnsavedChanges={hasUnsavedChanges}
         addLabel="Добавить здание"
       />
       <NumberField
@@ -869,7 +887,11 @@ export function ClothingParams({
   updateNodeParam,
   updateNodeParams,
 }: EP<ClothingNodeParams>) {
-  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
+  const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    node,
+    params,
+    updateNodeParams
+  )
   return (
     <>
       <DatabaseSelect
@@ -878,6 +900,8 @@ export function ClothingParams({
         selected={params.selectedItem}
         onSelect={onSelect}
         onAdd={onAdd}
+        onUpdate={onUpdate}
+        hasUnsavedChanges={hasUnsavedChanges}
         addLabel="Добавить дизайнера"
       />
       <SelectField
@@ -904,7 +928,11 @@ export function ArtworkParams({
   updateNodeParam,
   updateNodeParams,
 }: EP<ArtworkNodeParams>) {
-  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
+  const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    node,
+    params,
+    updateNodeParams
+  )
   return (
     <>
       <DatabaseSelect
@@ -913,6 +941,8 @@ export function ArtworkParams({
         selected={params.selectedItem}
         onSelect={onSelect}
         onAdd={onAdd}
+        onUpdate={onUpdate}
+        hasUnsavedChanges={hasUnsavedChanges}
         addLabel="Добавить произведение"
       />
       <RangeField
@@ -937,7 +967,11 @@ export function FurnitureParams({
   updateNodeParam,
   updateNodeParams,
 }: EP<FurnitureNodeParams>) {
-  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
+  const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    node,
+    params,
+    updateNodeParams
+  )
   return (
     <>
       <DatabaseSelect
@@ -946,6 +980,8 @@ export function FurnitureParams({
         selected={params.selectedItem}
         onSelect={onSelect}
         onAdd={onAdd}
+        onUpdate={onUpdate}
+        hasUnsavedChanges={hasUnsavedChanges}
         addLabel="Добавить мебель"
       />
       <RangeField
@@ -970,7 +1006,11 @@ export function MusicParams({
   updateNodeParam,
   updateNodeParams,
 }: EP<MusicNodeParams>) {
-  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
+  const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    node,
+    params,
+    updateNodeParams
+  )
   return (
     <>
       <DatabaseSelect
@@ -979,6 +1019,8 @@ export function MusicParams({
         selected={params.selectedItem}
         onSelect={onSelect}
         onAdd={onAdd}
+        onUpdate={onUpdate}
+        hasUnsavedChanges={hasUnsavedChanges}
         addLabel="Добавить трек"
       />
       <SelectField
@@ -997,7 +1039,11 @@ export function ScriptParams({
   updateNodeParam,
   updateNodeParams,
 }: EP<ScriptNodeParams>) {
-  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
+  const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    node,
+    params,
+    updateNodeParams
+  )
   return (
     <>
       <DatabaseSelect
@@ -1006,6 +1052,8 @@ export function ScriptParams({
         selected={params.selectedItem}
         onSelect={onSelect}
         onAdd={onAdd}
+        onUpdate={onUpdate}
+        hasUnsavedChanges={hasUnsavedChanges}
         addLabel="Добавить сцену"
       />
       <SelectField
@@ -1024,7 +1072,11 @@ export function StoryboardParams({
   updateNodeParam,
   updateNodeParams,
 }: EP<StoryboardNodeParams>) {
-  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
+  const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    node,
+    params,
+    updateNodeParams
+  )
   return (
     <>
       <DatabaseSelect
@@ -1033,6 +1085,8 @@ export function StoryboardParams({
         selected={params.selectedItem}
         onSelect={onSelect}
         onAdd={onAdd}
+        onUpdate={onUpdate}
+        hasUnsavedChanges={hasUnsavedChanges}
         addLabel="Добавить версию"
       />
       <NumberField
@@ -1053,7 +1107,11 @@ export function TransportParams({
   updateNodeParam,
   updateNodeParams,
 }: EP<TransportNodeParams>) {
-  const { db, onSelect, onAdd } = usePresetDatabase(node, params, updateNodeParams)
+  const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    node,
+    params,
+    updateNodeParams
+  )
   return (
     <>
       <DatabaseSelect
@@ -1062,6 +1120,8 @@ export function TransportParams({
         selected={params.selectedItem}
         onSelect={onSelect}
         onAdd={onAdd}
+        onUpdate={onUpdate}
+        hasUnsavedChanges={hasUnsavedChanges}
         addLabel="Добавить транспорт"
       />
       <InFrameToggle

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import cn from 'classnames'
 import type { Edge } from '@xyflow/react'
 import type { NodeRef } from '../../../types.ts'
@@ -91,18 +91,17 @@ function buildPresetSnapshot(params: Record<string, unknown>) {
 // current params (everything but the bookkeeping keys above) as that entity's
 // preset.
 //
-// While a preset is selected, further edits to the node auto-save back into
-// that shared preset (debounced ~1s so slider drags don't write on every
-// tick) — see the effect below. This is write-only: it does NOT push the
-// update to other nodes that happen to have the same preset selected, since
-// each node only holds its own copy of the params, snapshotted at the moment
-// it was selected. A node picks up another node's edit only if the user
-// re-selects that preset on it (picking a different item then picking the
-// original back — a native <select> doesn't fire onChange for choosing its
-// already-selected value). Reloading the page doesn't help either, since a
-// node's params are restored as-is from storage, not rebuilt from the
-// library. Live cross-node sync is out of scope until there's a real
-// backend/multi-user story.
+// Updating an existing preset is explicit (`onUpdate`, wired to a small
+// button next to the dropdown), not automatic: editing a node's params never
+// silently rewrites the shared preset by itself — e.g. tweaking a character's
+// age on one scene's node shouldn't quietly change what every other scene
+// using that same preset sees the next time it's selected there. The user
+// has to choose to push the update. `hasUnsavedChanges` reflects whether the
+// node's current params have drifted from the stored preset, for that
+// button's enabled state. As before, updating a preset is write-only — it
+// does not push to other nodes that already have it selected; they only pick
+// up the change if the user re-selects that preset on them. Live cross-node
+// sync is out of scope until there's a real backend/multi-user story.
 export function usePresetDatabase(
   node: NodeRef,
   params: Record<string, unknown>,
@@ -114,6 +113,11 @@ export function usePresetDatabase(
   const db = Object.keys(presets)
   const selectedName = params.selectedItem as string | undefined
   const storedSnapshot = selectedName ? presets[selectedName] : undefined
+  const snapshot = buildPresetSnapshot(params)
+  const hasUnsavedChanges =
+    !!selectedName &&
+    !!storedSnapshot &&
+    JSON.stringify(snapshot) !== JSON.stringify(storedSnapshot)
 
   const onSelect = (name: string) => {
     updateNodeParams(node.id, { selectedItem: name, ...(presets[name] ?? {}) })
@@ -122,26 +126,16 @@ export function usePresetDatabase(
   const onAdd = (name: string) => {
     const existing = db.find((c) => c.toLowerCase() === name.toLowerCase())
     if (existing) return onSelect(existing)
-    addPreset(entityType, name, buildPresetSnapshot(params))
+    addPreset(entityType, name, snapshot)
     updateNodeParams(node.id, { selectedItem: name })
   }
 
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => {
-    if (saveTimer.current) clearTimeout(saveTimer.current)
-    if (!selectedName || !storedSnapshot) return
-    saveTimer.current = setTimeout(() => {
-      const snapshot = buildPresetSnapshot(params)
-      if (JSON.stringify(snapshot) !== JSON.stringify(storedSnapshot)) {
-        addPreset(entityType, selectedName, snapshot)
-      }
-    }, 1000)
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current)
-    }
-  }, [params, entityType, selectedName, storedSnapshot, addPreset])
+  const onUpdate = () => {
+    if (!selectedName) return
+    addPreset(entityType, selectedName, snapshot)
+  }
 
-  return { db, onSelect, onAdd }
+  return { db, onSelect, onAdd, onUpdate, hasUnsavedChanges }
 }
 
 // Dropdown over a name list with an inline "add new item" flow: pick from
@@ -153,6 +147,8 @@ export function DatabaseSelect({
   selected,
   onSelect,
   onAdd,
+  onUpdate,
+  hasUnsavedChanges,
   addLabel = 'Добавить',
 }: {
   label: string
@@ -160,6 +156,8 @@ export function DatabaseSelect({
   selected: string
   onSelect: (v: string) => void
   onAdd: (name: string) => void
+  onUpdate?: () => void
+  hasUnsavedChanges?: boolean
   addLabel?: string
 }) {
   const [adding, setAdding] = useState(false)
@@ -186,6 +184,21 @@ export function DatabaseSelect({
           </option>
         ))}
       </select>
+      {onUpdate && selected && (
+        <button
+          className={cn(styles.btn, hasUnsavedChanges && styles.pri)}
+          style={{ marginTop: 6 }}
+          disabled={!hasUnsavedChanges}
+          onClick={onUpdate}
+          title={
+            hasUnsavedChanges
+              ? 'Сохранить текущие значения в пресет'
+              : 'Нет изменений для сохранения в пресет'
+          }
+        >
+          <i className="ti ti-device-floppy" /> Обновить пресет
+        </button>
+      )}
       {adding ? (
         <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
           <input
