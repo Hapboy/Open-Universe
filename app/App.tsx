@@ -2,7 +2,6 @@ import { AppProviders } from './store/AppProviders.tsx'
 import { useGraphContext } from './store/contexts/GraphContext.tsx'
 import { Topbar } from './ui/Topbar/Topbar.tsx'
 import { NodeEditor } from './ui/NodeEditor/NodeEditor.tsx'
-import { Palette } from './ui/Palette/Palette.tsx'
 import { Timeline } from './ui/Timeline/Timeline.tsx'
 import { MontageMonitor } from './ui/MontageMonitor/MontageMonitor.tsx'
 import { WorldMap } from './ui/WorldMap/WorldMap.tsx'
@@ -15,7 +14,6 @@ function AppShell() {
     <div id="app" data-theme="dark">
       <Topbar />
       <div className={styles.body}>
-        <Palette />
         <main className={styles.stage}>
           <NodeEditor />
         </main>

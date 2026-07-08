@@ -14,6 +14,7 @@ export function TextField({
   placeholder,
   title,
   className,
+  autoFocus,
 }: {
   label?: string
   value?: string
@@ -24,6 +25,7 @@ export function TextField({
   placeholder?: string
   title?: string
   className?: string
+  autoFocus?: boolean
 }) {
   return (
     <div className={cn(styles.fld, className)} title={title}>
@@ -32,6 +34,7 @@ export function TextField({
         type="text"
         disabled={disabled}
         placeholder={placeholder}
+        autoFocus={autoFocus}
         {...(value !== undefined ? { value } : { defaultValue })}
         onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         onBlur={onBlur ? (e) => onBlur(e.target.value) : undefined}

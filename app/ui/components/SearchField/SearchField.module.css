@@ -23,6 +23,26 @@
   z-index: 1;
 }
 
+.flush .searchInput input[type='text'] {
+  padding: 12px 34px 12px 34px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.flush .searchInput input[type='text']:focus {
+  border-color: transparent;
+}
+
+.flush .searchIcon {
+  left: 12px;
+  font-size: 14px;
+}
+
+.flush .clearBtn {
+  right: 12px;
+}
+
 .clearBtn {
   position: absolute;
   right: 6px;

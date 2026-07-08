@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -13,6 +13,7 @@ import '@xyflow/react/dist/style.css'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
 import { useToastContext } from '../../store/contexts/ToastContext.tsx'
 import { NodeCard } from '../NodeCard/NodeCard.tsx'
+import { NodeBrowser } from '../NodeBrowser/NodeBrowser.tsx'
 import type { NodeParams } from '../../types.ts'
 import styles from './NodeEditor.module.css'
 
@@ -37,6 +38,11 @@ function NodeEditorCanvas() {
   const { screenToFlowPosition } = useReactFlow()
 
   const copiedIdRef = useRef<string | null>(null)
+
+  const [browserAt, setBrowserAt] = useState<{
+    screen: { x: number; y: number }
+    flow: { x: number; y: number }
+  } | null>(null)
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -69,27 +75,29 @@ function NodeEditorCanvas() {
     selectNode(null)
   }, [selectNode])
 
-  const onDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }, [])
+  const onCanvasDoubleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!(e.target as HTMLElement).classList.contains('react-flow__pane')) return
 
-  const onDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault()
-      const type = e.dataTransfer.getData('node-template-type')
-      if (!type) return
+      const flow = screenToFlowPosition({ x: e.clientX, y: e.clientY })
+      setBrowserAt({ screen: { x: e.clientX, y: e.clientY }, flow })
+    },
+    [screenToFlowPosition]
+  )
 
-      const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
-      const node = createNode(type, position.x, position.y)
+  const onBrowserSelect = useCallback(
+    (type: string) => {
+      if (!browserAt) return
+      const node = createNode(type, browserAt.flow.x, browserAt.flow.y)
       if (node) {
         selectNode(node.id)
         if (type === 'pinterest_board') {
           showToast('Pinterest: добавляем доску...')
         }
       }
+      setBrowserAt(null)
     },
-    [screenToFlowPosition, createNode, selectNode, showToast]
+    [browserAt, createNode, selectNode, showToast]
   )
 
   const styledNodes = useMemo(
@@ -102,6 +110,7 @@ function NodeEditorCanvas() {
       className={styles.canvasWrap}
       id="canvasWrap"
       style={{ position: 'relative', width: '100%', height: '100%' }}
+      onDoubleClick={onCanvasDoubleClick}
     >
       <ReactFlow
         nodes={styledNodes}
@@ -112,11 +121,10 @@ function NodeEditorCanvas() {
         isValidConnection={isValidConnection}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
         nodeTypes={nodeTypes}
         fitView
         deleteKeyCode="Delete"
+        zoomOnDoubleClick={false}
         proOptions={{ hideAttribution: true }}
       >
         <Background gap={20} size={1} color="var(--color-border)" />
@@ -132,9 +140,16 @@ function NodeEditorCanvas() {
           />
         )}
       </ReactFlow>
+      {browserAt && (
+        <NodeBrowser
+          screenPos={browserAt.screen}
+          onSelect={onBrowserSelect}
+          onClose={() => setBrowserAt(null)}
+        />
+      )}
       <div className={styles.hint} id="hint" style={{ pointerEvents: 'none' }}>
-        Перетащи ноду из палитры слева. Соедини выход одной ноды со совместимым входом другой —
-        тянем от правого порта к левому.
+        Двойной клик по пустому месту — открыть поиск нод. Соедини выход одной ноды со совместимым
+        входом другой — тянем от правого порта к левому.
       </div>
     </div>
   )
