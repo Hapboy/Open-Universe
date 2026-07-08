@@ -212,6 +212,9 @@ interface GraphCtx {
   showMontageMonitor: boolean
   setShowMontageMonitor: (v: boolean) => void
 
+  showWorldMap: boolean
+  setShowWorldMap: (v: boolean) => void
+
   totalDuration: number
   setTotalDuration: (seconds: number) => void
 }
@@ -233,6 +236,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [showMiniMap, setShowMiniMap] = useState<boolean>(true)
   const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false)
+  const [showWorldMap, setShowWorldMap] = useState<boolean>(false)
 
   const [totalDuration, setTotalDurationState] = useState<number>(loadStoredTotalDuration)
   const setTotalDuration = useCallback(
@@ -599,6 +603,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     createScene,
     showMontageMonitor,
     setShowMontageMonitor,
+    showWorldMap,
+    setShowWorldMap,
     totalDuration,
     setTotalDuration,
   }

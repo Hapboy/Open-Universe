@@ -5,6 +5,7 @@ import { NodeEditor } from './ui/NodeEditor/NodeEditor.tsx'
 import { Palette } from './ui/Palette/Palette.tsx'
 import { Timeline } from './ui/Timeline/Timeline.tsx'
 import { MontageMonitor } from './ui/MontageMonitor/MontageMonitor.tsx'
+import { WorldMap } from './ui/WorldMap/WorldMap.tsx'
 import { Modals } from './ui/Modals/Modals.tsx'
 import { Toast } from './ui/Toast/Toast.tsx'
 import styles from './App.module.css'
@@ -24,6 +25,7 @@ function AppShell() {
         <StatusBar />
       </footer>
       <MontageMonitor />
+      <WorldMap />
       <Modals />
       <Toast />
     </div>

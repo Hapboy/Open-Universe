@@ -365,6 +365,19 @@ export function LocationParams({
         hasUnsavedChanges={hasUnsavedChanges}
         addLabel="Добавить локацию"
       />
+      <CoordinateField
+        label="Координаты"
+        value={params.coordinates}
+        onChange={(v) => updateNodeParam(node.id, 'coordinates', v)}
+      />
+      <NumberField
+        label={`Радиус зоны (${params.radiusKm ?? 0} км)`}
+        min={0.1}
+        max={500}
+        step={0.5}
+        value={params.radiusKm}
+        onChange={(v) => updateNodeParam(node.id, 'radiusKm', v)}
+      />
       <SelectField
         label="Погода"
         value={params.weather}

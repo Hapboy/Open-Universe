@@ -127,6 +127,8 @@ export interface LocationNodeParams extends Record<string, unknown> {
   timeOfDay: string
   interiorExterior: 'Интерьер' | 'Экстерьер'
   damageLevel: number
+  coordinates: WGS84Coordinates
+  radiusKm: number
 }
 
 export interface BuildingNodeParams extends Record<string, unknown> {

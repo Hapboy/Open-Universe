@@ -1,0 +1,67 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
+}
+
+/* visibility (not display:none) so the container never collapses to 0x0 while
+   hidden — globe.gl's internal ResizeObserver otherwise resets the camera
+   framing when the panel is reopened. */
+.hidden {
+  visibility: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.x {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: auto;
+}
+
+.globeContainer {
+  flex: 1;
+  min-height: 0;
+}
+
+.characterMarker {
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.pulseRing {
+  transform-origin: 16px 16px;
+  animation: hvPulse 2s ease-out infinite;
+}
+
+@keyframes hvPulse {
+  0% {
+    r: 5;
+    opacity: 0.9;
+  }
+  100% {
+    r: 14;
+    opacity: 0;
+  }
+}

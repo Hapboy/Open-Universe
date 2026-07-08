@@ -277,6 +277,8 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       timeOfDay: 'рассвет',
       interiorExterior: 'Экстерьер',
       damageLevel: 0,
+      coordinates: { lat: null, lon: null },
+      radiusKm: 5,
     },
   },
 
