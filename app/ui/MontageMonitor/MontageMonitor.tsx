@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
-import { DEFAULT_SCENES } from '../../data/scenes.ts'
 import styles from './MontageMonitor.module.css'
 
 function readResolvedUrl(
@@ -13,7 +12,7 @@ function readResolvedUrl(
 }
 
 export function MontageMonitor() {
-  const { nodes, resolved, activeSceneId, showMontageMonitor, setShowMontageMonitor } =
+  const { nodes, resolved, activeSceneId, scenes, showMontageMonitor, setShowMontageMonitor } =
     useGraphContext()
 
   const [position, setPosition] = useState({ x: window.innerWidth - 460, y: 80 })
@@ -23,27 +22,7 @@ export function MontageMonitor() {
 
   const monitorRef = useRef<HTMLDivElement>(null)
 
-  const activeScene = DEFAULT_SCENES.find((s) => s.id === activeSceneId) || DEFAULT_SCENES[0]
-
-  // Find generated image/video outputs from nodes in the active graph
-  const getMontageMedia = () => {
-    // Look for any gemini image/video node resolved outputs
-    const imagenNode = nodes.find(
-      (n) => n.data.nodeType === 'gemini_imagen' || n.data.nodeType === 'gemini_nanobanana'
-    )
-    const veoNode = nodes.find((n) => n.data.nodeType === 'gemini_veo')
-
-    const veoUrl = veoNode ? readResolvedUrl(resolved, veoNode.data.outputs[0]?.id) : null
-    if (veoUrl) return { url: veoUrl, type: 'video' }
-
-    const imagenUrl = imagenNode ? readResolvedUrl(resolved, imagenNode.data.outputs[0]?.id) : null
-    if (imagenUrl) return { url: imagenUrl, type: 'image' }
-
-    // Fallback to default scene cover
-    return { url: activeScene.coverUrl, type: 'image' }
-  }
-
-  const media = getMontageMedia()
+  const activeScene = scenes.find((s) => s.id === activeSceneId)
 
   // Dragging event handlers
   const handleMouseMove = useCallback(
@@ -108,7 +87,21 @@ export function MontageMonitor() {
     }
   }
 
-  if (!showMontageMonitor) return null
+  if (!showMontageMonitor || !activeScene) return null
+
+  // Find generated image/video outputs from nodes in the active graph,
+  // falling back to the scene's own cover image.
+  const imagenNode = nodes.find(
+    (n) => n.data.nodeType === 'gemini_imagen' || n.data.nodeType === 'gemini_nanobanana'
+  )
+  const veoNode = nodes.find((n) => n.data.nodeType === 'gemini_veo')
+  const veoUrl = veoNode ? readResolvedUrl(resolved, veoNode.data.outputs[0]?.id) : null
+  const imagenUrl = imagenNode ? readResolvedUrl(resolved, imagenNode.data.outputs[0]?.id) : null
+  const media = veoUrl
+    ? { url: veoUrl, type: 'video' as const }
+    : imagenUrl
+      ? { url: imagenUrl, type: 'image' as const }
+      : { url: activeScene.coverUrl, type: 'image' as const }
 
   return (
     <div
@@ -141,13 +134,6 @@ export function MontageMonitor() {
           <video src={media.url} className={styles.mediaOutput} autoPlay loop muted playsInline />
         ) : (
           <img src={media.url} alt="Scene Frame" className={styles.mediaOutput} />
-        )}
-
-        {/* Subtitle Overlay */}
-        {activeScene.sub && (
-          <div className={styles.subtitleOverlay}>
-            <p className={styles.subtitleText}>{activeScene.sub}</p>
-          </div>
         )}
 
         {/* Tech Details Badge Overlay */}

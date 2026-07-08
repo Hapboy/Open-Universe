@@ -1,13 +1,13 @@
 import { useRef } from 'react'
 import cn from 'classnames'
 import { useGraphContext } from '../../../store/contexts/GraphContext.tsx'
-import type { TimelineScene } from '../../../data/scenes.ts'
-import { formatTime, getScenePosition } from '../timelineUtils.ts'
+import type { TimelineScene } from '../../../types.ts'
+import { computeRulerTicks, formatTime, getScenePosition } from '../timelineUtils.ts'
 import styles from '../Timeline.module.css'
 
 interface SceneTrackViewProps {
   scenes: TimelineScene[]
-  activeSceneId: string
+  activeSceneId: string | null
   currentTime: number
   setCurrentTime: (t: number) => void
   collapseEmptySpace: boolean
@@ -78,19 +78,16 @@ export function SceneTrackView({
 
   const scrubberPercent = (currentTime / maxTime) * 100
 
-  const renderRulerTicks = () => {
-    const ticksCount = 10
-    const ticks = []
-    for (let i = 0; i <= ticksCount; i++) {
-      const timeVal = (i / ticksCount) * maxTime
-      ticks.push(
-        <div key={i} className={styles.rulerTick} style={{ left: `${(i / ticksCount) * 100}%` }}>
-          <span className={styles.tickLabel}>{formatTime(timeVal)}</span>
-        </div>
-      )
-    }
-    return ticks
-  }
+  const renderRulerTicks = () =>
+    computeRulerTicks(maxTime).map((tick) => (
+      <div
+        key={tick.time}
+        className={tick.isMajor ? styles.rulerTick : styles.rulerTickMinor}
+        style={{ left: `${(tick.time / maxTime) * 100}%` }}
+      >
+        {tick.isMajor && <span className={styles.tickLabel}>{formatTime(tick.time)}</span>}
+      </div>
+    ))
 
   const renderTrack = (trackScenes: TimelineScene[]) => (
     <div className={styles.trackRow}>

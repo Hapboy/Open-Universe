@@ -45,11 +45,11 @@ UGC-платформа («кинематограф-геймдизайн 2.0»).
 В [`prototypes/`](../prototypes/) — три автономных HTML-файла
 (без сборки, открываются двойным кликом; иконки — Tabler с CDN, тема светлая/тёмная):
 
-| Файл | Что демонстрирует |
-|---|---|
-| `prototype-1-node-editor.html` | Нодовый редактор: граф объектов, инспектор узла (выбор из базы + параметры), переключатель Канон/Мультивселенная, очередь pull-request на канонизацию, таймлайн фильма. |
+| Файл                                | Что демонстрирует                                                                                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `prototype-1-node-editor.html`      | Нодовый редактор: граф объектов, инспектор узла (выбор из базы + параметры), очередь pull-request на канонизацию, таймлайн фильма.                     |
 | `prototype-2-film-game-player.html` | Плеер «фильм ↔ игра»: живые регуляторы (темп, камера classic/top/side/one-take, палитра, диалоги) и вход в игру с любого таймкода с возвратом в фильм. |
-| `index.html` | Сшитый экран (актуальный): граф слева → плеер справа, изменение любого узла мгновенно перерисовывает кадр. |
+| `index.html`                        | Сшитый экран (актуальный): граф слева → плеер справа, изменение любого узла мгновенно перерисовывает кадр.                                             |
 
 ---
 
@@ -84,7 +84,7 @@ OpenAI (рассуждение + модерация + embeddings) → Gemini Nan
 
 ### Архитектура
 
-Узлы графа **не знают о вендорах**. Нода объявляет *capability*, между ней и
+Узлы графа **не знают о вендорах**. Нода объявляет _capability_, между ней и
 провайдером — наш слой:
 
 ```
@@ -96,6 +96,7 @@ OpenAI (рассуждение + модерация + embeddings) → Gemini Nan
 ```
 
 Опоры:
+
 1. **Capability-абстракция + адаптеры** — интерфейсы `LLMReason`, `ImageGen`,
    `ImageEdit`, `VideoGen`, `VideoEdit`, `PerfTransfer`, `TTS`, `STT`, `Embed`,
    `Moderate`. Смена модели = новый адаптер, граф не трогаем.
@@ -147,27 +148,27 @@ OpenAI (рассуждение + модерация + embeddings) → Gemini Nan
 
 ### B. Внешние (обёртки над сторонними API)
 
-| Нода (capability) | Что делает | Провайдер: основной → фоллбэк |
-|---|---|---|
-| `LLMReason` | Сценарий, JSON-спека сцены, оркестрация | OpenAI GPT-5 → Gemini |
-| `Embed` | Векторизация лора/архивов (RAG) | OpenAI text-embedding-3 → Gemini |
-| `Moderate` | Гейт UGC перед каноном | OpenAI Moderation + Gemini safety |
-| `ImageGen` | Генерация кадра/ассета | Higgsfield Soul / Imagen 4 / gpt-image-1 |
-| `ImageEdit` (identity-safe) | Сменить одежду/деталь, лицо то же | Gemini Nano Banana → gpt-image-1 → Recast |
-| `Inpaint/Outpaint/Matte` | Маски, расширение кадра, вырез фона | gpt-image-1 / Imagen / Nano Banana |
-| `CharacterReference` | Пин идентичности между шотами | Runway Gen-4 References / Soul ID |
-| `Text2Video` | Видео из текста | Seedance → Veo 3 → Sora 2 → Runway Gen-4 |
-| `Image2Video` | Кадр(ы)→движение, first/last-frame | Seedance → Runway Gen-4 → Veo |
-| `CameraMotionVideo` | Кинопресеты движения камеры | Higgsfield (профильная фича) |
-| `VideoEdit/Re-angle/Relight` | Сменить ракурс/свет/погоду на видео | Runway Aleph |
-| `PerformanceTransfer` | Игра/мимика актёра → персонаж | Runway Act-One |
-| `TalkingAvatar/Lipsync` | Говорящий персонаж по аудио+кадру | Higgsfield Speak → Act-One |
-| `VideoWithAudio` | Видео с нативным звуком | Veo 3 / Sora 2 |
-| `TTS` | Озвучка диалогов | OpenAI TTS → Gemini TTS |
-| `STT/Subtitles` | Транскрипт, субтитры | OpenAI Whisper → Gemini |
-| `Music` | Саундтрек/скор | Google Lyria / ElevenLabs ⚠️ |
-| `SFX/Foley` | Шумы, звуковой дизайн | ElevenLabs ⚠️ |
-| `Upscale/Interpolate/Restore` | Апскейл, доводка fps/качества | Topaz / model-native ⚠️ |
+| Нода (capability)             | Что делает                              | Провайдер: основной → фоллбэк             |
+| ----------------------------- | --------------------------------------- | ----------------------------------------- |
+| `LLMReason`                   | Сценарий, JSON-спека сцены, оркестрация | OpenAI GPT-5 → Gemini                     |
+| `Embed`                       | Векторизация лора/архивов (RAG)         | OpenAI text-embedding-3 → Gemini          |
+| `Moderate`                    | Гейт UGC перед каноном                  | OpenAI Moderation + Gemini safety         |
+| `ImageGen`                    | Генерация кадра/ассета                  | Higgsfield Soul / Imagen 4 / gpt-image-1  |
+| `ImageEdit` (identity-safe)   | Сменить одежду/деталь, лицо то же       | Gemini Nano Banana → gpt-image-1 → Recast |
+| `Inpaint/Outpaint/Matte`      | Маски, расширение кадра, вырез фона     | gpt-image-1 / Imagen / Nano Banana        |
+| `CharacterReference`          | Пин идентичности между шотами           | Runway Gen-4 References / Soul ID         |
+| `Text2Video`                  | Видео из текста                         | Seedance → Veo 3 → Sora 2 → Runway Gen-4  |
+| `Image2Video`                 | Кадр(ы)→движение, first/last-frame      | Seedance → Runway Gen-4 → Veo             |
+| `CameraMotionVideo`           | Кинопресеты движения камеры             | Higgsfield (профильная фича)              |
+| `VideoEdit/Re-angle/Relight`  | Сменить ракурс/свет/погоду на видео     | Runway Aleph                              |
+| `PerformanceTransfer`         | Игра/мимика актёра → персонаж           | Runway Act-One                            |
+| `TalkingAvatar/Lipsync`       | Говорящий персонаж по аудио+кадру       | Higgsfield Speak → Act-One                |
+| `VideoWithAudio`              | Видео с нативным звуком                 | Veo 3 / Sora 2                            |
+| `TTS`                         | Озвучка диалогов                        | OpenAI TTS → Gemini TTS                   |
+| `STT/Subtitles`               | Транскрипт, субтитры                    | OpenAI Whisper → Gemini                   |
+| `Music`                       | Саундтрек/скор                          | Google Lyria / ElevenLabs ⚠️              |
+| `SFX/Foley`                   | Шумы, звуковой дизайн                   | ElevenLabs ⚠️                             |
+| `Upscale/Interpolate/Restore` | Апскейл, доводка fps/качества           | Topaz / model-native ⚠️                   |
 
 ### C. Гибридные (наша логика + внешний вызов под капотом)
 

@@ -40,6 +40,7 @@ export function NodeParamsPanel({
   node,
   edges,
   resolved,
+  scenes,
   updateNodeParam,
   updateNodeParams,
   loadPinterestBoards,
@@ -102,6 +103,7 @@ export function NodeParamsPanel({
           params={params}
           edges={edges}
           resolved={resolved}
+          scenes={scenes}
           updateNodeParam={updateNodeParam}
           executeGraph={executeGraph}
         />

@@ -25,6 +25,7 @@ export const NodeCard = memo(function NodeCard({
   const {
     edges,
     resolved,
+    scenes,
     updateNodeParam,
     updateNodeParams,
     loadPinterestBoards,
@@ -141,6 +142,7 @@ export const NodeCard = memo(function NodeCard({
           node={{ id, data }}
           edges={edges}
           resolved={resolved}
+          scenes={scenes}
           updateNodeParam={updateNodeParam}
           updateNodeParams={updateNodeParams}
           loadPinterestBoards={loadPinterestBoards}

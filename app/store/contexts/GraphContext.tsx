@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import {
   addEdge,
   applyEdgeChanges,
@@ -14,13 +14,12 @@ import {
   type OnNodesChange,
 } from '@xyflow/react'
 import { NODE_TEMPLATES } from '../../data/nodes.ts'
-import type { CanonMode, NodeParams, NodeRef, Port } from '../../types.ts'
+import type { NodeParams, NodeRef, Port, TimelineScene } from '../../types.ts'
 import { useToastContext } from './ToastContext.tsx'
 import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from '../../core/browserStorage.ts'
 
 const SCENE_GRAPHS_KEY = 'hv_scene_graphs'
 const ACTIVE_SCENE_KEY = 'hv_active_scene_id'
-const LEGACY_GRAPH_KEY = 'hv_graph'
 const TIMELINE_DURATION_KEY = 'hv_timeline_duration'
 const DEFAULT_TOTAL_DURATION = 872 // 14:32 in seconds
 
@@ -66,19 +65,6 @@ function loadActiveSceneId(): string {
   return readRaw(ACTIVE_SCENE_KEY) || 'sc1'
 }
 
-// One-time recovery of a graph saved before scenes existed (the old single
-// `hv_graph`), so upgrading to per-scene storage doesn't silently drop what
-// a user already built. Never deletes `hv_graph` itself — PresetLibraryContext
-// still reads it for its own legacy-preset recovery.
-function recoverLegacyGraph(): { nodes: Node<NodeParams>[]; edges: Edge[] } | null {
-  const parsed = readJSON<{ nodes?: unknown[]; edges?: unknown[] }>(LEGACY_GRAPH_KEY, {})
-  if (!Array.isArray(parsed.nodes) || parsed.nodes.length === 0) return null
-  return {
-    nodes: parsed.nodes as Node<NodeParams>[],
-    edges: Array.isArray(parsed.edges) ? (parsed.edges as Edge[]) : [],
-  }
-}
-
 // Params from the node template, deep-cloned, with overrides on top.
 function templateParams(type: string, overrides: Record<string, unknown> = {}) {
   if (!type) return overrides || {}
@@ -103,59 +89,19 @@ function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
   }))
 }
 
-function createDefaultSceneGraph(sceneId: string): { nodes: Node<NodeParams>[]; edges: Edge[] } {
-  const charId = `node_char_${sceneId}`
-  const locId = `node_loc_${sceneId}`
+// A brand-new scene's graph is just its output node — no character/location
+// starter nodes. Used both for "Add Scene" and the very-first-run bootstrap.
+function createEmptySceneGraph(
+  sceneId: string,
+  overrides: { title?: string; start?: number } = {}
+): { nodes: Node<NodeParams>[]; edges: Edge[] } {
   const outId = `node_out_${sceneId}`
-
-  const defaultLoc =
-    sceneId === 'sc1'
-      ? 'Севан'
-      : sceneId === 'sc2'
-        ? 'Дорога'
-        : sceneId === 'sc3'
-          ? 'Вернисаж'
-          : sceneId.includes('sc4')
-            ? 'Старый Конд'
-            : 'Мастерская'
 
   const nodes: Node<NodeParams>[] = [
     {
-      id: charId,
-      type: 'custom',
-      position: { x: 50, y: 80 },
-      data: {
-        nodeType: 'character',
-        label: 'Персонаж',
-        icon: 'ti-user',
-        color: 'var(--color-node-higgsfield)',
-        inputs: [{ id: `${charId}_in_0`, name: 'Clothing', type: 'any' }],
-        outputs: [{ id: `${charId}_out_0`, name: 'Character Out', type: 'any' }],
-        params: templateParams('character', { selectedItem: 'Ара Гехецик' }),
-      },
-    },
-    {
-      id: locId,
-      type: 'custom',
-      position: { x: 50, y: 260 },
-      data: {
-        nodeType: 'location',
-        label: 'Локация',
-        icon: 'ti-map-pin',
-        color: 'var(--color-node-scene)',
-        inputs: [],
-        outputs: [{ id: `${locId}_out_0`, name: 'Location Out', type: 'any' }],
-        params: templateParams('location', {
-          selectedItem: defaultLoc,
-          weather: 'солнце',
-          timeOfDay: 'день',
-        }),
-      },
-    },
-    {
       id: outId,
       type: 'custom',
-      position: { x: 420, y: 180 },
+      position: { x: 200, y: 150 },
       data: {
         nodeType: 'output_scene',
         label: 'Выходная Сцена',
@@ -166,29 +112,35 @@ function createDefaultSceneGraph(sceneId: string): { nodes: Node<NodeParams>[]; 
           { id: `${outId}_in_1`, name: 'Motion Render', type: 'Video' },
         ],
         outputs: [],
-        params: { renderingEngine: 'Hayverse Realtime Veo 3' },
+        params: templateParams('output_scene', overrides),
       },
     },
   ]
 
-  const edges: Edge[] = [
-    {
-      id: `edge_${sceneId}_c_o`,
-      source: charId,
-      sourceHandle: `${charId}_out_0`,
-      target: outId,
-      targetHandle: `${outId}_in_0`,
-    },
-    {
-      id: `edge_${sceneId}_l_o`,
-      source: locId,
-      sourceHandle: `${locId}_out_0`,
-      target: outId,
-      targetHandle: `${outId}_in_1`,
-    },
-  ]
+  return { nodes, edges: [] }
+}
 
-  return { nodes, edges }
+// Builds the Timeline's scene list straight from each scene's `output_scene`
+// node params — a scene with no such node (deleted, or never had one) simply
+// doesn't count. Sorted by `start`; `num` is a display label, not stored.
+function deriveScenes(graphs: SceneGraphs): TimelineScene[] {
+  const list: Omit<TimelineScene, 'num'>[] = []
+  for (const [sceneId, graph] of Object.entries(graphs)) {
+    const outNode = graph.nodes.find((n) => n.data?.nodeType === 'output_scene')
+    if (!outNode) continue
+    const p = outNode.data.params as Record<string, unknown>
+    list.push({
+      id: sceneId,
+      title: (p.title as string) ?? '',
+      start: (p.start as number) ?? 0,
+      duration: (p.duration as number) ?? 0,
+      track: (p.track as number) === 2 ? 2 : 1,
+      coverUrl: (p.coverUrl as string) ?? '',
+      cameraActive: true,
+    })
+  }
+  list.sort((a, b) => a.start - b.start)
+  return list.map((s, i) => ({ ...s, num: String(i + 1).padStart(2, '0') }))
 }
 
 interface InitialGraphState {
@@ -203,12 +155,8 @@ interface InitialGraphState {
 // mount — once per lazy initializer — each re-parsing the same blob).
 function loadInitialGraphState(): InitialGraphState {
   const activeSceneId = loadActiveSceneId()
-  let sceneGraphs = loadStoredSceneGraphs()
-  if (Object.keys(sceneGraphs).length === 0) {
-    const legacy = recoverLegacyGraph()
-    if (legacy) sceneGraphs = { [activeSceneId]: legacy }
-  }
-  const activeGraph = sceneGraphs[activeSceneId] || createDefaultSceneGraph(activeSceneId)
+  const sceneGraphs = loadStoredSceneGraphs()
+  const activeGraph = sceneGraphs[activeSceneId] || createEmptySceneGraph(activeSceneId)
   return {
     activeSceneId,
     sceneGraphs,
@@ -252,14 +200,14 @@ interface GraphCtx {
   loadPinterestBoards: (node: NodeRef) => Promise<void>
   loadPinterestPins: (node: NodeRef, boardId: string) => Promise<void>
 
-  canonMode: CanonMode
-  setCanonMode: (m: CanonMode) => void
-
   showMiniMap: boolean
   setShowMiniMap: (v: boolean) => void
 
-  activeSceneId: string
+  activeSceneId: string | null
   setActiveSceneId: (id: string) => void
+
+  scenes: TimelineScene[]
+  createScene: () => void
 
   showMontageMonitor: boolean
   setShowMontageMonitor: (v: boolean) => void
@@ -275,16 +223,14 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToastContext()
 
   const [initialGraphState] = useState(loadInitialGraphState)
-  const [activeSceneId, setActiveSceneIdState] = useState<string>(initialGraphState.activeSceneId)
-  // Not reactive state — nothing reads it, it only exists to accumulate the
-  // in-memory scene-graph cache between saves/switches, so a ref (not
-  // useState) avoids forcing a re-render on every write.
-  const sceneGraphsRef = useRef<SceneGraphs>(initialGraphState.sceneGraphs)
+  const [activeSceneId, setActiveSceneIdState] = useState<string | null>(
+    initialGraphState.activeSceneId
+  )
+  const [sceneGraphs, setSceneGraphs] = useState<SceneGraphs>(initialGraphState.sceneGraphs)
 
   const [nodes, setNodes] = useState<Node<NodeParams>[]>(initialGraphState.nodes)
   const [edges, setEdges] = useState<Edge[]>(initialGraphState.edges)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [canonMode, setCanonMode] = useState<CanonMode>('canon')
   const [showMiniMap, setShowMiniMap] = useState<boolean>(true)
   const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false)
 
@@ -310,6 +256,33 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const persistSceneGraphs = useCallback(
+    (updated: SceneGraphs) => {
+      writeJSON(SCENE_GRAPHS_KEY, updated, () =>
+        showToast('Не удалось сохранить граф сцены (превышен лимит хранилища)')
+      )
+      setSceneGraphs(updated)
+    },
+    [showToast]
+  )
+
+  // Loads a scene's graph into the live editor state (or clears the canvas
+  // when `nextId` is null, i.e. no scenes remain).
+  const loadSceneIntoState = useCallback((nextId: string | null, graphs: SceneGraphs) => {
+    if (nextId) {
+      const nextGraph = graphs[nextId] || createEmptySceneGraph(nextId)
+      setNodes(withTemplateDefaults(nextGraph.nodes))
+      setEdges(nextGraph.edges)
+      writeRaw(ACTIVE_SCENE_KEY, nextId)
+    } else {
+      setNodes([])
+      setEdges([])
+      removeKey(ACTIVE_SCENE_KEY)
+    }
+    setSelectedNodeId(null)
+    setActiveSceneIdState(nextId)
+  }, [])
+
   const setActiveSceneId = useCallback(
     (nextId: string) => {
       if (nextId === activeSceneId) return
@@ -317,19 +290,13 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
       // setters are called directly, one after another — not from inside
       // another setState's updater function — so this stays a plain
       // synchronous sequence with no nested-updater purity concerns.
-      const updated = { ...sceneGraphsRef.current, [activeSceneId]: { nodes, edges } }
-      const nextGraph = updated[nextId] || createDefaultSceneGraph(nextId)
-      writeJSON(SCENE_GRAPHS_KEY, updated, () =>
-        showToast('Не удалось сохранить граф сцены (превышен лимит хранилища)')
-      )
-      writeRaw(ACTIVE_SCENE_KEY, nextId)
-      sceneGraphsRef.current = updated
-      setNodes(withTemplateDefaults(nextGraph.nodes))
-      setEdges(nextGraph.edges)
-      setSelectedNodeId(null)
-      setActiveSceneIdState(nextId)
+      const updated = activeSceneId
+        ? { ...sceneGraphs, [activeSceneId]: { nodes, edges } }
+        : sceneGraphs
+      persistSceneGraphs(updated)
+      loadSceneIntoState(nextId, updated)
     },
-    [activeSceneId, nodes, edges, showToast]
+    [activeSceneId, nodes, edges, sceneGraphs, persistSceneGraphs, loadSceneIntoState]
   )
 
   // ── React Flow handlers ─────────────────────────────────────────────────────
@@ -361,18 +328,90 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
   const graphSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
+    if (!activeSceneId) return
     if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current)
     graphSaveTimer.current = setTimeout(() => {
-      const updated = { ...sceneGraphsRef.current, [activeSceneId]: { nodes, edges } }
-      writeJSON(SCENE_GRAPHS_KEY, updated, () =>
-        showToast('Не удалось сохранить граф локально (превышен лимит хранилища)')
-      )
-      sceneGraphsRef.current = updated
+      // Deliberately reads `sceneGraphs` via closure without listing it as a
+      // dependency below: every code path that changes the map (switching,
+      // adding, or cascade-removing a scene) also changes activeSceneId or
+      // nodes/edges, which already re-creates this effect with a fresh
+      // closure — adding `sceneGraphs` itself would re-arm this timer on
+      // every save, since saving is exactly what changes it.
+      persistSceneGraphs({ ...sceneGraphs, [activeSceneId]: { nodes, edges } })
     }, 400)
     return () => {
       if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current)
     }
-  }, [nodes, edges, activeSceneId, showToast])
+  }, [nodes, edges, activeSceneId, persistSceneGraphs])
+
+  // ── Scene list (derived from each scene's output_scene node) ────────────────
+
+  // Merges the *live*, not-yet-debounce-saved active scene on top of the
+  // saved snapshot of every other scene, so editing a scene's params (title,
+  // start, cover...) updates the Timeline immediately.
+  const mergedGraphsForDerivation = useMemo(
+    () => (activeSceneId ? { ...sceneGraphs, [activeSceneId]: { nodes, edges } } : sceneGraphs),
+    [sceneGraphs, activeSceneId, nodes, edges]
+  )
+  const scenes = useMemo(() => deriveScenes(mergedGraphsForDerivation), [mergedGraphsForDerivation])
+
+  // Cascade-delete: if the active scene's `output_scene` node disappears —
+  // whether via the NodeCard menu's `deleteNode` or React Flow's built-in
+  // `Delete`-key path (which bypasses `deleteNode` entirely, see
+  // NodeEditor.tsx's `deleteKeyCode` prop) — remove the whole scene and
+  // switch to whichever remaining scene starts earliest (or clear the
+  // canvas if none remain). Only the active scene's graph is ever editable
+  // from the canvas, so watching `nodes` here is sufficient.
+  const prevSceneIdRef = useRef<string | null>(initialGraphState.activeSceneId)
+  const prevHadOutputRef = useRef<boolean>(
+    initialGraphState.nodes.some((n) => n.data.nodeType === 'output_scene')
+  )
+  useEffect(() => {
+    if (prevSceneIdRef.current !== activeSceneId) {
+      prevSceneIdRef.current = activeSceneId
+      prevHadOutputRef.current = activeSceneId
+        ? nodes.some((n) => n.data.nodeType === 'output_scene')
+        : false
+      return
+    }
+
+    const hasOutputNow = nodes.some((n) => n.data.nodeType === 'output_scene')
+    if (activeSceneId && prevHadOutputRef.current && !hasOutputNow) {
+      const updated = { ...sceneGraphs }
+      delete updated[activeSceneId]
+      persistSceneGraphs(updated)
+      const remaining = deriveScenes(updated) // sorted by start ascending
+      loadSceneIntoState(remaining[0]?.id ?? null, updated)
+    }
+    prevHadOutputRef.current = hasOutputNow
+  }, [nodes, activeSceneId, sceneGraphs, persistSceneGraphs, loadSceneIntoState])
+
+  const createScene = useCallback(() => {
+    const idPool = new Set([...Object.keys(sceneGraphs), ...(activeSceneId ? [activeSceneId] : [])])
+    let maxN = 0
+    idPool.forEach((id) => {
+      const m = /^sc(\d+)$/.exec(id)
+      if (m) maxN = Math.max(maxN, Number(m[1]))
+    })
+    const newId = `sc${maxN + 1}`
+
+    // New scenes always default to track 1 — chain after track 1's last scene
+    // specifically, not the global end across both tracks, so consecutive
+    // adds never accidentally overlap a scene sitting on track 2.
+    const track1Scenes = scenes.filter((s) => s.track === 1)
+    const start = track1Scenes.length
+      ? Math.max(...track1Scenes.map((s) => s.start + s.duration))
+      : 0
+    const newGraph = createEmptySceneGraph(newId, { title: `Сцена ${maxN + 1}`, start })
+
+    const updated = {
+      ...sceneGraphs,
+      ...(activeSceneId ? { [activeSceneId]: { nodes, edges } } : {}),
+      [newId]: newGraph,
+    }
+    persistSceneGraphs(updated)
+    loadSceneIntoState(newId, updated)
+  }, [activeSceneId, nodes, edges, sceneGraphs, scenes, persistSceneGraphs, loadSceneIntoState])
 
   // ── Graph actions ───────────────────────────────────────────────────────────
 
@@ -552,12 +591,12 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     runningNodeIds,
     loadPinterestBoards,
     loadPinterestPins,
-    canonMode,
-    setCanonMode,
     showMiniMap,
     setShowMiniMap,
     activeSceneId,
     setActiveSceneId,
+    scenes,
+    createScene,
     showMontageMonitor,
     setShowMontageMonitor,
     totalDuration,

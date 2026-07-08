@@ -39,6 +39,47 @@
   composes: spacer from '../../styles/shared.module.css';
 }
 
+.iconGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.iconBtn:hover {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-hover);
+  color: var(--color-text-primary);
+}
+
+.iconBtn i {
+  font-size: 15px;
+}
+
+.iconBtnActive {
+  background: rgba(239, 159, 39, 0.15);
+  border-color: var(--color-bg-accent);
+  color: var(--color-bg-accent);
+}
+
+.iconBtnActive:hover {
+  background: rgba(239, 159, 39, 0.22);
+  color: var(--color-bg-accent);
+}
+
 .tb {
   display: inline-flex;
   align-items: center;

@@ -1,23 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import cn from 'classnames'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
-import { DEFAULT_SCENES } from '../../data/scenes.ts'
 import { formatTime } from './timelineUtils.ts'
-import { useFullscreenToggle } from '../hooks/useFullscreenToggle.ts'
 import { SceneTrackView } from './SceneTrackView/SceneTrackView.tsx'
 import { SynapsesCanvas } from './SynapsesCanvas/SynapsesCanvas.tsx'
 import { SceneArcSettings } from './SceneArcSettings/SceneArcSettings.tsx'
-import { StateDebugger } from './StateDebugger/StateDebugger.tsx'
 import { DurationEditor } from './DurationEditor/DurationEditor.tsx'
 import styles from './Timeline.module.css'
 
 const SPEED_LIST = [0.5, 1.0, 1.5, 2.0]
-const BRANCHES_LIST = ['main (канон)', 'fork-rambalkoshe', 'alt-kond-rain']
 
 export function Timeline() {
   const {
-    showMiniMap,
-    setShowMiniMap,
+    scenes: baseScenes,
+    createScene,
     activeSceneId,
     setActiveSceneId,
     showMontageMonitor,
@@ -37,41 +33,20 @@ export function Timeline() {
   const [isMuted, setIsMuted] = useState<boolean>(false)
   const [collapseEmptySpace, setCollapseEmptySpace] = useState<boolean>(false)
   const [isAutoMontage, setIsAutoMontage] = useState<boolean>(false)
-  const [currentBranch, setCurrentBranch] = useState<string>('main (канон)')
-  const [showStateDebugger, setShowStateDebugger] = useState<boolean>(false)
   const [showVolumeSlider, setShowVolumeSlider] = useState<boolean>(false)
 
-  // Camera toggle state
-  const [activeCameras, setActiveCameras] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {}
-    DEFAULT_SCENES.forEach((s) => {
-      initial[s.id] = s.cameraActive
-    })
-    return initial
-  })
+  // Camera toggle state — ephemeral per-session UI state, not a node param.
+  // Untouched scenes (including newly added ones) default to camera-active.
+  const [activeCameras, setActiveCameras] = useState<Record<string, boolean>>({})
 
-  const toggleFullscreen = useFullscreenToggle(() => document.getElementById('app'))
-
-  // Derive scenes list based on current branch and active cameras state
+  // Derive scenes list with active-camera state applied
   const scenes = useMemo(
     () =>
-      DEFAULT_SCENES.map((s) => {
-        let title = s.title
-        let sub = s.sub
-        if (currentBranch === 'alt-kond-rain' && s.id.includes('sc4')) {
-          title = s.id === 'sc4a' ? 'Дождь в Конде' : 'Гроза в Конде'
-          sub = 'Армянская гроза смывает пыль времен.'
-        } else if (currentBranch === 'fork-rambalkoshe') {
-          sub = `[Альт-линия @rambalkoshe] ${s.sub || ''}`
-        }
-        return {
-          ...s,
-          title,
-          sub,
-          cameraActive: activeCameras[s.id] ?? false,
-        }
-      }),
-    [currentBranch, activeCameras]
+      baseScenes.map((s) => ({
+        ...s,
+        cameraActive: activeCameras[s.id] ?? true,
+      })),
+    [baseScenes, activeCameras]
   )
 
   // Calculate packed segments for collapsed mode
@@ -169,9 +144,6 @@ export function Timeline() {
   // Mute toggle
   const toggleMute = () => setIsMuted(!isMuted)
 
-  // Minimap toggle
-  const toggleMiniMap = () => setShowMiniMap(!showMiniMap)
-
   // Toggle camera active for parallel scenes
   const toggleCamera = (sceneId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -197,6 +169,21 @@ export function Timeline() {
 
   // Calculate current scrubber position percentage
   const maxTime = collapseEmptySpace ? totalPackedDuration : totalDuration
+
+  if (scenes.length === 0) {
+    return (
+      <div className={styles.timelineContainer}>
+        <div className={styles.emptyState}>
+          <i className="ti ti-movie-off" />
+          <p>Сцен пока нет</p>
+          <button className={styles.tbBtn} onClick={createScene}>
+            <i className="ti ti-plus" />
+            <span>Добавить сцену</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={styles.timelineContainer}>
@@ -239,44 +226,16 @@ export function Timeline() {
             </button>
           </div>
 
-          <div className={styles.branchSelectWrapper}>
-            <i className="ti ti-git-branch" />
-            <select
-              value={currentBranch}
-              onChange={(e) => setCurrentBranch(e.target.value)}
-              className={styles.branchSelect}
-            >
-              {BRANCHES_LIST.map((branch) => (
-                <option key={branch} value={branch}>
-                  {branch}
-                </option>
-              ))}
-            </select>
-          </div>
+          <button className={styles.tbBtn} onClick={createScene} title="Добавить сцену">
+            <i className="ti ti-plus" />
+          </button>
         </div>
         <div className={styles.headerRight}>
-          <button
-            className={cn(styles.tbBtn, showStateDebugger && styles.tbBtnActive)}
-            onClick={() => setShowStateDebugger(!showStateDebugger)}
-            title="Показать JSON состояние Вселенной"
-          >
-            <i className="ti ti-database" />
-            <span>База Данных (JSON)</span>
-          </button>
           <span>{scenes.length} сцен</span>
           <span>·</span>
           <DurationEditor totalDuration={totalDuration} onChange={setTotalDuration} />
         </div>
       </div>
-
-      <StateDebugger
-        isOpen={showStateDebugger}
-        onClose={() => setShowStateDebugger(false)}
-        scenes={scenes}
-        activeSceneId={activeSceneId}
-        currentTime={currentTime}
-        currentBranch={currentBranch}
-      />
 
       {/* Main Tracks / Canvas Area depending on Active Tab */}
       <div className={styles.mainTimelineArea}>
@@ -416,20 +375,6 @@ export function Timeline() {
 
         <div className={styles.timeDisplay}>
           {formatTime(currentTime)} / {formatTime(maxTime)}
-        </div>
-
-        <div className={styles.btnGroup}>
-          <button
-            className={cn(styles.tbBtn, showMiniMap && styles.tbBtnActive)}
-            onClick={toggleMiniMap}
-            title="Показать/скрыть миникарту холста"
-          >
-            <i className="ti ti-map-2" />
-            <span>Миникарта</span>
-          </button>
-          <button className={styles.tbBtn} onClick={toggleFullscreen} title="Полноэкранный режим">
-            <i className="ti ti-arrows-maximize" />
-          </button>
         </div>
       </div>
     </div>

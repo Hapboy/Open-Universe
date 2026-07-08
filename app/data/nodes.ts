@@ -211,7 +211,14 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
       { name: 'Motion Render', type: PORT_TYPES.VIDEO },
     ],
     outputs: [],
-    params: { renderingEngine: 'Hayverse Realtime Veo 3' },
+    params: {
+      renderingEngine: 'Hayverse Realtime Veo 3',
+      title: '',
+      start: 0,
+      duration: 60,
+      track: 1,
+      coverUrl: '',
+    },
   },
 
   text_prompt: {

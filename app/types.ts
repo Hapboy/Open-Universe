@@ -1,5 +1,4 @@
 export type PortType = 'Image' | 'Video' | 'Audio' | 'Text' | 'any'
-export type CanonMode = 'canon' | 'mv'
 
 export interface Port {
   id: string
@@ -34,6 +33,19 @@ export interface Scene {
   sub: string
   sky: string
   ground: string
+}
+
+// A scene as shown in the Timeline — derived from each scene's `output_scene`
+// node params, not stored separately (see GraphContext's `deriveScenes`).
+export interface TimelineScene {
+  id: string
+  num: string
+  title: string
+  start: number // in seconds
+  duration: number // in seconds
+  track: number // 1 or 2 (for parallel scenes)
+  coverUrl: string
+  cameraActive: boolean
 }
 
 export interface PinItem {

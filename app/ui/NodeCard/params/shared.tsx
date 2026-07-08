@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import cn from 'classnames'
 import type { Edge } from '@xyflow/react'
-import type { NodeRef } from '../../../types.ts'
+import type { NodeRef, TimelineScene } from '../../../types.ts'
 import { usePresetLibraryContext } from '../../../store/contexts/PresetLibraryContext.tsx'
 import { Switch } from '../../components/Switch/Switch.tsx'
 import styles from '../../../styles/shared.module.css'
@@ -10,6 +10,7 @@ export interface NodeParamsProps {
   node: NodeRef
   edges: Edge[]
   resolved: Record<string, unknown>
+  scenes: TimelineScene[]
   updateNodeParam: (id: string, key: string, value: unknown) => void
   updateNodeParams: (id: string, patch: Record<string, unknown>) => void
   loadPinterestBoards: (node: NodeRef) => Promise<void>

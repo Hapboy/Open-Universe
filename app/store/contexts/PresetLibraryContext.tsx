@@ -5,42 +5,16 @@ import { useToastContext } from './ToastContext.tsx'
 import { readJSON, writeJSON } from '../../core/browserStorage.ts'
 
 const LIBRARY_STORAGE_KEY = 'hv_preset_library'
-const LEGACY_GRAPH_STORAGE_KEY = 'hv_graph'
 
 type PresetLibrary = Record<string, EntityPresets>
-
-// One-time recovery of custom presets that were saved per-node (the old
-// `params._presets`) before presets became a shared library, so upgrading
-// doesn't silently drop anything a user already created.
-function recoverLegacyPresets(): PresetLibrary {
-  const parsed = readJSON<{ nodes?: unknown[] }>(LEGACY_GRAPH_STORAGE_KEY, {})
-  const nodes = parsed.nodes ?? []
-  const recovered: PresetLibrary = {}
-  for (const n of nodes as { data?: { nodeType?: string; params?: { _presets?: unknown } } }[]) {
-    const entityType = n?.data?.nodeType
-    const legacyPresets = n?.data?.params?._presets
-    if (!entityType || !legacyPresets || typeof legacyPresets !== 'object') continue
-    recovered[entityType] = {
-      ...(recovered[entityType] ?? {}),
-      ...(legacyPresets as EntityPresets),
-    }
-  }
-  return recovered
-}
 
 function loadStoredLibrary(): PresetLibrary {
   const stored = readJSON<PresetLibrary>(LIBRARY_STORAGE_KEY, {})
   const seeds = JSON.parse(JSON.stringify(ENTITY_PRESET_SEEDS)) as PresetLibrary
-  const legacy = recoverLegacyPresets()
   const merged: PresetLibrary = {}
-  for (const entityType of new Set([
-    ...Object.keys(seeds),
-    ...Object.keys(legacy),
-    ...Object.keys(stored),
-  ])) {
+  for (const entityType of new Set([...Object.keys(seeds), ...Object.keys(stored)])) {
     merged[entityType] = {
       ...(seeds[entityType] ?? {}),
-      ...(legacy[entityType] ?? {}),
       ...(stored[entityType] ?? {}),
     }
   }

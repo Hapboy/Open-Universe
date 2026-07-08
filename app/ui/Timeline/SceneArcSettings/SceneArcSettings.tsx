@@ -34,6 +34,9 @@ const conflictTargetLabels = {
 export function SceneArcSettings() {
   const { activeSceneId } = useGraphContext()
   const { getSceneNarrativeSettings, updateNarrativeSettings } = useNarrativeContext()
+  // Defensive: Timeline's empty-state gate already prevents this component
+  // from rendering when there's no active scene.
+  if (!activeSceneId) return null
   const activeSettings = getSceneNarrativeSettings(activeSceneId)
 
   // Calculate dynamic curve path rotating around center (225, 55)

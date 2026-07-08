@@ -13,7 +13,12 @@ export function SearchField({
   return (
     <div className={styles.wrap}>
       <i className={`ti ti-search ${styles.searchIcon}`} />
-      <TextField value={value} onChange={onChange} placeholder={placeholder} />
+      <TextField
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className={styles.searchInput}
+      />
       {value && (
         <button
           type="button"

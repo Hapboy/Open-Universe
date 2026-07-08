@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useGraphContext } from '../../../store/contexts/GraphContext.tsx'
-import type { TimelineScene } from '../../../data/scenes.ts'
+import type { TimelineScene } from '../../../types.ts'
 import styles from '../Timeline.module.css'
 
 // Illustrative character-lane data for this "Synapses of Fates" view — not
@@ -16,7 +16,7 @@ const CHAR_LANES = [
 
 interface SynapsesCanvasProps {
   scenes: TimelineScene[]
-  activeSceneId: string
+  activeSceneId: string | null
   currentTime: number
   setCurrentTime: (t: number) => void
   collapseEmptySpace: boolean

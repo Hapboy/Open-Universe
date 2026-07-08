@@ -4,12 +4,12 @@
   align-items: center;
 }
 
-.wrap :global(.fld) {
+.wrap .searchInput {
   flex: 1;
   margin-bottom: 0;
 }
 
-.wrap :global(.fld) input[type='text'] {
+.wrap .searchInput input[type='text'] {
   padding-left: 28px;
   padding-right: 28px;
 }

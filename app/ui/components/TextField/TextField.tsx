@@ -1,3 +1,4 @@
+import cn from 'classnames'
 import styles from './TextField.module.css'
 
 // Supports both interaction styles used across the app: fully controlled
@@ -12,6 +13,7 @@ export function TextField({
   disabled,
   placeholder,
   title,
+  className,
 }: {
   label?: string
   value?: string
@@ -21,9 +23,10 @@ export function TextField({
   disabled?: boolean
   placeholder?: string
   title?: string
+  className?: string
 }) {
   return (
-    <div className={styles.fld} title={title}>
+    <div className={cn(styles.fld, className)} title={title}>
       {label && <span>{label}</span>}
       <input
         type="text"

@@ -2,11 +2,13 @@ import cn from 'classnames'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
 import { usePwaContext } from '../../store/contexts/PwaContext.tsx'
 import { useUserContext } from '../../store/contexts/UserContext.tsx'
+import { useFullscreenToggle } from '../hooks/useFullscreenToggle.ts'
 import styles from './Topbar.module.css'
 
 export function Topbar() {
-  const { executeGraph } = useGraphContext()
+  const { executeGraph, showMiniMap, setShowMiniMap } = useGraphContext()
   const { deferredInstallPrompt, setDeferredInstallPrompt } = usePwaContext()
+  const toggleFullscreen = useFullscreenToggle(() => document.getElementById('app'))
 
   const handleInstall = async () => {
     if (!deferredInstallPrompt) return
@@ -21,10 +23,23 @@ export function Topbar() {
       <div className={styles.brand}>
         <i className="ti ti-affiliate" />
         <span>Open Universe</span>
-        <em id="branchTag">main · канон</em>
       </div>
 
       <div className={styles.spacer} />
+
+      <div className={styles.iconGroup}>
+        <button
+          className={cn(styles.iconBtn, showMiniMap && styles.iconBtnActive)}
+          onClick={() => setShowMiniMap(!showMiniMap)}
+          aria-pressed={showMiniMap}
+          title={showMiniMap ? 'Скрыть миникарту холста' : 'Показать миникарту холста'}
+        >
+          <i className="ti ti-map-2" />
+        </button>
+        <button className={styles.iconBtn} onClick={toggleFullscreen} title="Полноэкранный режим">
+          <i className="ti ti-arrows-maximize" />
+        </button>
+      </div>
 
       <button
         className={cn(styles.tb, styles.runBtn)}
