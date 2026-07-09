@@ -204,6 +204,9 @@ export function WorldMap() {
                 <div className={styles.headerTitle}>
                     <i className="ti ti-world" />
                     <span>Карта мира</span>
+                    <span className={styles.mapboxStatus}>
+                        Mapbox: {MAPBOX_TOKEN ? "live" : "mock"}
+                    </span>
                 </div>
                 <button className={styles.x} onClick={() => setShowWorldMap(false)} title="Закрыть">
                     <i className="ti ti-x" />

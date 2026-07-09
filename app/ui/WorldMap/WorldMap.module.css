@@ -31,6 +31,12 @@
     color: var(--color-text-primary);
 }
 
+.mapboxStatus {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--color-text-tertiary);
+}
+
 .x {
     background: transparent;
     border: none;
