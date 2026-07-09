@@ -2,7 +2,7 @@ import cn from "classnames";
 import styles from "./MediaSlider.module.css";
 
 export interface MediaItem {
-    url: string;
+    url: string | undefined;
     type?: "image" | "video";
 }
 

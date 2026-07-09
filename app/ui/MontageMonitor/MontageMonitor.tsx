@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
 import { usePlayerContext } from "../../store/contexts/PlayerContext.tsx";
+import { useResolvedMediaUrl } from "../../core/blobStore.ts";
 import styles from "./MontageMonitor.module.css";
 
 export function MontageMonitor() {
@@ -18,8 +19,9 @@ export function MontageMonitor() {
     // The Monitor strictly reflects the playhead — no scene under it means a
     // black screen, not a fallback to whatever's loaded in the editor.
     const activeScene = scenes.find((s) => s.id === playingSceneId);
+    const resolvedCoverUrl = useResolvedMediaUrl(activeScene?.coverUrl);
     const media = activeScene
-        ? (sceneOutputs[activeScene.id] ?? { url: activeScene.coverUrl, type: "image" as const })
+        ? (sceneOutputs[activeScene.id] ?? { url: resolvedCoverUrl ?? "", type: "image" as const })
         : null;
     const sceneRelativeTime = activeScene ? playingSceneRelativeTime : null;
 

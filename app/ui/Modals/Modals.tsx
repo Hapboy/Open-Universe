@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import cn from "classnames";
 import { useUserContext } from "../../store/contexts/UserContext.tsx";
 import { useToastContext } from "../../store/contexts/ToastContext.tsx";
+import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
+import { usePresetLibraryContext } from "../../store/contexts/PresetLibraryContext.tsx";
 import type { CurrentUser } from "../../types.ts";
 import { SelectField } from "../components/SelectField/SelectField.tsx";
 import { TextField } from "../components/TextField/TextField.tsx";
+import { collectLiveMediaRefs, listBlobIds, sweepUnusedBlobs } from "../../core/blobStore.ts";
 import styles from "./Modals.module.css";
 
 function sideColor(side: string): string {
@@ -18,7 +21,7 @@ function sideColor(side: string): string {
 export function Modals() {
     const { currentUser } = useUserContext();
     // Show onboarding on first load
-    const [openModal, setOpenModal] = useState<"team" | "onboard" | null>(() =>
+    const [openModal, setOpenModal] = useState<"team" | "onboard" | "storage" | null>(() =>
         currentUser ? null : "onboard",
     );
 
@@ -40,6 +43,7 @@ export function Modals() {
         <>
             {openModal === "onboard" && <OnboardModal onClose={close} />}
             {openModal === "team" && <TeamModal onClose={close} />}
+            {openModal === "storage" && <StorageModal onClose={close} />}
         </>
     );
 }
@@ -165,6 +169,97 @@ function TeamModal({ onClose }: { onClose: () => void }) {
                             </div>
                         ))}
                     </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+
+function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} Б`;
+    const units = ["КБ", "МБ", "ГБ"];
+    let value = bytes / 1024;
+    let unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex++;
+    }
+    return `${value.toFixed(1)} ${units[unitIndex]}`;
+}
+
+function StorageModal({ onClose }: { onClose: () => void }) {
+    const { allSceneGraphs } = useGraphContext();
+    const { library } = usePresetLibraryContext();
+    const { showToast } = useToastContext();
+    const [count, setCount] = useState<number | null>(null);
+    const [usedBytes, setUsedBytes] = useState<number | null>(null);
+    const [sweeping, setSweeping] = useState(false);
+
+    const refreshStats = useCallback(() => {
+        listBlobIds()
+            .then((ids) => setCount(ids.length))
+            .catch(() => setCount(null));
+        navigator.storage
+            ?.estimate?.()
+            .then((est) => setUsedBytes(est.usage ?? null))
+            .catch(() => setUsedBytes(null));
+    }, []);
+
+    useEffect(refreshStats, [refreshStats]);
+
+    const handleSweep = async () => {
+        setSweeping(true);
+        const nodeParamsList = Object.values(allSceneGraphs).flatMap((g) =>
+            g.nodes.map((n) => n.data.params),
+        );
+        const presetSnapshotList = Object.values(library).flatMap((presets) =>
+            Object.values(presets),
+        );
+        const liveRefs = collectLiveMediaRefs(nodeParamsList, presetSnapshotList);
+        const deleted = await sweepUnusedBlobs(liveRefs);
+        showToast(
+            deleted > 0
+                ? `Удалено неиспользуемых файлов: ${deleted}`
+                : "Неиспользуемых файлов не найдено",
+        );
+        setSweeping(false);
+        refreshStats();
+    };
+
+    return (
+        <div className={styles.modal}>
+            <div className={styles.sheet}>
+                <div className={styles.sheetH}>
+                    <h2>Локальное хранилище</h2>
+                    <button className={styles.x} onClick={onClose}>
+                        <i className="ti ti-x" />
+                    </button>
+                </div>
+                <div className={styles.sheetBody}>
+                    <p className={styles.sub}>
+                        Загруженные фото и обложки сцен хранятся в IndexedDB браузера, а не в
+                        localStorage — очистка ниже удаляет только те файлы, на которые больше не
+                        ссылается ни одна сцена или пресет.
+                    </p>
+                    <div className={styles.statRow}>
+                        <span>Файлов сохранено</span>
+                        <strong>{count ?? "…"}</strong>
+                    </div>
+                    {usedBytes != null && (
+                        <div className={styles.statRow}>
+                            <span>Использовано места</span>
+                            <strong>{formatBytes(usedBytes)}</strong>
+                        </div>
+                    )}
+                    <br />
+                    <button
+                        className={cn(styles.btn, styles.pri)}
+                        onClick={handleSweep}
+                        disabled={sweeping}>
+                        Очистить неиспользуемые файлы
+                    </button>
                 </div>
             </div>
         </div>

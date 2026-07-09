@@ -4,6 +4,7 @@ import type { EEP, NodeParamsProps } from "./shared.tsx";
 import { SelectField } from "../../components/SelectField/SelectField.tsx";
 import { TextField } from "../../components/TextField/TextField.tsx";
 import { NumberField } from "../../components/NumberField/NumberField.tsx";
+import { putBlob, useResolvedMediaUrl } from "../../../core/blobStore.ts";
 import styles from "./UtilParams.module.css";
 
 export function OutputParams({
@@ -35,11 +36,12 @@ export function OutputParams({
     const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => updateNodeParam(node.id, "coverUrl", ev.target!.result as string);
-        reader.readAsDataURL(file);
+        putBlob(file)
+            .then((ref) => updateNodeParam(node.id, "coverUrl", ref))
+            .catch(console.error);
         e.target.value = "";
     };
+    const resolvedCoverUrl = useResolvedMediaUrl(params.coverUrl as string | undefined);
 
     return (
         <>
@@ -93,7 +95,7 @@ export function OutputParams({
                 {params.coverUrl ? (
                     <div className={styles.coverPreviewWrapper}>
                         <img
-                            src={params.coverUrl as string}
+                            src={resolvedCoverUrl}
                             className={styles.coverPreviewImg}
                             alt="Обложка"
                         />

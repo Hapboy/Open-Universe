@@ -193,6 +193,7 @@ interface GraphCtx {
     edges: Edge[];
     resolved: Record<string, unknown>;
     sceneOutputs: Record<string, SceneOutput>;
+    allSceneGraphs: SceneGraphs;
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
@@ -696,6 +697,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         edges,
         resolved,
         sceneOutputs,
+        allSceneGraphs: mergedGraphsForDerivation,
         onNodesChange,
         onEdgesChange,
         onConnect,

@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import cn from "classnames";
 import { DatabaseSelect, InFrameToggle, usePresetDatabase } from "../shared.tsx";
 import type { EP } from "../shared.tsx";
+import { putBlob, useResolvedMediaUrl, useResolvedMediaUrls } from "../../../../core/blobStore.ts";
 import { SelectField } from "../../../components/SelectField/SelectField.tsx";
 import { RangeField } from "../../../components/RangeField/RangeField.tsx";
 import { NumberField } from "../../../components/NumberField/NumberField.tsx";
@@ -51,6 +52,8 @@ export function CharacterParams({
         updateNodeParams,
     );
     const photos = params.photos || [];
+    const resolvedCover = useResolvedMediaUrl(photos[params.photoIdx ?? 0]);
+    const resolvedThumbs = useResolvedMediaUrls(photos);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Toggle Category Tags and Search State
@@ -92,16 +95,7 @@ export function CharacterParams({
     const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-        Promise.all(
-            files.map(
-                (file) =>
-                    new Promise<string>((resolve) => {
-                        const reader = new FileReader();
-                        reader.onload = (ev) => resolve(ev.target!.result as string);
-                        reader.readAsDataURL(file);
-                    }),
-            ),
-        ).then((newPhotos) => {
+        Promise.all(files.map((file) => putBlob(file))).then((newPhotos) => {
             const next = [...photos, ...newPhotos];
             updateNodeParam(node.id, "photos", next);
             updateNodeParam(node.id, "photoIdx", next.length - 1);
@@ -140,7 +134,7 @@ export function CharacterParams({
             {shouldShow("general", "Обложка Персонажа") && photos.length > 0 && (
                 <div className={styles.coverPreviewWrapper}>
                     <img
-                        src={photos[params.photoIdx ?? 0]}
+                        src={resolvedCover}
                         className={styles.coverPreviewImg}
                         alt="Character Cover"
                     />
@@ -199,7 +193,7 @@ export function CharacterParams({
                     </div>
                     {photos.length > 0 && (
                         <div className={styles.thumbnailsList}>
-                            {photos.map((url, idx) => (
+                            {resolvedThumbs.map((url, idx) => (
                                 <div
                                     key={idx}
                                     className={cn(
@@ -207,7 +201,7 @@ export function CharacterParams({
                                         idx === params.photoIdx && styles.thumbCellActive,
                                     )}
                                     onClick={() => updateNodeParam(node.id, "photoIdx", idx)}
-                                    style={{ backgroundImage: `url(${url})` }}
+                                    style={{ backgroundImage: url ? `url(${url})` : undefined }}
                                     title="Установить как обложку"
                                 />
                             ))}

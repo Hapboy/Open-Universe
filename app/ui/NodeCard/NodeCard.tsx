@@ -4,6 +4,7 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import type { NodeParams, PortType } from "../../types.ts";
 import { AI_MODEL_NODE_TYPES, NODE_TEMPLATES } from "../../data/nodes.ts";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
+import { useResolvedMediaUrls } from "../../core/blobStore.ts";
 import { CircleLoader } from "../components/CircleLoader/CircleLoader.tsx";
 import { MediaSlider } from "./MediaSlider/MediaSlider.tsx";
 import { NodeParamsPanel } from "./params/NodeParamsPanel.tsx";
@@ -51,6 +52,7 @@ export const NodeCard = memo(function NodeCard({
     const templateInputCount = NODE_TEMPLATES[data.nodeType]?.inputs.length ?? data.inputs.length;
 
     const photos = data.nodeType === "character" ? (data.params.photos as string[]) || [] : [];
+    const resolvedPhotos = useResolvedMediaUrls(photos);
     const photoIdx = (data.params.photoIdx as number) || 0;
     const isAiModel = AI_MODEL_NODE_TYPES.includes(data.nodeType);
     const isRunning = runningNodeIds.has(id);
@@ -250,7 +252,7 @@ export const NodeCard = memo(function NodeCard({
 
                 {photos.length > 0 && (
                     <MediaSlider
-                        items={photos.map((url) => ({ url, type: "image" }))}
+                        items={resolvedPhotos.map((url) => ({ url, type: "image" }))}
                         index={photoIdx}
                         onIndexChange={(i) => updateNodeParam(id, "photoIdx", i)}
                         onDelete={(i) => {

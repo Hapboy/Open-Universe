@@ -1,7 +1,8 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import cn from "classnames";
 import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
 import type { TimelineScene } from "../../../types.ts";
+import { useResolvedMediaUrls } from "../../../core/blobStore.ts";
 import {
     computeRulerTicks,
     findSceneAtTime,
@@ -36,6 +37,12 @@ export function SceneTrackView({
     const { setActiveSceneId } = useGraphContext();
     const containerRef = useRef<HTMLDivElement>(null);
     const isDragging = useRef<boolean>(false);
+
+    const resolvedCovers = useResolvedMediaUrls(scenes.map((s) => s.coverUrl));
+    const coverBySceneId = useMemo(
+        () => new Map(scenes.map((s, i) => [s.id, resolvedCovers[i]])),
+        [scenes, resolvedCovers],
+    );
 
     const maxTime = collapseEmptySpace ? totalPackedDuration : totalDuration;
 
@@ -105,7 +112,9 @@ export function SceneTrackView({
                             totalPackedDuration,
                             packedStarts,
                         }),
-                        backgroundImage: `url(${scene.coverUrl})`,
+                        backgroundImage: coverBySceneId.get(scene.id)
+                            ? `url(${coverBySceneId.get(scene.id)})`
+                            : undefined,
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={() => handleSceneTabClick(scene.id, scene.start)}>

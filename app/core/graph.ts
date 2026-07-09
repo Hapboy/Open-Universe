@@ -2,6 +2,7 @@ import type { Edge, Node } from "@xyflow/react";
 import type { NodeParams } from "../types.ts";
 import { GeminiService, HiggsfieldService } from "./services/index.ts";
 import { AI_MODEL_NODE_TYPES } from "../data/nodes.ts";
+import { resolveMediaRef } from "./blobStore.ts";
 
 type ShowToast = (msg: string) => void;
 type Resolved = Record<string, unknown>;
@@ -157,11 +158,20 @@ async function computeNodeOutput(
 
 // Fills a character node's fixed pins (Photos/Description/JSON) — pure
 // derivations of its own params, independent of edges/resolution order.
-function computeCharacterExtraOutputs(node: Node<NodeParams>, resolved: Resolved): void {
+// Photos are stored as blobStore refs (`idb:<uuid>`), not raw data — resolve
+// them to real URLs here so downstream AI-model nodes (e.g. Nano Banana
+// reference images) get usable image data, not an id string.
+async function computeCharacterExtraOutputs(
+    node: Node<NodeParams>,
+    resolved: Resolved,
+): Promise<void> {
     const d = node.data;
     if (d.nodeType !== "character") return;
     const [photosPort, descPort, jsonPort] = d.outputs;
-    if (photosPort) resolved[photosPort.id] = d.params.photos;
+    if (photosPort) {
+        const photos = (d.params.photos as string[] | undefined) ?? [];
+        resolved[photosPort.id] = await Promise.all(photos.map(resolveMediaRef));
+    }
     if (descPort) resolved[descPort.id] = d.params.additionalDescription;
     if (jsonPort) {
         resolved[jsonPort.id] = JSON.stringify(
@@ -229,7 +239,7 @@ export async function runGraph(
 
             if (opts?.autoMode && AI_MODEL_NODE_TYPES.includes(d.nodeType)) continue;
 
-            computeCharacterExtraOutputs(node, resolved);
+            await computeCharacterExtraOutputs(node, resolved);
 
             // Skip nodes whose output is already resolved from a previous pass
             const alreadyResolved = d.outputs[0]?.id && resolved[d.outputs[0].id] !== undefined;
@@ -286,7 +296,7 @@ async function resolveNode(
             if (out !== undefined) resolved[outputId] = out;
             else delete resolved[outputId];
         }
-        computeCharacterExtraOutputs(node, resolved);
+        await computeCharacterExtraOutputs(node, resolved);
     } finally {
         onNodeDone?.(id);
     }
