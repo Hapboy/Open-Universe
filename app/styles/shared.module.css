@@ -2,145 +2,145 @@
    Populated incrementally as components migrate off the old global style.css. */
 
 .spacer {
-  flex: 1;
+    flex: 1;
 }
 
 .inspSection {
-  padding: 16px;
-  border-bottom: 1px solid var(--color-border);
+    padding: 16px;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .inspH {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .inspH i {
-  color: var(--nc);
+    color: var(--nc);
 }
 
 .fld {
-  margin-bottom: 12px;
+    margin-bottom: 12px;
 }
 
 .fld > span {
-  display: block;
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  margin-bottom: 6px;
-  font-weight: 500;
+    display: block;
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+    margin-bottom: 6px;
+    font-weight: 500;
 }
 
-.fld input[type='text'],
-.fld input[type='number'],
-.fld input[type='datetime-local'],
+.fld input[type="text"],
+.fld input[type="number"],
+.fld input[type="datetime-local"],
 .fld select {
-  width: 100%;
-  padding: 8px 12px;
-  background-color: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-primary);
-  font-family: inherit;
-  font-size: 13px;
-  outline: none;
+    width: 100%;
+    padding: 8px 12px;
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
 }
 
 .fld select {
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 32px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%23B4B2A9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%23B4B2A9' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
 }
 
-.fld input[type='text']:focus,
-.fld input[type='number']:focus,
-.fld input[type='datetime-local']:focus,
+.fld input[type="text"]:focus,
+.fld input[type="number"]:focus,
+.fld input[type="datetime-local"]:focus,
 .fld select:focus {
-  border-color: var(--color-border-active);
+    border-color: var(--color-border-active);
 }
 
-.fld input[type='text']:disabled,
-.fld input[type='number']:disabled,
-.fld input[type='datetime-local']:disabled,
+.fld input[type="text"]:disabled,
+.fld input[type="number"]:disabled,
+.fld input[type="datetime-local"]:disabled,
 .fld select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .hint {
-  margin: 6px 0 0;
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
+    margin: 6px 0 0;
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    transition: all 0.2s;
 }
 
 .btn:hover {
-  background: var(--color-bg-card);
+    background: var(--color-bg-card);
 }
 
 .pri {
-  background: var(--color-bg-accent);
-  border-color: var(--color-bg-accent);
-  color: #fff;
+    background: var(--color-bg-accent);
+    border-color: var(--color-bg-accent);
+    color: #fff;
 }
 
 .pri:hover {
-  opacity: 0.95;
+    opacity: 0.95;
 }
 
 .segBtn {
-  display: inline-flex;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  width: 100%;
+    display: inline-flex;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    width: 100%;
 }
 
 .segBtn button {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary);
-  padding: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  font-family: inherit;
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    padding: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .segBtn button.isOn {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  font-weight: 600;
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    font-weight: 600;
 }
 
 .segBtn button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+    opacity: 0.6;
+    cursor: not-allowed;
 }

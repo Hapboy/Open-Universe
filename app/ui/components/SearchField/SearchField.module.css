@@ -1,65 +1,65 @@
 .wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
+    position: relative;
+    display: flex;
+    align-items: center;
 }
 
 .wrap .searchInput {
-  flex: 1;
-  margin-bottom: 0;
+    flex: 1;
+    margin-bottom: 0;
 }
 
-.wrap .searchInput input[type='text'] {
-  padding-left: 28px;
-  padding-right: 28px;
+.wrap .searchInput input[type="text"] {
+    padding-left: 28px;
+    padding-right: 28px;
 }
 
 .searchIcon {
-  position: absolute;
-  left: 8px;
-  color: var(--color-text-tertiary);
-  font-size: 13px;
-  pointer-events: none;
-  z-index: 1;
+    position: absolute;
+    left: 8px;
+    color: var(--color-text-tertiary);
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 1;
 }
 
-.flush .searchInput input[type='text'] {
-  padding: 12px 34px 12px 34px;
-  background: transparent;
-  border: none;
-  border-radius: 0;
+.flush .searchInput input[type="text"] {
+    padding: 12px 34px 12px 34px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
 }
 
-.flush .searchInput input[type='text']:focus {
-  border-color: transparent;
+.flush .searchInput input[type="text"]:focus {
+    border-color: transparent;
 }
 
 .flush .searchIcon {
-  left: 12px;
-  font-size: 14px;
+    left: 12px;
+    font-size: 14px;
 }
 
 .flush .clearBtn {
-  right: 12px;
+    right: 12px;
 }
 
 .clearBtn {
-  position: absolute;
-  right: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
+    position: absolute;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
 }
 
 .clearBtn:hover {
-  color: var(--color-text-primary);
-  background: var(--color-bg-card);
+    color: var(--color-text-primary);
+    background: var(--color-bg-card);
 }

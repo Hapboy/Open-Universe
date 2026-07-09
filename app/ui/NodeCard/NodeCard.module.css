@@ -1,155 +1,155 @@
 .card {
-  width: 300px;
-  background-color: var(--color-bg-card);
-  border: 1.5px solid var(--color-border);
-  border-left: 4px solid var(--nc, var(--color-border));
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  z-index: 2;
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
-  transition:
-    box-shadow 0.2s,
-    border-color 0.2s;
+    width: 300px;
+    background-color: var(--color-bg-card);
+    border: 1.5px solid var(--color-border);
+    border-left: 4px solid var(--nc, var(--color-border));
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    z-index: 2;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    transition:
+        box-shadow 0.2s,
+        border-color 0.2s;
 }
 
 .card:active {
-  cursor: grabbing;
+    cursor: grabbing;
 }
 
 .card.isSelected {
-  border-color: var(--color-border-active);
-  box-shadow:
-    var(--shadow-md),
-    0 0 0 2px rgba(239, 159, 39, 0.25);
+    border-color: var(--color-border-active);
+    box-shadow:
+        var(--shadow-md),
+        0 0 0 2px rgba(239, 159, 39, 0.25);
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--color-border);
-  font-weight: 600;
-  font-size: 12px;
-  color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border);
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--color-text-primary);
 }
 
 .header i {
-  color: var(--nc);
-  font-size: 14px;
+    color: var(--nc);
+    font-size: 14px;
 }
 
 .header span {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .labelInput {
-  flex: 1;
-  min-width: 0;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-primary);
-  font: inherit;
-  font-weight: 600;
-  font-size: 12px;
-  padding: 2px 4px;
-  outline: none;
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 2px 4px;
+    outline: none;
 }
 
 .labelInput:hover,
 .labelInput:focus {
-  border-color: var(--color-border);
-  background: var(--color-bg-primary);
+    border-color: var(--color-border);
+    background: var(--color-bg-primary);
 }
 
 .runBtn {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: none;
-  background: var(--nc, var(--color-border));
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  cursor: pointer;
-  padding: 0;
-  flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: var(--nc, var(--color-border));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
 }
 
 .runBtn:disabled {
-  cursor: default;
-  opacity: 0.6;
+    cursor: default;
+    opacity: 0.6;
 }
 
 .header .runBtn i {
-  color: #fff;
-  font-size: 11px;
+    color: #fff;
+    font-size: 11px;
 }
 
 .runBtnLoader {
-  width: 20px;
-  height: 20px;
+    width: 20px;
+    height: 20px;
 }
 
 .paramsWrap {
-  padding: 8px 12px 12px;
-  border-top: 1px solid var(--color-border);
+    padding: 8px 12px 12px;
+    border-top: 1px solid var(--color-border);
 }
 
 .audioPlayer {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
+    display: block;
+    width: 100%;
+    margin-top: 8px;
 }
 
 .body {
-  padding: 8px 12px;
-  font-size: 11px;
-  color: var(--color-text-secondary);
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--color-text-secondary);
 }
 
 .titleVal {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .titleValFull {
-  white-space: normal;
-  text-overflow: unset;
-  word-break: break-word;
-  max-height: 160px;
-  overflow-y: auto;
-  padding-right: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
+    white-space: normal;
+    text-overflow: unset;
+    word-break: break-word;
+    max-height: 160px;
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
 }
 
 .titleValFull::-webkit-scrollbar {
-  width: 5px;
+    width: 5px;
 }
 
 .titleValFull::-webkit-scrollbar-track {
-  background: transparent;
+    background: transparent;
 }
 
 .titleValFull::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
+    background: var(--color-border);
+    border-radius: 3px;
 }
 
 .titleValFull::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
+    background: var(--color-text-tertiary);
 }

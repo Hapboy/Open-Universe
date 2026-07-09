@@ -1,25 +1,25 @@
 .fld {
-  composes: fld from '../../../styles/shared.module.css';
+    composes: fld from "../../../styles/shared.module.css";
 }
 
 .pair {
-  display: flex;
-  gap: 6px;
+    display: flex;
+    gap: 6px;
 }
 
-.pair input[type='number'] {
-  width: 100%;
-  min-width: 0;
-  padding: 8px 12px;
-  background-color: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-primary);
-  font-family: inherit;
-  font-size: 13px;
-  outline: none;
+.pair input[type="number"] {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 12px;
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
 }
 
-.pair input[type='number']:focus {
-  border-color: var(--color-border-active);
+.pair input[type="number"]:focus {
+    border-color: var(--color-border-active);
 }

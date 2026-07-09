@@ -1,31 +1,31 @@
 .display {
-  cursor: pointer;
-  border-bottom: 1px dashed transparent;
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
 }
 
 .display:hover {
-  color: var(--color-text-primary);
-  border-bottom-color: var(--color-text-secondary);
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-text-secondary);
 }
 
 .editRow {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .editRow input {
-  width: 56px;
-  padding: 2px 6px;
-  background-color: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-primary);
-  font-family: inherit;
-  font-size: 12px;
-  outline: none;
+    width: 56px;
+    padding: 2px 6px;
+    background-color: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
 }
 
 .editRow input:focus {
-  border-color: var(--color-border-active);
+    border-color: var(--color-border-active);
 }

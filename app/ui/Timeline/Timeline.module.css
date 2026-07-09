@@ -1,794 +1,794 @@
 .timelineContainer {
-  background: rgba(27, 26, 22, 0.85);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--color-border);
-  padding: 12px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 100;
-  box-sizing: border-box;
+    background: rgba(27, 26, 22, 0.85);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--color-border);
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+    box-sizing: border-box;
 }
 
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: var(--color-text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--color-text-primary);
 }
 
 .headerLeft {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .headerLeft i {
-  color: var(--color-node-scene);
+    color: var(--color-node-scene);
 }
 
 /* Timeline Tabs button styling */
 .tabHeaders {
-  display: flex;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-  gap: 2px;
-  margin-left: 14px;
+    display: flex;
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    gap: 2px;
+    margin-left: 14px;
 }
 
 .tabHeaderBtn {
-  background: transparent;
-  border: none;
-  color: var(--color-text-secondary);
-  font-size: 11.5px;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: inherit;
-  transition: all 0.2s;
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    transition: all 0.2s;
 }
 
 .tabHeaderBtn:hover {
-  color: var(--color-text-primary);
+    color: var(--color-text-primary);
 }
 
 .tabHeaderBtnActive {
-  background: var(--color-bg-card);
-  color: var(--color-text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    background: var(--color-bg-card);
+    color: var(--color-text-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .headerRight {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--color-text-secondary);
-  font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
 }
 
 /* Main Timeline Area Container */
 .mainTimelineArea {
-  position: relative;
-  min-height: 130px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+    position: relative;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 /* Time Ruler */
 .rulerContainer {
-  position: relative;
-  height: 16px;
-  border-bottom: 1px solid rgba(241, 239, 232, 0.08);
-  margin-bottom: 2px;
+    position: relative;
+    height: 16px;
+    border-bottom: 1px solid rgba(241, 239, 232, 0.08);
+    margin-bottom: 2px;
 }
 
 .rulerTick {
-  position: absolute;
-  top: 6px;
-  bottom: 0;
-  width: 1px;
-  background: rgba(241, 239, 232, 0.15);
+    position: absolute;
+    top: 6px;
+    bottom: 0;
+    width: 1px;
+    background: rgba(241, 239, 232, 0.15);
 }
 
 .rulerTickMinor {
-  position: absolute;
-  top: 11px;
-  bottom: 0;
-  width: 1px;
-  background: rgba(241, 239, 232, 0.07);
+    position: absolute;
+    top: 11px;
+    bottom: 0;
+    width: 1px;
+    background: rgba(241, 239, 232, 0.07);
 }
 
 .tickLabel {
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 8px;
-  color: var(--color-text-tertiary);
-  font-family: monospace;
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: var(--color-text-tertiary);
+    font-family: monospace;
 }
 
 /* Playback bar and controls layout */
 .controlsBar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 4px;
 }
 
 .btnGroup {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .tbBtn {
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-family: inherit;
-  transition: all 0.2s;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    transition: all 0.2s;
 }
 
 .tbBtn:hover {
-  background: var(--color-bg-card);
-  color: var(--color-text-primary);
-  border-color: var(--color-text-secondary);
+    background: var(--color-bg-card);
+    color: var(--color-text-primary);
+    border-color: var(--color-text-secondary);
 }
 
 .tbBtnActive {
-  background: rgba(239, 159, 39, 0.15);
-  color: var(--color-bg-accent);
-  border-color: var(--color-bg-accent);
+    background: rgba(239, 159, 39, 0.15);
+    color: var(--color-bg-accent);
+    border-color: var(--color-bg-accent);
 }
 
 /* Volume control popover */
 .volumeWrapper {
-  position: relative;
-  display: inline-block;
+    position: relative;
+    display: inline-block;
 }
 
 .volumePopover {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 6px;
-  z-index: 110;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 90px;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+    z-index: 110;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 90px;
 }
 
 .volumeInput {
-  width: 100%;
-  accent-color: var(--color-bg-accent);
-  cursor: pointer;
-  height: 4px;
+    width: 100%;
+    accent-color: var(--color-bg-accent);
+    cursor: pointer;
+    height: 4px;
 }
 
 .timeDisplay {
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Menlo,
-    Monaco,
-    Consolas,
-    monospace;
-  font-size: 13px;
-  color: var(--color-text-primary);
-  min-width: 100px;
-  text-align: center;
+    font-family:
+        ui-monospace,
+        SFMono-Regular,
+        SF Mono,
+        Menlo,
+        Monaco,
+        Consolas,
+        monospace;
+    font-size: 13px;
+    color: var(--color-text-primary);
+    min-width: 100px;
+    text-align: center;
 }
 
 /* Scrubber and Track Area */
 .tracksWrapper {
-  position: relative;
-  background: rgba(20, 19, 16, 0.6);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 8px;
-  height: 106px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  cursor: pointer;
-  user-select: none;
-  overflow: hidden;
+    position: relative;
+    background: rgba(20, 19, 16, 0.6);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 8px;
+    height: 106px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    overflow: hidden;
 }
 
 .trackRow {
-  position: relative;
-  height: 42px;
-  width: 100%;
+    position: relative;
+    height: 42px;
+    width: 100%;
 }
 
 .sceneCard {
-  position: absolute;
-  height: 100%;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  box-sizing: border-box;
-  background-size: cover;
-  background-position: center;
-  border: 1.5px solid rgba(241, 239, 232, 0.15);
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
-  cursor: pointer;
+    position: absolute;
+    height: 100%;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    box-sizing: border-box;
+    background-size: cover;
+    background-position: center;
+    border: 1.5px solid rgba(241, 239, 232, 0.15);
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
+    cursor: pointer;
 }
 
 .sceneCard:hover {
-  border-color: var(--color-text-secondary);
+    border-color: var(--color-text-secondary);
 }
 
 .sceneCardSelected {
-  border-color: var(--color-node-scene) !important;
-  box-shadow: 0 0 10px rgba(29, 158, 117, 0.5) !important;
+    border-color: var(--color-node-scene) !important;
+    box-shadow: 0 0 10px rgba(29, 158, 117, 0.5) !important;
 }
 
 .sceneCardActive {
-  border-color: var(--color-node-scene) !important;
+    border-color: var(--color-node-scene) !important;
 }
 
 .sceneCardCameraSelected {
-  border-color: var(--color-bg-accent) !important;
-  box-shadow: 0 0 8px rgba(239, 159, 39, 0.4);
+    border-color: var(--color-bg-accent) !important;
+    box-shadow: 0 0 8px rgba(239, 159, 39, 0.4);
 }
 
 .cardOverlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.1) 100%);
-  padding: 4px 8px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  color: #fff;
-  pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.1) 100%);
+    padding: 4px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: #fff;
+    pointer-events: none;
 }
 
 .sceneNum {
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
 }
 
 .sceneTitle {
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .camBtn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border-radius: 4px;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  transition: all 0.2s;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
 }
 
 .camBtn:hover {
-  background: var(--color-bg-accent);
-  border-color: var(--color-bg-accent);
+    background: var(--color-bg-accent);
+    border-color: var(--color-bg-accent);
 }
 
 .camBtnActive {
-  background: var(--color-bg-accent);
-  border-color: var(--color-bg-accent);
-  color: #000;
+    background: var(--color-bg-accent);
+    border-color: var(--color-bg-accent);
+    color: #000;
 }
 
 /* Scrubber Line */
 .playhead {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--color-bg-accent);
-  pointer-events: none;
-  z-index: 20;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-bg-accent);
+    pointer-events: none;
+    z-index: 20;
 }
 
 .playheadHandle {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
-  background: var(--color-bg-accent);
-  border-radius: 50%;
-  box-shadow: 0 0 6px var(--color-bg-accent);
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background: var(--color-bg-accent);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--color-bg-accent);
 }
 
 /* Tab 2: Synapses interactive network canvas styling */
 .canvasWrapper {
-  position: relative;
-  background: rgba(20, 19, 16, 0.6);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  height: 145px;
-  overflow: hidden;
+    position: relative;
+    background: rgba(20, 19, 16, 0.6);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    height: 145px;
+    overflow: hidden;
 }
 
 .synapsesCanvas {
-  width: 100%;
-  height: 100%;
-  display: block;
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
 .canvasLegend {
-  position: absolute;
-  bottom: 6px;
-  left: 12px;
-  font-size: 9px;
-  color: var(--color-text-tertiary);
-  pointer-events: none;
+    position: absolute;
+    bottom: 6px;
+    left: 12px;
+    font-size: 9px;
+    color: var(--color-text-tertiary);
+    pointer-events: none;
 }
 
 /* Tab 3: Narrative settings UI wrapper styling (Scene Arc) */
 .arcSettingsWrapper {
-  background: rgba(27, 26, 22, 0.45);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(239, 159, 39, 0.15);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  height: 145px;
-  box-sizing: border-box;
+    background: rgba(27, 26, 22, 0.45);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(239, 159, 39, 0.15);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    height: 145px;
+    box-sizing: border-box;
 }
 
 .settingsGrid {
-  display: grid;
-  grid-template-columns: 1.25fr 1fr 1.35fr;
-  gap: 16px;
+    display: grid;
+    grid-template-columns: 1.25fr 1fr 1.35fr;
+    gap: 16px;
 }
 
 .arcCol {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .columnHeader {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.08em;
 }
 
 .columnHeader i {
-  color: var(--color-bg-accent);
+    color: var(--color-bg-accent);
 }
 
 .emotionalBox {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  height: 62px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    height: 62px;
 }
 
 .emotionalSvg {
-  width: 100%;
-  height: 100%;
+    width: 100%;
+    height: 100%;
 }
 
 .svgText {
-  fill: var(--color-text-tertiary);
-  font-size: 8px;
-  font-family: inherit;
+    fill: var(--color-text-tertiary);
+    font-size: 8px;
+    font-family: inherit;
 }
 
 .svgLabelText {
-  fill: var(--color-text-secondary);
-  font-size: 9px;
-  font-weight: 500;
-  font-family: inherit;
-  opacity: 0.4;
+    fill: var(--color-text-secondary);
+    font-size: 9px;
+    font-weight: 500;
+    font-family: inherit;
+    opacity: 0.4;
 }
 
 /* Horizontal sliders layout under Emotional line */
 .arcSlidersRow {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+    display: flex;
+    gap: 12px;
+    align-items: center;
 }
 
 .sliderBox {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .sliderLabel {
-  font-size: 10px;
-  color: var(--color-text-secondary);
-  white-space: nowrap;
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
 }
 
 .settingsSlider {
-  flex: 1;
-  accent-color: var(--color-bg-accent);
-  cursor: pointer;
-  height: 3px;
+    flex: 1;
+    accent-color: var(--color-bg-accent);
+    cursor: pointer;
+    height: 3px;
 }
 
 /* Tension level dynamic indicator overlay */
 .tensionSliderContainer {
-  position: relative;
-  height: 16px;
-  display: flex;
-  align-items: center;
+    position: relative;
+    height: 16px;
+    display: flex;
+    align-items: center;
 }
 
 .tensionGlowBar {
-  position: absolute;
-  bottom: 2px;
-  left: 0;
-  height: 3px;
-  border-radius: 2px;
-  transition: all 0.2s;
-  pointer-events: none;
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    height: 3px;
+    border-radius: 2px;
+    transition: all 0.2s;
+    pointer-events: none;
 }
 
 /* Story Beat steps progress layout (synapse-like beat line) */
 .storyBeatWrapper {
-  position: relative;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  height: 62px;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    position: relative;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    height: 62px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .beatProgressLine {
-  position: absolute;
-  left: 32px;
-  right: 32px;
-  height: 2px;
-  background: rgba(241, 239, 232, 0.1);
-  top: 20px;
-  z-index: 1;
+    position: absolute;
+    left: 32px;
+    right: 32px;
+    height: 2px;
+    background: rgba(241, 239, 232, 0.1);
+    top: 20px;
+    z-index: 1;
 }
 
 .beatSteps {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  z-index: 2;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    z-index: 2;
 }
 
 .beatStep {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .beatNode {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #2c2923;
-  border: 2px solid rgba(241, 239, 232, 0.3);
-  transition: all 0.2s;
-  position: relative;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #2c2923;
+    border: 2px solid rgba(241, 239, 232, 0.3);
+    transition: all 0.2s;
+    position: relative;
 }
 
 .beatNodePulse {
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 1.5px solid var(--color-bg-accent);
-  animation: pulseBeat 1.5s infinite;
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-bg-accent);
+    animation: pulseBeat 1.5s infinite;
 }
 
 @keyframes pulseBeat {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.6);
-    opacity: 0;
-  }
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
 }
 
 .beatStepActive .beatNode {
-  background: var(--color-bg-accent) !important;
-  border-color: var(--color-bg-accent) !important;
-  box-shadow: 0 0 8px var(--color-bg-accent);
+    background: var(--color-bg-accent) !important;
+    border-color: var(--color-bg-accent) !important;
+    box-shadow: 0 0 8px var(--color-bg-accent);
 }
 
 .beatLabel {
-  font-size: 8.5px;
-  color: var(--color-text-secondary);
-  text-align: center;
-  white-space: nowrap;
+    font-size: 8.5px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    white-space: nowrap;
 }
 
 .beatStepActive .beatLabel {
-  color: var(--color-text-primary);
-  font-weight: 600;
+    color: var(--color-text-primary);
+    font-weight: 600;
 }
 
 /* Pacing selection pills */
 .pacingContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 6px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 6px 12px;
 }
 
 .pacingTitle {
-  font-size: 9.5px;
-  text-transform: uppercase;
-  color: var(--color-text-tertiary);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+    font-weight: 600;
+    letter-spacing: 0.05em;
 }
 
 .pacingPills {
-  display: flex;
-  gap: 6px;
+    display: flex;
+    gap: 6px;
 }
 
 .pacingPill {
-  flex: 1;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  color: var(--color-text-secondary);
-  font-size: 10px;
-  padding: 3px 0;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
+    flex: 1;
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    color: var(--color-text-secondary);
+    font-size: 10px;
+    padding: 3px 0;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
 }
 
 .pacingPill:hover {
-  border-color: rgba(241, 239, 232, 0.3);
-  color: var(--color-text-primary);
+    border-color: rgba(241, 239, 232, 0.3);
+    color: var(--color-text-primary);
 }
 
 .pacingPillActive {
-  background: rgba(239, 159, 39, 0.15) !important;
-  border-color: var(--color-bg-accent) !important;
-  color: var(--color-bg-accent) !important;
-  font-weight: 600;
-  box-shadow: 0 0 6px rgba(239, 159, 39, 0.2);
+    background: rgba(239, 159, 39, 0.15) !important;
+    border-color: var(--color-bg-accent) !important;
+    color: var(--color-bg-accent) !important;
+    font-weight: 600;
+    box-shadow: 0 0 6px rgba(239, 159, 39, 0.2);
 }
 
 /* Custom Conflict Grid layout */
 .conflictMatrixWrapper {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 8px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
 }
 
 .conflictMatrixHeader {
-  font-size: 9.5px;
-  text-transform: uppercase;
-  color: var(--color-text-tertiary);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+    font-weight: 600;
+    letter-spacing: 0.05em;
 }
 
 .conflictMatrixGrid {
-  display: grid;
-  grid-template-columns: 110px 1fr;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  overflow: hidden;
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    overflow: hidden;
 }
 
 .conflictLeftCol {
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--color-border);
 }
 
 .conflictBtnLeft {
-  height: 27px;
-  background: var(--color-bg-primary);
-  border: none;
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-  font-size: 9.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: left;
-  padding-left: 8px;
-  font-family: inherit;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+    height: 27px;
+    background: var(--color-bg-primary);
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: 9.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    padding-left: 8px;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .conflictBtnLeft:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
 
 .conflictBtnLeftActive {
-  background: #73c850 !important; /* Premium green from conflict screenshot */
-  color: #000 !important;
-  font-weight: 600;
+    background: #73c850 !important; /* Premium green from conflict screenshot */
+    color: #000 !important;
+    font-weight: 600;
 }
 
 .conflictRightCol {
-  display: flex;
-  flex-direction: column;
-  background: rgba(20, 19, 16, 0.4);
+    display: flex;
+    flex-direction: column;
+    background: rgba(20, 19, 16, 0.4);
 }
 
 .conflictBtnRight {
-  height: 18px;
-  background: transparent;
-  border: none;
-  color: var(--color-text-secondary);
-  font-size: 9.5px;
-  text-align: left;
-  padding-left: 10px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
+    height: 18px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 9.5px;
+    text-align: left;
+    padding-left: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
 }
 
 .conflictBtnRight:hover {
-  color: var(--color-text-primary);
+    color: var(--color-text-primary);
 }
 
 .conflictBtnRightActive {
-  color: var(--color-text-primary) !important;
-  font-weight: 600;
+    color: var(--color-text-primary) !important;
+    font-weight: 600;
 }
 
 /* Lore checkbox badges */
 .loreWrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 6px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 6px 12px;
 }
 
 .loreTitle {
-  font-size: 9.5px;
-  text-transform: uppercase;
-  color: var(--color-text-tertiary);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    color: var(--color-text-tertiary);
+    font-weight: 600;
+    letter-spacing: 0.05em;
 }
 
 .loreBadges {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
 }
 
 .loreBadge {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  color: var(--color-text-secondary);
-  font-size: 9.5px;
-  padding: 3px 6px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  text-align: left;
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    color: var(--color-text-secondary);
+    font-size: 9.5px;
+    padding: 3px 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    text-align: left;
 }
 
 .loreBadgeActive {
-  border-color: var(--color-bg-accent) !important;
-  color: var(--color-text-primary) !important;
-  background: rgba(239, 159, 39, 0.08) !important;
-  box-shadow: 0 0 6px rgba(239, 159, 39, 0.15);
+    border-color: var(--color-bg-accent) !important;
+    color: var(--color-text-primary) !important;
+    background: rgba(239, 159, 39, 0.08) !important;
+    box-shadow: 0 0 6px rgba(239, 159, 39, 0.15);
 }
 
 .loreBadge i {
-  font-size: 10.5px;
-  color: var(--color-text-tertiary);
+    font-size: 10.5px;
+    color: var(--color-text-tertiary);
 }
 
 .loreBadgeActive i {
-  color: var(--color-bg-accent) !important;
+    color: var(--color-bg-accent) !important;
 }
 
 .curveSelect {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-  font-size: 10px;
-  padding: 1px 4px;
-  border-radius: 4px;
-  outline: none;
-  cursor: pointer;
-  font-family: inherit;
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .spacer {
-  flex: 1;
+    flex: 1;
 }
 
 /* Shown instead of the whole timeline when no scenes exist yet */
 .emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 32px 0;
-  color: var(--color-text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 32px 0;
+    color: var(--color-text-secondary);
 }
 
 .emptyState i {
-  font-size: 28px;
-  color: var(--color-text-tertiary);
+    font-size: 28px;
+    color: var(--color-text-tertiary);
 }
 
 .emptyState p {
-  margin: 0;
-  font-size: 13px;
+    margin: 0;
+    font-size: 13px;
 }

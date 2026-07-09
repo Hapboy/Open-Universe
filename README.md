@@ -37,11 +37,11 @@ API работают в **mock-режиме без ключей** (демо-ре
 
 Ранние автономные HTML-прототипы (без сборки, тема светлая/тёмная):
 
-| Файл | Что демонстрирует |
-|---|---|
-| [`prototypes/index.html`](prototypes/index.html) | Сшитый экран: граф слева → плеер справа, изменение узла мгновенно перерисовывает кадр. |
-| [`prototypes/prototype-1-node-editor.html`](prototypes/prototype-1-node-editor.html) | Нодовый редактор: граф, инспектор, Канон/Мультивселенная, очередь pull-request, таймлайн. |
-| [`prototypes/prototype-2-film-game-player.html`](prototypes/prototype-2-film-game-player.html) | Плеер «фильм ↔ игра»: живые регуляторы и вход в игру с любого таймкода. |
+| Файл                                                                                           | Что демонстрирует                                                                         |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [`prototypes/index.html`](prototypes/index.html)                                               | Сшитый экран: граф слева → плеер справа, изменение узла мгновенно перерисовывает кадр.    |
+| [`prototypes/prototype-1-node-editor.html`](prototypes/prototype-1-node-editor.html)           | Нодовый редактор: граф, инспектор, Канон/Мультивселенная, очередь pull-request, таймлайн. |
+| [`prototypes/prototype-2-film-game-player.html`](prototypes/prototype-2-film-game-player.html) | Плеер «фильм ↔ игра»: живые регуляторы и вход в игру с любого таймкода.                   |
 
 ## Документация
 
@@ -59,4 +59,5 @@ docs/DESIGN.md     — дизайн-спека, план интеграции AI
 ```
 
 ---
+
 🤖 Сделано с [Claude Code](https://claude.com/claude-code)
