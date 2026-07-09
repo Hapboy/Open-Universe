@@ -665,6 +665,30 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         [nodes, edges, showToast, activeSceneId, cacheSceneOutput],
     );
 
+    // Reactively keeps free/non-AI nodes (Pinterest pin, text passthrough,
+    // entity selectors, ...) resolved without a manual "Прогнать граф" click
+    // — debounced so rapid edits don't thrash. AI-model nodes are skipped
+    // entirely (see runGraph's autoMode) and only ever resolve from an
+    // explicit manual action (the Topbar button or a node's own ▶ button).
+    const autoResolveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (autoResolveTimer.current) clearTimeout(autoResolveTimer.current);
+        autoResolveTimer.current = setTimeout(() => {
+            void (async () => {
+                const { runGraph } = await import("../../core/graph.ts");
+                const sceneId = activeSceneId;
+                const output = await runGraph(nodes, edges, resolvedRef.current, showToast, {
+                    autoMode: true,
+                });
+                setResolved({ ...resolvedRef.current });
+                cacheSceneOutput(sceneId, output);
+            })();
+        }, 250);
+        return () => {
+            if (autoResolveTimer.current) clearTimeout(autoResolveTimer.current);
+        };
+    }, [nodes, edges, activeSceneId, showToast, cacheSceneOutput]);
+
     // ── Assemble and expose ─────────────────────────────────────────────────────
 
     const ctx: GraphCtx = {

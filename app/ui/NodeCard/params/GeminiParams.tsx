@@ -210,8 +210,10 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
             <SelectField
                 label="Язык промпта"
                 value={params.language as string}
-                onChange={(v) => updateNodeParam(node.id, "language", v)}
+                onChange={() => {}}
                 options={LANGUAGE_OPTIONS}
+                disabled
+                title={ENTERPRISE_ONLY_HINT}
             />
             <Switch
                 label="Улучшить промпт"

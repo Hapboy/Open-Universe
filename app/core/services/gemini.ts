@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import type { ImagePromptLanguage, PersonGeneration, SafetyFilterLevel } from "@google/genai";
+import type { PersonGeneration, SafetyFilterLevel } from "@google/genai";
 
 type ShowToast = (msg: string) => void;
 
@@ -10,9 +10,11 @@ export interface GeminiModelInfo {
 
 // This app only ever creates GoogleGenAI({ apiKey }) — the Gemini Developer API,
 // not Vertex AI's "Enterprise" mode. Several GenerateImages/GenerateVideos config
-// fields are Vertex-only and throw client-side in Developer API mode: for Imagen
-// that's negativePrompt/seed/enhancePrompt/addWatermark, for Veo it's seed/generateAudio.
-// They're intentionally omitted from these option types.
+// fields are Vertex-only and throw client-side or server-side (400) in Developer
+// API mode: for Imagen that's negativePrompt/seed/enhancePrompt/addWatermark/
+// language ("Setting language is not supported", confirmed live even with the
+// default "auto"), for Veo it's seed/generateAudio. They're intentionally
+// omitted from these option types.
 export interface ImagenOptions {
     aspectRatio: string;
     model: string;
@@ -23,7 +25,6 @@ export interface ImagenOptions {
     outputMimeType?: string;
     outputCompressionQuality?: number;
     guidanceScale?: number;
-    language?: string;
 }
 
 export interface VeoOptions {
@@ -176,11 +177,24 @@ export const GeminiService = {
                             ? options.outputCompressionQuality
                             : undefined,
                     guidanceScale: options.guidanceScale,
-                    language: options.language as ImagePromptLanguage,
+                    includeRaiReason: true,
                 },
             });
-            const bytes = res.generatedImages?.[0]?.image?.imageBytes;
-            if (!bytes) throw new Error("no image bytes");
+            const first = res.generatedImages?.[0];
+            const bytes = first?.image?.imageBytes;
+            if (!bytes) {
+                // Imagen's child-safety/RAI policy can silently drop the image and
+                // still return HTTP 200 — indistinguishable from a real failure
+                // unless includeRaiReason is set and we surface it here.
+                const reason = first?.raiFilteredReason;
+                showToast(
+                    reason
+                        ? `Imagen 4: изображение отклонено (safety-фильтр): ${reason}`
+                        : "Imagen 4: пустой ответ — изображение отклонено фильтром безопасности",
+                );
+                console.warn("Imagen 4: filtered, no image bytes", reason ?? res);
+                return null;
+            }
             showToast("Imagen 4: изображение готово!");
             return `data:image/png;base64,${bytes}`;
         } catch (e) {

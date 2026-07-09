@@ -1,6 +1,7 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeParams } from "../types.ts";
 import { GeminiService, HiggsfieldService } from "./services/index.ts";
+import { AI_MODEL_NODE_TYPES } from "../data/nodes.ts";
 
 type ShowToast = (msg: string) => void;
 type Resolved = Record<string, unknown>;
@@ -94,7 +95,6 @@ async function computeNodeOutput(
                 outputMimeType: d.params.outputMimeType as string,
                 outputCompressionQuality: d.params.outputCompressionQuality as number,
                 guidanceScale: toNum(d.params.guidanceScale),
-                language: d.params.language as string,
             },
             showToast,
         );
@@ -206,20 +206,34 @@ function resolveSceneOutput(
 
 // Full-graph pass: recomputes every node from scratch into `resolved`
 // (mutated in place — pass an empty object to fully reset the cache).
+//
+// `autoMode` is for the reactive/automatic pass (GraphContext's debounced
+// effect, not the manual "Прогнать граф" button): it skips AI-model node
+// types entirely — never calls them, never touches their cached output —
+// so a paid node only ever runs from an explicit manual action. Every other
+// node is recomputed fresh on every call (bypassing the "already resolved"
+// skip below) since that's the only way a changed param or rewiring ever
+// takes effect without a manual click, and these nodes are pure/free local
+// reads (Pinterest pin, text passthrough, entity selector) so recomputing
+// them costs nothing.
 export async function runGraph(
     nodes: Node<NodeParams>[],
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
+    opts?: { autoMode?: boolean },
 ): Promise<SceneOutput | null> {
     for (let pass = 0; pass < nodes.length; pass++) {
         for (const node of nodes) {
             const d = node.data;
 
+            if (opts?.autoMode && AI_MODEL_NODE_TYPES.includes(d.nodeType)) continue;
+
             computeCharacterExtraOutputs(node, resolved);
 
             // Skip nodes whose output is already resolved from a previous pass
-            if (d.outputs[0]?.id && resolved[d.outputs[0].id] !== undefined) continue;
+            const alreadyResolved = d.outputs[0]?.id && resolved[d.outputs[0].id] !== undefined;
+            if (alreadyResolved && !opts?.autoMode) continue;
 
             const out = await computeNodeOutput(node, edges, resolved, showToast);
             if (out !== undefined && d.outputs[0]?.id) resolved[d.outputs[0].id] = out;

@@ -127,14 +127,14 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             resolution: "1K",
             numberOfImages: 1,
             personGeneration: "ALLOW_ADULT",
-            safetyFilterLevel: "BLOCK_MEDIUM_AND_ABOVE",
+            safetyFilterLevel: "BLOCK_LOW_AND_ABOVE",
             outputMimeType: "image/png",
             outputCompressionQuality: 75,
             guidanceScale: "",
-            language: "auto",
             // Vertex/Enterprise-only fields — this browser app can only reach the Gemini
             // Developer API, which rejects these. Kept (disabled) on the node card for
             // when a backend proxy adds Vertex support.
+            language: "auto",
             negativePrompt: "",
             seed: "",
             enhancePrompt: true,
