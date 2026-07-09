@@ -1,23 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import cn from 'classnames'
 import type { GlobeInstance } from 'globe.gl'
+import * as THREE from 'three'
 import { useGraphContext } from '../../store/contexts/GraphContext.tsx'
 import type { CharacterNodeParams, LocationNodeParams, WGS84Coordinates } from '../../types.ts'
 import styles from './WorldMap.module.css'
 
 const EARTH_RADIUS_KM = 6371
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
 
 interface LocationRingDatum {
   label: string
   geometry: { type: 'Polygon'; coordinates: [number, number][][] }
 }
 
-interface CharacterMarkerDatum {
-  lat: number
-  lng: number
-  color: string
-  label: string
-}
+type MarkerDatum =
+  | { kind: 'character'; lat: number; lng: number; color: string; label: string }
+  | { kind: 'location'; lat: number; lng: number; label: string }
 
 function hasCoords(c: WGS84Coordinates | undefined): c is { lat: number; lon: number } {
   return !!c && c.lat != null && c.lon != null
@@ -47,16 +46,27 @@ function circleRing(lat: number, lon: number, radiusKm: number, segments = 64): 
   return ring
 }
 
-function buildCharacterMarkerEl(d: CharacterMarkerDatum): HTMLElement {
+function buildMarkerEl(d: MarkerDatum): HTMLElement {
   const el = document.createElement('div')
-  el.className = styles.characterMarker
   el.title = d.label
-  el.innerHTML = `
-    <svg viewBox="0 0 32 32" width="28" height="28">
-      <circle class="${styles.pulseRing}" cx="16" cy="16" r="5" fill="none" stroke="${d.color}" stroke-width="2" />
-      <circle cx="16" cy="16" r="5" fill="${d.color}" />
-    </svg>
-  `
+
+  const labelEl = document.createElement('span')
+  labelEl.className = styles.markerLabel
+  labelEl.textContent = d.label
+
+  if (d.kind === 'character') {
+    el.className = styles.characterMarker
+    el.innerHTML = `
+      <svg viewBox="0 0 32 32" width="28" height="28">
+        <circle class="${styles.pulseRing}" cx="16" cy="16" r="5" fill="none" stroke="${d.color}" stroke-width="2" />
+        <circle cx="16" cy="16" r="5" fill="${d.color}" />
+      </svg>
+    `
+  } else {
+    el.className = styles.locationMarker
+  }
+  el.appendChild(labelEl)
+
   return el
 }
 
@@ -72,19 +82,49 @@ export function WorldMap() {
     let cancelled = false
     import('globe.gl').then(({ default: Globe }) => {
       if (cancelled || !containerRef.current) return
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
+      const sunLight = new THREE.DirectionalLight(0xffffff, 1.1)
+      sunLight.position.set(-1, 0.5, 1)
+
       const instance = new Globe(containerRef.current)
-        .globeImageUrl('/textures/earth-blue-marble.jpg')
         .backgroundColor('rgba(0,0,0,0)')
+        .showAtmosphere(true)
+        .atmosphereColor('#4da6ff')
+        .atmosphereAltitude(0.2)
+        .lights([ambientLight, sunLight])
         .polygonGeoJsonGeometry((d: LocationRingDatum) => d.geometry)
         .polygonCapColor(() => 'rgba(255,138,61,0.35)')
         .polygonSideColor(() => 'rgba(255,138,61,0.15)')
         .polygonStrokeColor(() => '#ff8a3d')
         .polygonAltitude(0.005)
         .polygonLabel((d: LocationRingDatum) => d.label)
-        .htmlLat((d: CharacterMarkerDatum) => d.lat)
-        .htmlLng((d: CharacterMarkerDatum) => d.lng)
-        .htmlElement((d: CharacterMarkerDatum) => buildCharacterMarkerEl(d))
+        .htmlLat((d: MarkerDatum) => d.lat)
+        .htmlLng((d: MarkerDatum) => d.lng)
+        .htmlElement((d: MarkerDatum) => buildMarkerEl(d))
         .pointOfView({ lat: 20, lng: 45, altitude: 2.5 })
+
+      // Real satellite imagery via Mapbox tiles when a token is configured;
+      // otherwise fall back to the bundled static texture so the globe still
+      // renders (globeTileEngineUrl/globeImageUrl are alternate rendering
+      // paths — only one is active at a time).
+      if (MAPBOX_TOKEN) {
+        instance
+          .globeTileEngineUrl(
+            (x: number, y: number, l: number) =>
+              `https://api.mapbox.com/v4/mapbox.satellite/${l}/${x}/${y}.jpg90?access_token=${MAPBOX_TOKEN}`
+          )
+          .globeTileEngineMaxLevel(19)
+      } else {
+        instance.globeImageUrl('/textures/earth-blue-marble.jpg')
+      }
+
+      // Lower shininess/specular so the surface reads as matte rock/water
+      // instead of the default glossy plastic look.
+      const material = instance.globeMaterial() as THREE.MeshPhongMaterial
+      material.shininess = 6
+      material.specular = new THREE.Color(0x111111)
+
       // `instance` is a kapsule chainable *function* — pass it via an updater
       // so React stores it as the value instead of calling it as `fn(prevState)`.
       setGlobe(() => instance)
@@ -100,19 +140,20 @@ export function WorldMap() {
   useEffect(() => {
     if (!globe) return
 
-    const locations: LocationRingDatum[] = nodes
+    const locationNodes = nodes
       .filter((n) => n.data.nodeType === 'location')
-      .map((n) => n.data.params as LocationNodeParams)
-      .filter((p) => hasCoords(p.coordinates))
-      .map((p) => ({
-        label: 'Локация',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [circleRing(p.coordinates.lat!, p.coordinates.lon!, p.radiusKm || 5)],
-        },
-      }))
+      .map((n) => ({ label: n.data.label, params: n.data.params as LocationNodeParams }))
+      .filter(({ params }) => hasCoords(params.coordinates))
 
-    const characters: CharacterMarkerDatum[] = nodes
+    const locations: LocationRingDatum[] = locationNodes.map(({ label, params: p }) => ({
+      label,
+      geometry: {
+        type: 'Polygon',
+        coordinates: [circleRing(p.coordinates.lat!, p.coordinates.lon!, p.radiusKm || 5)],
+      },
+    }))
+
+    const characters = nodes
       .filter((n) => n.data.nodeType === 'character')
       .map((n) => ({
         color: n.data.color,
@@ -120,14 +161,24 @@ export function WorldMap() {
         params: n.data.params as CharacterNodeParams,
       }))
       .filter(({ params }) => hasCoords(params.currentPosition))
-      .map(({ color, label, params }) => ({
+
+    const markers: MarkerDatum[] = [
+      ...characters.map(({ color, label, params }) => ({
+        kind: 'character' as const,
         lat: params.currentPosition.lat!,
         lng: params.currentPosition.lon!,
         color: color || '#ff8a3d',
+        label: params.name?.trim() || label,
+      })),
+      ...locationNodes.map(({ label, params: p }) => ({
+        kind: 'location' as const,
+        lat: p.coordinates.lat!,
+        lng: p.coordinates.lon!,
         label,
-      }))
+      })),
+    ]
 
-    globe.polygonsData(locations).htmlElementsData(characters)
+    globe.polygonsData(locations).htmlElementsData(markers)
   }, [globe, nodes])
 
   return (
@@ -141,7 +192,21 @@ export function WorldMap() {
           <i className="ti ti-x" />
         </button>
       </div>
-      <div ref={containerRef} className={styles.globeContainer} />
+      <div className={styles.globeContainer}>
+        <div ref={containerRef} className={styles.globeMount} />
+        {MAPBOX_TOKEN && (
+          <div className={styles.attribution}>
+            ©{' '}
+            <a href="https://www.mapbox.com/about/maps/" target="_blank" rel="noreferrer">
+              Mapbox
+            </a>{' '}
+            ©{' '}
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
+              OpenStreetMap
+            </a>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
