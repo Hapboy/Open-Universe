@@ -145,7 +145,7 @@ export function WorldMap() {
             // `instance` is a kapsule chainable *function* — pass it via an updater
             // so React stores it as the value instead of calling it as `fn(prevState)`.
             setGlobe(() => instance);
-        });
+        }, console.error);
         return () => {
             cancelled = true;
         };

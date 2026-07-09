@@ -105,7 +105,7 @@ export function CharacterParams({
             const next = [...photos, ...newPhotos];
             updateNodeParam(node.id, "photos", next);
             updateNodeParam(node.id, "photoIdx", next.length - 1);
-        });
+        }, console.error);
         e.target.value = "";
     };
 

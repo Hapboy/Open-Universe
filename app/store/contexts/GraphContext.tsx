@@ -356,6 +356,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         return () => {
             if (graphSaveTimer.current) clearTimeout(graphSaveTimer.current);
         };
+        // sceneGraphs deliberately omitted below — see comment above
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [nodes, edges, activeSceneId, persistSceneGraphs]);
 
     // ── Scene list (derived from each scene's output_scene node) ────────────────
