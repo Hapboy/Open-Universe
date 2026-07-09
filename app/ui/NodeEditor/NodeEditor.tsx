@@ -147,10 +147,6 @@ function NodeEditorCanvas() {
           onClose={() => setBrowserAt(null)}
         />
       )}
-      <div className={styles.hint} id="hint" style={{ pointerEvents: 'none' }}>
-        Двойной клик по пустому месту — открыть поиск нод. Соедини выход одной ноды со совместимым
-        входом другой — тянем от правого порта к левому.
-      </div>
     </div>
   )
 }
