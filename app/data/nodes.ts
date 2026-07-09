@@ -153,10 +153,10 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         outputs: [{ name: "Generated Video", type: PORT_TYPES.VIDEO }],
         params: {
             prompt: "",
-            model: "veo-3.1-generate-preview",
+            model: "veo-3.1-lite-generate-preview",
             aspectRatio: "16:9",
             resolution: "720p",
-            durationSeconds: 8,
+            durationSeconds: 4,
             negativePrompt: "",
             personGeneration: "allow_adult",
             enhancePrompt: true,

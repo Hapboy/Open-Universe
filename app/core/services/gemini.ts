@@ -162,13 +162,17 @@ export const GeminiService = {
         }
         try {
             showToast("Imagen 4: генерация кадра…");
+            const model = options.model || "imagen-4.0-generate-001";
+            // Imagen 4 Fast has a fixed output size and rejects imageSize outright
+            // ("sampleImageSize is not adjustable") — only Standard/Ultra support it.
+            const supportsImageSize = model !== "imagen-4.0-fast-generate-001";
             const res = await GeminiService._ai().models.generateImages({
-                model: options.model || "imagen-4.0-generate-001",
+                model,
                 prompt,
                 config: {
                     numberOfImages: options.numberOfImages ?? 1,
                     aspectRatio: options.aspectRatio,
-                    imageSize: options.resolution,
+                    imageSize: supportsImageSize ? options.resolution : undefined,
                     personGeneration: options.personGeneration as PersonGeneration,
                     safetyFilterLevel: options.safetyFilterLevel as SafetyFilterLevel,
                     outputMimeType: options.outputMimeType,
@@ -219,6 +223,11 @@ export const GeminiService = {
             const image = imageUrl
                 ? { imageBytes: await GeminiService._urlToBase64(imageUrl), mimeType: "image/jpeg" }
                 : undefined;
+            const resolution = options.resolution ?? "720p";
+            // 1080p/4k generations must be exactly 8s across every veo-3.1-*-preview
+            // model (confirmed in ai.google.dev/gemini-api/docs/veo) — clamp rather
+            // than let the API reject a shorter duration picked at 720p.
+            const durationSeconds = resolution !== "720p" ? 8 : (options.durationSeconds ?? 8);
             let operation = await GeminiService._ai().models.generateVideos({
                 model: options.model || "veo-3.1-generate-preview",
                 prompt,
@@ -226,8 +235,8 @@ export const GeminiService = {
                 config: {
                     numberOfVideos: 1,
                     aspectRatio: options.aspectRatio,
-                    resolution: options.resolution,
-                    durationSeconds: options.durationSeconds,
+                    resolution,
+                    durationSeconds,
                     negativePrompt: options.negativePrompt || undefined,
                     // personGeneration and enhancePrompt are both rejected ("currently not
                     // supported" / "not supported by this model") by every veo-3.1-*-preview

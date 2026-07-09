@@ -123,11 +123,19 @@ const ENTERPRISE_ONLY_HINT =
 // supported" / "not supported by this model"), regardless of value.
 const VEO_PREVIEW_UNSUPPORTED_HINT = "Не поддерживается моделями Veo 3.1 preview на данный момент";
 
+// Confirmed via Google's docs: Imagen 4 Fast has a fixed output size and
+// rejects imageSize outright, unlike Standard/Ultra.
+const IMAGEN_FAST_FIXED_SIZE_HINT = "Imagen 4 Fast использует фиксированный размер вывода";
+
+// Confirmed via Google's docs: 1080p/4k Veo generations must be exactly 8s.
+const VEO_NON_720P_DURATION_HINT = "Для разрешения выше 720p длительность фиксирована на 8 секунд";
+
 export function GeminiImagenParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
     const RATIOS = ["16:9", "1:1", "9:16", "4:3", "3:4"];
     const RESOLUTIONS = ["1K", "2K"];
     const prompt = edgeInput(node.data, edges, resolved, 0);
     const isJpeg = params.outputMimeType === "image/jpeg";
+    const isFastModel = params.model === "imagen-4.0-fast-generate-001";
     return (
         <>
             <WirableTextField
@@ -156,6 +164,8 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                 value={params.resolution as string}
                 onChange={(v) => updateNodeParam(node.id, "resolution", v)}
                 options={RESOLUTIONS}
+                disabled={isFastModel}
+                title={isFastModel ? IMAGEN_FAST_FIXED_SIZE_HINT : undefined}
             />
             <TextField
                 label="Негативный промпт"
@@ -242,6 +252,7 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
     const RATIOS = ["16:9", "9:16"];
     const RESOLUTIONS = ["720p", "1080p"];
     const prompt = edgeInput(node.data, edges, resolved, 0);
+    const requiresFullDuration = params.resolution !== "720p";
     return (
         <>
             <WirableTextField
@@ -272,8 +283,11 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                 options={RESOLUTIONS}
             />
             <TextField
+                key={String(requiresFullDuration)}
                 label="Длительность (сек)"
-                defaultValue={String(params.durationSeconds as number)}
+                disabled={requiresFullDuration}
+                title={requiresFullDuration ? VEO_NON_720P_DURATION_HINT : undefined}
+                defaultValue={String(requiresFullDuration ? 8 : (params.durationSeconds as number))}
                 onBlur={(v) => updateNodeParam(node.id, "durationSeconds", Number(v))}
             />
             <TextField
