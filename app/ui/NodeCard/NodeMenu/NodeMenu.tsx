@@ -4,9 +4,13 @@ import styles from "./NodeMenu.module.css";
 export function NodeMenu({
     onDuplicate,
     onDelete,
+    jsonPreviewVisible,
+    onToggleJsonPreview,
 }: {
     onDuplicate: () => void;
     onDelete: () => void;
+    jsonPreviewVisible?: boolean;
+    onToggleJsonPreview?: () => void;
 }) {
     return (
         <Popover
@@ -31,6 +35,16 @@ export function NodeMenu({
                         }}>
                         <i className="ti ti-copy" /> Дублировать
                     </button>
+                    {onToggleJsonPreview && (
+                        <button
+                            onClick={() => {
+                                onToggleJsonPreview();
+                                close();
+                            }}>
+                            <i className={`ti ${jsonPreviewVisible ? "ti-eye-off" : "ti-eye"}`} />
+                            {jsonPreviewVisible ? "Скрыть JSON превью" : "Показать JSON превью"}
+                        </button>
+                    )}
                     <button
                         className={styles.danger}
                         onClick={() => {

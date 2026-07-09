@@ -1,14 +1,24 @@
-.fld {
-    composes: fld from "../../../styles/shared.module.css";
-}
-
 .pair {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    flex-direction: row;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
-.pair input[type="datetime-local"] {
+.fld {
+    flex: 1;
+    min-width: 0;
+}
+
+.fld > span {
+    display: block;
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.fld input[type="datetime-local"] {
     width: 100%;
     min-width: 0;
     padding: 8px 12px;
@@ -21,6 +31,6 @@
     outline: none;
 }
 
-.pair input[type="datetime-local"]:focus {
+.fld input[type="datetime-local"]:focus {
     border-color: var(--color-border-active);
 }

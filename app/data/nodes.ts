@@ -237,7 +237,11 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         icon: "ti-user",
         color: "var(--color-node-higgsfield)",
         inputs: [{ name: "Clothing", type: "any" as PortType }],
-        outputs: [{ name: "Character Out", type: "any" as PortType }],
+        outputs: [
+            { name: "Photos", type: PORT_TYPES.IMAGE },
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
         params: {
             selectedItem: "Ара Гехецик",
             inFrame: true,
@@ -261,6 +265,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             tattoos: "Нет",
             accessories: "Нет",
             clothing: "Куртка",
+            additionalDescription: "",
         },
     },
 

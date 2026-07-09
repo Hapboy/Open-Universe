@@ -202,6 +202,7 @@ interface GraphCtx {
     duplicateNode: (id: string) => void;
     deleteNode: (id: string) => void;
     renameNode: (nodeId: string, label: string) => void;
+    setNodeField: (nodeId: string, patch: Partial<NodeParams>) => void;
     updateNodeParam: (nodeId: string, key: string, value: unknown) => void;
     updateNodeParams: (nodeId: string, patch: Record<string, unknown>) => void;
     executeGraph: () => Promise<void>;
@@ -510,6 +511,12 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         );
     }, []);
 
+    const setNodeField = useCallback((nodeId: string, patch: Partial<NodeParams>) => {
+        setNodes((ns) =>
+            ns.map((n) => (n.id !== nodeId ? n : { ...n, data: { ...n.data, ...patch } })),
+        );
+    }, []);
+
     const updateNodeParam = useCallback((nodeId: string, key: string, value: unknown) => {
         setNodes((ns) =>
             ns.map((n) =>
@@ -623,6 +630,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         duplicateNode,
         deleteNode,
         renameNode,
+        setNodeField,
         updateNodeParam,
         updateNodeParams,
         executeGraph,

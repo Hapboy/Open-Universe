@@ -1,5 +1,5 @@
 .card {
-    width: 300px;
+    width: 320px;
     background-color: var(--color-bg-card);
     border: 1.5px solid var(--color-border);
     border-left: 4px solid var(--nc, var(--color-border));
@@ -10,6 +10,7 @@
     user-select: none;
     touch-action: none;
     transition:
+        width 0.25s ease,
         box-shadow 0.2s,
         border-color 0.2s;
 }
@@ -25,12 +26,16 @@
         0 0 0 2px rgba(239, 159, 39, 0.25);
 }
 
+.card.cardWide {
+    width: 580px;
+}
+
 .header {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 2px solid var(--color-border);
     font-weight: 600;
     font-size: 12px;
     color: var(--color-text-primary);
@@ -99,9 +104,72 @@
     height: 20px;
 }
 
+.wideBtn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.wideBtn:hover {
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+}
+
+.wideBtn i {
+    font-size: 11px;
+}
+
+.wideBtnActive {
+    background: var(--nc, var(--color-bg-accent));
+    color: #fff;
+}
+
+.handle {
+    width: 12px;
+    height: 12px;
+    border-width: 2px;
+}
+
+.card.cardWide .paramsCol {
+    width: 320px;
+    margin: 0 auto;
+}
+
+.pinLabel {
+    position: absolute;
+    transform: translateY(-50%);
+    font-size: 12px;
+    line-height: 1.2;
+    color: var(--color-text-secondary);
+    background: var(--color-bg-card);
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--color-border);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.pinLabelLeft {
+    left: 14px;
+}
+
+.pinLabelRight {
+    right: 14px;
+}
+
 .paramsWrap {
     padding: 8px 12px 12px;
-    border-top: 1px solid var(--color-border);
 }
 
 .audioPlayer {

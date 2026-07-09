@@ -155,6 +155,14 @@ export function CharacterParams({
                 />
             )}
 
+            {shouldShow("general", "Дополнительное описание") && (
+                <TextAreaField
+                    label="Дополнительное описание"
+                    value={params.additionalDescription}
+                    onChange={(v) => updateNodeParam(node.id, "additionalDescription", v)}
+                />
+            )}
+
             {shouldShow("general", "Текущие координаты") && (
                 <CoordinateField
                     label="Текущие координаты"
@@ -175,20 +183,20 @@ export function CharacterParams({
                             style={{ display: "none" }}
                             onChange={handleUpload}
                         />
+                        <input
+                            key={params.selectedItem}
+                            type="text"
+                            placeholder="Pinterest board URL"
+                            defaultValue={params.pinterestUrl || ""}
+                            onBlur={(e) => updateNodeParam(node.id, "pinterestUrl", e.target.value)}
+                        />
                         <button
-                            className={styles.btn}
-                            onClick={() => fileInputRef.current?.click()}>
-                            <i className="ti ti-upload" /> Загрузить
+                            className={styles.iconBtn}
+                            onClick={() => fileInputRef.current?.click()}
+                            title="Загрузить фото">
+                            <i className="ti ti-upload" />
                         </button>
                     </div>
-                    <input
-                        key={params.selectedItem}
-                        type="text"
-                        placeholder="Pinterest board URL"
-                        defaultValue={params.pinterestUrl || ""}
-                        onBlur={(e) => updateNodeParam(node.id, "pinterestUrl", e.target.value)}
-                        style={{ marginTop: 4 }}
-                    />
                     {photos.length > 0 && (
                         <div className={styles.thumbnailsList}>
                             {photos.map((url, idx) => (
@@ -209,9 +217,10 @@ export function CharacterParams({
             )}
 
             {/* 2. BIRTH CATEGORY */}
-            {shouldShow("birth", "Годы жизни") && (
+            {(shouldShow("birth", "Дата рождения") || shouldShow("birth", "Дата смерти")) && (
                 <DateRangeField
-                    label="Годы жизни"
+                    fromLabel="Дата рождения"
+                    toLabel="Дата смерти"
                     from={params.lifetimeFrom}
                     to={params.lifetimeTo}
                     onChangeFrom={(v) => updateNodeParam(node.id, "lifetimeFrom", v)}

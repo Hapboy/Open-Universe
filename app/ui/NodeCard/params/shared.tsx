@@ -4,6 +4,7 @@ import type { Edge } from "@xyflow/react";
 import type { NodeRef, TimelineScene } from "../../../types.ts";
 import { usePresetLibraryContext } from "../../../store/contexts/PresetLibraryContext.tsx";
 import { Switch } from "../../components/Switch/Switch.tsx";
+import { Select } from "../../components/Select/Select.tsx";
 import styles from "../../../styles/shared.module.css";
 
 export interface NodeParamsProps {
@@ -182,28 +183,36 @@ export function DatabaseSelect({
     return (
         <div className={styles.fld}>
             <span>{label}</span>
-            <select value={selected} onChange={(e) => onSelect(e.target.value)}>
-                {items.map((item) => (
-                    <option key={item} value={item}>
-                        {item}
-                    </option>
-                ))}
-            </select>
-            {onUpdate && selected && (
-                <button
-                    className={cn(styles.btn, hasUnsavedChanges && styles.pri)}
-                    style={{ marginTop: 6 }}
-                    disabled={!hasUnsavedChanges}
-                    onClick={onUpdate}
-                    title={
-                        hasUnsavedChanges
-                            ? "Сохранить текущие значения в пресет"
-                            : "Нет изменений для сохранения в пресет"
-                    }>
-                    <i className="ti ti-device-floppy" /> Обновить пресет
-                </button>
-            )}
-            {adding ? (
+            <div className={styles.presetRow}>
+                <Select
+                    className={styles.presetSelect}
+                    value={selected}
+                    onChange={onSelect}
+                    options={items}
+                />
+                {onUpdate && selected && (
+                    <button
+                        className={cn(styles.iconBtn, hasUnsavedChanges && styles.pri)}
+                        disabled={!hasUnsavedChanges}
+                        onClick={onUpdate}
+                        title={
+                            hasUnsavedChanges
+                                ? "Сохранить текущие значения в пресет"
+                                : "Нет изменений для сохранения в пресет"
+                        }>
+                        <i className="ti ti-device-floppy" />
+                    </button>
+                )}
+                {!adding && (
+                    <button
+                        className={styles.iconBtn}
+                        onClick={() => setAdding(true)}
+                        title={addLabel}>
+                        <i className="ti ti-plus" />
+                    </button>
+                )}
+            </div>
+            {adding && (
                 <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                     <input
                         type="text"
@@ -231,13 +240,6 @@ export function DatabaseSelect({
                         <i className="ti ti-x" />
                     </button>
                 </div>
-            ) : (
-                <button
-                    className={styles.btn}
-                    style={{ marginTop: 6 }}
-                    onClick={() => setAdding(true)}>
-                    <i className="ti ti-plus" /> {addLabel}
-                </button>
             )}
         </div>
     );

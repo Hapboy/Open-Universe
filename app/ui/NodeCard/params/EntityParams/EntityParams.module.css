@@ -6,6 +6,10 @@
     composes: btn from "../../../../styles/shared.module.css";
 }
 
+.iconBtn {
+    composes: iconBtn from "../../../../styles/shared.module.css";
+}
+
 .segBtn {
     composes: segBtn from "../../../../styles/shared.module.css";
 }

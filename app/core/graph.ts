@@ -61,7 +61,7 @@ async function computeNodeOutput(
         const input = edgeInput(d, edges, resolved, 0);
         const val = (input.wired ? input.value : null) as string | null;
         return await HiggsfieldService.runMotion(val, d.params.motionPreset as string, showToast);
-    } else if (ENTITY_TYPES.includes(d.nodeType)) {
+    } else if (ENTITY_TYPES.includes(d.nodeType) && d.nodeType !== "character") {
         return d.params.selectedItem;
     } else if (d.nodeType === "gemini_text") {
         const prompt = edgeInput(d, edges, resolved, 0);
@@ -153,6 +153,23 @@ async function computeNodeOutput(
     return undefined;
 }
 
+// Fills a character node's fixed pins (Photos/Description/JSON) — pure
+// derivations of its own params, independent of edges/resolution order.
+function computeCharacterExtraOutputs(node: Node<NodeParams>, resolved: Resolved): void {
+    const d = node.data;
+    if (d.nodeType !== "character") return;
+    const [photosPort, descPort, jsonPort] = d.outputs;
+    if (photosPort) resolved[photosPort.id] = d.params.photos;
+    if (descPort) resolved[descPort.id] = d.params.additionalDescription;
+    if (jsonPort) {
+        resolved[jsonPort.id] = JSON.stringify(
+            { id: node.id, nodeType: d.nodeType, label: d.label, ...d.params },
+            null,
+            2,
+        );
+    }
+}
+
 function updateOutputScene(
     nodes: Node<NodeParams>[],
     edges: Edge[],
@@ -187,6 +204,8 @@ export async function runGraph(
     for (let pass = 0; pass < nodes.length; pass++) {
         for (const node of nodes) {
             const d = node.data;
+
+            computeCharacterExtraOutputs(node, resolved);
 
             // Skip nodes whose output is already resolved from a previous pass
             if (d.outputs[0]?.id && resolved[d.outputs[0].id] !== undefined) continue;
@@ -242,6 +261,7 @@ async function resolveNode(
             if (out !== undefined) resolved[outputId] = out;
             else delete resolved[outputId];
         }
+        computeCharacterExtraOutputs(node, resolved);
     } finally {
         onNodeDone?.(id);
     }

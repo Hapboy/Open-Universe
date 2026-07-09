@@ -15,6 +15,11 @@ export interface NodeParams {
     inputs: Port[];
     outputs: Port[];
     params: Record<string, unknown>;
+    // UI-only display flags — deliberately kept outside `params` so they
+    // never leak into a character's JSON output pin or get swept into
+    // preset snapshots (which only ever look at `params`).
+    showJsonPreview?: boolean;
+    pinLabelsWide?: boolean;
     [key: string]: unknown;
 }
 
@@ -119,6 +124,7 @@ export interface CharacterNodeParams extends Record<string, unknown> {
     tattoos: string;
     accessories: string;
     clothing: string;
+    additionalDescription: string;
 }
 
 export interface LocationNodeParams extends Record<string, unknown> {

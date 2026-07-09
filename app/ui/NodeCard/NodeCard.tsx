@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { Fragment, memo, useState } from "react";
 import cn from "classnames";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import type { NodeParams, PortType } from "../../types.ts";
@@ -15,6 +15,10 @@ function portColor(type: PortType): string {
     if (type === "Video") return "var(--color-node-higgsfield)";
     if (type === "Text") return "var(--color-node-pinterest)";
     return "var(--color-text-tertiary)";
+}
+
+function portTypeLabel(type: PortType): string {
+    return type === "any" ? "любой тип" : type;
 }
 
 export const NodeCard = memo(function NodeCard({
@@ -36,6 +40,7 @@ export const NodeCard = memo(function NodeCard({
         duplicateNode,
         deleteNode,
         renameNode,
+        setNodeField,
         selectNode,
     } = useGraphContext();
 
@@ -62,22 +67,47 @@ export const NodeCard = memo(function NodeCard({
         data.nodeType === "gemini_lyria" && outputId
             ? (resolved[outputId] as string | undefined)
             : undefined;
+    const characterJson =
+        data.nodeType === "character" && data.showJsonPreview
+            ? JSON.stringify(
+                  { id, nodeType: data.nodeType, label: data.label, ...data.params },
+                  null,
+                  2,
+              )
+            : undefined;
 
     return (
         <div
-            className={cn(styles.card, selected && styles.isSelected)}
+            className={cn(
+                styles.card,
+                selected && styles.isSelected,
+                data.pinLabelsWide && styles.cardWide,
+            )}
             style={{ "--nc": data.color } as React.CSSProperties}>
             {/* Input handles */}
-            {data.inputs.map((port, i) => (
-                <Handle
-                    key={port.id}
-                    type="target"
-                    position={Position.Left}
-                    id={port.id}
-                    style={{ top: 10 + i * 20, background: portColor(port.type) }}
-                    title={`${port.name} (${port.type === "any" ? "любой тип" : port.type})`}
-                />
-            ))}
+            {data.inputs.map((port, i) => {
+                const top = 68 + i * 28;
+                const text = `${port.name} (${portTypeLabel(port.type)})`;
+                return (
+                    <Fragment key={port.id}>
+                        <Handle
+                            type="target"
+                            position={Position.Left}
+                            id={port.id}
+                            className={styles.handle}
+                            style={{ top, background: portColor(port.type) }}
+                            title={text}
+                        />
+                        {data.pinLabelsWide && (
+                            <span
+                                className={cn(styles.pinLabel, styles.pinLabelLeft)}
+                                style={{ top }}>
+                                {text}
+                            </span>
+                        )}
+                    </Fragment>
+                );
+            })}
 
             <div className={styles.header}>
                 <i className={`ti ${data.icon}`} />
@@ -120,77 +150,131 @@ export const NodeCard = memo(function NodeCard({
                         )}
                     </button>
                 )}
+                <button
+                    className={cn(styles.wideBtn, data.pinLabelsWide && styles.wideBtnActive)}
+                    aria-pressed={!!data.pinLabelsWide}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    title="Показать подписи пинов"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setNodeField(id, { pinLabelsWide: !data.pinLabelsWide });
+                    }}>
+                    <i className="ti ti-arrows-horizontal" />
+                </button>
                 <NodeMenu
                     onDuplicate={() => duplicateNode(id)}
                     onDelete={() => {
                         deleteNode(id);
                         selectNode(null);
                     }}
+                    {...(data.nodeType === "character"
+                        ? {
+                              jsonPreviewVisible: !!data.showJsonPreview,
+                              onToggleJsonPreview: () =>
+                                  setNodeField(id, { showJsonPreview: !data.showJsonPreview }),
+                          }
+                        : {})}
                 />
             </div>
 
-            {generatedText && (
-                <div className={styles.body}>
-                    <div className={cn(styles.titleVal, styles.titleValFull, "nodrag", "nowheel")}>
-                        {generatedText}
+            <div className={styles.paramsCol}>
+                {generatedText && (
+                    <div className={styles.body}>
+                        <div
+                            className={cn(
+                                styles.titleVal,
+                                styles.titleValFull,
+                                "nodrag",
+                                "nowheel",
+                            )}>
+                            {generatedText}
+                        </div>
                     </div>
+                )}
+
+                <div className={cn(styles.paramsWrap, "nodrag", "nowheel")}>
+                    <NodeParamsPanel
+                        node={{ id, data }}
+                        edges={edges}
+                        resolved={resolved}
+                        scenes={scenes}
+                        updateNodeParam={updateNodeParam}
+                        updateNodeParams={updateNodeParams}
+                        loadPinterestBoards={loadPinterestBoards}
+                        loadPinterestPins={loadPinterestPins}
+                        executeGraph={executeGraph}
+                    />
                 </div>
-            )}
 
-            <div className={cn(styles.paramsWrap, "nodrag", "nowheel")}>
-                <NodeParamsPanel
-                    node={{ id, data }}
-                    edges={edges}
-                    resolved={resolved}
-                    scenes={scenes}
-                    updateNodeParam={updateNodeParam}
-                    updateNodeParams={updateNodeParams}
-                    loadPinterestBoards={loadPinterestBoards}
-                    loadPinterestPins={loadPinterestPins}
-                    executeGraph={executeGraph}
-                />
+                {generatedImage && <MediaSlider items={[{ url: generatedImage, type: "image" }]} />}
+
+                {generatedVideo && <MediaSlider items={[{ url: generatedVideo, type: "video" }]} />}
+
+                {generatedAudio && (
+                    <audio
+                        src={generatedAudio}
+                        controls
+                        className={cn(styles.audioPlayer, "nodrag", "nowheel")}
+                    />
+                )}
+
+                {photos.length > 0 && (
+                    <MediaSlider
+                        items={photos.map((url) => ({ url, type: "image" }))}
+                        index={photoIdx}
+                        onIndexChange={(i) => updateNodeParam(id, "photoIdx", i)}
+                        onDelete={(i) => {
+                            const next = photos.filter((_, idx) => idx !== i);
+                            updateNodeParam(id, "photos", next);
+                            updateNodeParam(
+                                id,
+                                "photoIdx",
+                                Math.max(0, Math.min(photoIdx, next.length - 1)),
+                            );
+                        }}
+                    />
+                )}
+
+                {characterJson && (
+                    <div className={styles.body}>
+                        <pre
+                            className={cn(
+                                styles.titleVal,
+                                styles.titleValFull,
+                                "nodrag",
+                                "nowheel",
+                            )}
+                            style={{ whiteSpace: "pre-wrap" }}>
+                            {characterJson}
+                        </pre>
+                    </div>
+                )}
             </div>
-
-            {generatedImage && <MediaSlider items={[{ url: generatedImage, type: "image" }]} />}
-
-            {generatedVideo && <MediaSlider items={[{ url: generatedVideo, type: "video" }]} />}
-
-            {generatedAudio && (
-                <audio
-                    src={generatedAudio}
-                    controls
-                    className={cn(styles.audioPlayer, "nodrag", "nowheel")}
-                />
-            )}
-
-            {photos.length > 0 && (
-                <MediaSlider
-                    items={photos.map((url) => ({ url, type: "image" }))}
-                    index={photoIdx}
-                    onIndexChange={(i) => updateNodeParam(id, "photoIdx", i)}
-                    onDelete={(i) => {
-                        const next = photos.filter((_, idx) => idx !== i);
-                        updateNodeParam(id, "photos", next);
-                        updateNodeParam(
-                            id,
-                            "photoIdx",
-                            Math.max(0, Math.min(photoIdx, next.length - 1)),
-                        );
-                    }}
-                />
-            )}
 
             {/* Output handles */}
-            {data.outputs.map((port, i) => (
-                <Handle
-                    key={port.id}
-                    type="source"
-                    position={Position.Right}
-                    id={port.id}
-                    style={{ top: 10 + i * 20, background: portColor(port.type) }}
-                    title={`${port.name} (${port.type === "any" ? "любой тип" : port.type})`}
-                />
-            ))}
+            {data.outputs.map((port, i) => {
+                const top = 68 + i * 28;
+                const text = `${port.name} (${portTypeLabel(port.type)})`;
+                return (
+                    <Fragment key={port.id}>
+                        <Handle
+                            type="source"
+                            position={Position.Right}
+                            id={port.id}
+                            className={styles.handle}
+                            style={{ top, background: portColor(port.type) }}
+                            title={text}
+                        />
+                        {data.pinLabelsWide && (
+                            <span
+                                className={cn(styles.pinLabel, styles.pinLabelRight)}
+                                style={{ top }}>
+                                {text}
+                            </span>
+                        )}
+                    </Fragment>
+                );
+            })}
         </div>
     );
 });
