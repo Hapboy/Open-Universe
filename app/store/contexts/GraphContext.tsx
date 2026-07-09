@@ -30,6 +30,7 @@ const SCENE_GRAPHS_KEY = "hv_scene_graphs";
 const ACTIVE_SCENE_KEY = "hv_active_scene_id";
 const TIMELINE_DURATION_KEY = "hv_timeline_duration";
 const DEFAULT_TOTAL_DURATION = 872; // 14:32 in seconds
+const MAX_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
 
 type SceneGraphs = Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>;
 
@@ -205,6 +206,8 @@ interface GraphCtx {
     setNodeField: (nodeId: string, patch: Partial<NodeParams>) => void;
     updateNodeParam: (nodeId: string, key: string, value: unknown) => void;
     updateNodeParams: (nodeId: string, patch: Record<string, unknown>) => void;
+    addImageInput: (nodeId: string) => void;
+    removeImageInput: (nodeId: string, portId: string) => void;
     executeGraph: () => Promise<void>;
     runNode: (nodeId: string) => Promise<void>;
     runningNodeIds: Set<string>;
@@ -527,6 +530,40 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         );
     }, []);
 
+    // Appends a new "Reference Image N" input pin to a node (used by nodes
+    // like Nano Banana that accept a variable number of reference images).
+    // Capped at 14 reference images — Nano Banana's own API limit.
+    const addImageInput = useCallback((nodeId: string) => {
+        setNodes((ns) =>
+            ns.map((n) => {
+                if (n.id !== nodeId) return n;
+                const imageCount = n.data.inputs.length - 1;
+                if (imageCount >= MAX_REFERENCE_IMAGES) return n;
+                const index = n.data.inputs.length;
+                const newPort: Port = {
+                    id: `${nodeId}_in_${index}`,
+                    name: `Reference Image ${index}`,
+                    type: "Image",
+                };
+                return { ...n, data: { ...n.data, inputs: [...n.data.inputs, newPort] } };
+            }),
+        );
+    }, []);
+
+    const removeImageInput = useCallback((nodeId: string, portId: string) => {
+        setNodes((ns) =>
+            ns.map((n) =>
+                n.id !== nodeId
+                    ? n
+                    : {
+                          ...n,
+                          data: { ...n.data, inputs: n.data.inputs.filter((p) => p.id !== portId) },
+                      },
+            ),
+        );
+        setEdges((es) => es.filter((e) => e.targetHandle !== portId));
+    }, []);
+
     const updateNodeParams = useCallback((nodeId: string, patch: Record<string, unknown>) => {
         setNodes((ns) =>
             ns.map((n) =>
@@ -633,6 +670,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         setNodeField,
         updateNodeParam,
         updateNodeParams,
+        addImageInput,
+        removeImageInput,
         executeGraph,
         runNode,
         runningNodeIds,

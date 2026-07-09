@@ -2,7 +2,7 @@ import { Fragment, memo, useState } from "react";
 import cn from "classnames";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import type { NodeParams, PortType } from "../../types.ts";
-import { AI_MODEL_NODE_TYPES } from "../../data/nodes.ts";
+import { AI_MODEL_NODE_TYPES, NODE_TEMPLATES } from "../../data/nodes.ts";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
 import { CircleLoader } from "../components/CircleLoader/CircleLoader.tsx";
 import { MediaSlider } from "./MediaSlider/MediaSlider.tsx";
@@ -32,6 +32,8 @@ export const NodeCard = memo(function NodeCard({
         scenes,
         updateNodeParam,
         updateNodeParams,
+        addImageInput,
+        removeImageInput,
         loadPinterestBoards,
         loadPinterestPins,
         executeGraph,
@@ -45,6 +47,8 @@ export const NodeCard = memo(function NodeCard({
     } = useGraphContext();
 
     const [editingLabel, setEditingLabel] = useState(false);
+    const [hoveredInputId, setHoveredInputId] = useState<string | null>(null);
+    const templateInputCount = NODE_TEMPLATES[data.nodeType]?.inputs.length ?? data.inputs.length;
 
     const photos = data.nodeType === "character" ? (data.params.photos as string[]) || [] : [];
     const photoIdx = (data.params.photoIdx as number) || 0;
@@ -88,21 +92,46 @@ export const NodeCard = memo(function NodeCard({
             {data.inputs.map((port, i) => {
                 const top = 68 + i * 28;
                 const text = `${port.name} (${portTypeLabel(port.type)})`;
+                const removable = i >= templateInputCount;
                 return (
                     <Fragment key={port.id}>
-                        <Handle
-                            type="target"
-                            position={Position.Left}
-                            id={port.id}
-                            className={styles.handle}
-                            style={{ top, background: portColor(port.type) }}
-                            title={text}
-                        />
+                        <div
+                            className={styles.pinSlot}
+                            style={{ top: top - 11 }}
+                            onMouseEnter={() => removable && setHoveredInputId(port.id)}
+                            onMouseLeave={() =>
+                                setHoveredInputId((cur) => (cur === port.id ? null : cur))
+                            }>
+                            <Handle
+                                type="target"
+                                position={Position.Left}
+                                id={port.id}
+                                className={styles.handle}
+                                style={{ left: 28, background: portColor(port.type) }}
+                                title={text}
+                            />
+                            {removable && (
+                                <button
+                                    className={cn(
+                                        styles.pinRemoveBtn,
+                                        hoveredInputId === port.id && styles.pinRemoveBtnVisible,
+                                    )}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeImageInput(id, port.id);
+                                    }}
+                                    title="Удалить пин">
+                                    <i className="ti ti-x" />
+                                </button>
+                            )}
+                        </div>
                         {data.pinLabelsWide && (
                             <span
                                 className={cn(styles.pinLabel, styles.pinLabelLeft)}
-                                style={{ top }}>
-                                {text}
+                                style={{ top }}
+                                title={text}>
+                                {port.name}
                             </span>
                         )}
                     </Fragment>
@@ -200,6 +229,7 @@ export const NodeCard = memo(function NodeCard({
                         scenes={scenes}
                         updateNodeParam={updateNodeParam}
                         updateNodeParams={updateNodeParams}
+                        addImageInput={addImageInput}
                         loadPinterestBoards={loadPinterestBoards}
                         loadPinterestPins={loadPinterestPins}
                         executeGraph={executeGraph}
@@ -268,8 +298,9 @@ export const NodeCard = memo(function NodeCard({
                         {data.pinLabelsWide && (
                             <span
                                 className={cn(styles.pinLabel, styles.pinLabelRight)}
-                                style={{ top }}>
-                                {text}
+                                style={{ top }}
+                                title={text}>
+                                {port.name}
                             </span>
                         )}
                     </Fragment>

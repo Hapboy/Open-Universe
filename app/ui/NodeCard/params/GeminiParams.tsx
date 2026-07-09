@@ -3,8 +3,10 @@ import { edgeInput } from "../../../core/graph.ts";
 import { GeminiService, type GeminiModelInfo } from "../../../core/services/gemini.ts";
 import { WirableTextField, type EEP } from "./shared.tsx";
 import { SelectField } from "../../components/SelectField/SelectField.tsx";
+import { Select } from "../../components/Select/Select.tsx";
 import { TextField } from "../../components/TextField/TextField.tsx";
 import { Switch } from "../../components/Switch/Switch.tsx";
+import sharedStyles from "../../../styles/shared.module.css";
 
 const FALLBACK_MODELS: GeminiModelInfo[] = [
     { id: "gemini-flash-latest", displayName: "Gemini Flash (latest)" },
@@ -326,10 +328,23 @@ const NANO_BANANA_PERSON_OPTIONS = [
     { value: "ALLOW_NONE", label: "Запрещено" },
 ];
 
-export function GeminiNanoBananaParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
+const MAX_NANO_BANANA_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
+
+export function GeminiNanoBananaParams({
+    node,
+    params,
+    edges,
+    resolved,
+    updateNodeParam,
+    addImageInput,
+}: EEP & {
+    addImageInput: (id: string) => void;
+}) {
     const RATIOS = ["16:9", "1:1", "9:16", "3:2", "2:3", "4:3", "21:9"];
     const SIZES = ["1K", "2K", "4K"];
     const prompt = edgeInput(node.data, edges, resolved, 0);
+    const imageCount = node.data.inputs.length - 1;
+    const atLimit = imageCount >= MAX_NANO_BANANA_REFERENCE_IMAGES;
     return (
         <>
             <WirableTextField
@@ -341,12 +356,28 @@ export function GeminiNanoBananaParams({ node, params, edges, resolved, updateNo
                 liveValue={prompt.value}
                 updateNodeParam={updateNodeParam}
             />
-            <SelectField
-                label="Модель"
-                value={params.model as string}
-                onChange={(v) => updateNodeParam(node.id, "model", v)}
-                options={modelOptions(NANO_BANANA_MODELS)}
-            />
+            <div className={sharedStyles.fld}>
+                <span>Модель</span>
+                <div className={sharedStyles.presetRow}>
+                    <Select
+                        className={sharedStyles.presetSelect}
+                        value={params.model as string}
+                        onChange={(v) => updateNodeParam(node.id, "model", v)}
+                        options={modelOptions(NANO_BANANA_MODELS)}
+                    />
+                    <button
+                        className={sharedStyles.iconBtn}
+                        disabled={atLimit}
+                        onClick={() => addImageInput(node.id)}
+                        title={
+                            atLimit
+                                ? "Достигнут лимит Nano Banana — 14 изображений"
+                                : "Добавить референсное изображение"
+                        }>
+                        <i className="ti ti-plus" />
+                    </button>
+                </div>
+            </div>
             <SelectField
                 label="Соотношение сторон"
                 value={params.aspectRatio as string}

@@ -121,12 +121,15 @@ async function computeNodeOutput(
     } else if (d.nodeType === "gemini_nanobanana") {
         const prompt = edgeInput(d, edges, resolved, 0);
         const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string;
-        const img = edgeInput(d, edges, resolved, 1);
-        const imgVal = (img.wired ? img.value : null) as string | null;
+        const imageUrls = d.inputs
+            .slice(1)
+            .map((_, i) => edgeInput(d, edges, resolved, i + 1))
+            .filter((img) => img.wired && img.value != null)
+            .map((img) => img.value as string);
         const toNum = (v: unknown) => (v === "" || v == null ? undefined : Number(v));
         return await GeminiService.runNanoBanana(
             promptVal || "",
-            imgVal,
+            imageUrls,
             {
                 model: d.params.model as string,
                 aspectRatio: d.params.aspectRatio as string,

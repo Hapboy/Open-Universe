@@ -43,6 +43,7 @@ export function NodeParamsPanel({
     scenes,
     updateNodeParam,
     updateNodeParams,
+    addImageInput,
     loadPinterestBoards,
     loadPinterestPins,
     executeGraph,
@@ -166,6 +167,7 @@ export function NodeParamsPanel({
                     resolved={resolved}
                     updateNodeParam={updateNodeParam}
                     executeGraph={executeGraph}
+                    addImageInput={addImageInput}
                 />
             )}
             {nodeType === "gemini_lyria" && (

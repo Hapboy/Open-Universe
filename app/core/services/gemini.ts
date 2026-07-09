@@ -257,7 +257,7 @@ export const GeminiService = {
 
     async runNanoBanana(
         prompt: string,
-        imageUrl: string | null,
+        imageUrls: string[],
         options: NanoBananaOptions,
         showToast: ShowToast,
     ): Promise<string | null> {
@@ -267,18 +267,20 @@ export const GeminiService = {
         }
         try {
             showToast("Nano Banana: генерация изображения…");
-            const contents = imageUrl
+            const contents = imageUrls.length
                 ? [
                       {
                           role: "user",
                           parts: [
                               { text: prompt },
-                              {
-                                  inlineData: {
-                                      mimeType: "image/jpeg",
-                                      data: await GeminiService._urlToBase64(imageUrl),
-                                  },
-                              },
+                              ...(await Promise.all(
+                                  imageUrls.map(async (url) => ({
+                                      inlineData: {
+                                          mimeType: "image/jpeg",
+                                          data: await GeminiService._urlToBase64(url),
+                                      },
+                                  })),
+                              )),
                           ],
                       },
                   ]
