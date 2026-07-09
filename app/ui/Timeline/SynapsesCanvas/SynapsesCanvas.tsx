@@ -110,7 +110,7 @@ export function SynapsesCanvas({
 
                 ctx.beginPath();
                 let isFirst = true;
-                scenes.forEach((s, idx) => {
+                scenes.forEach((_, idx) => {
                     const slot = c.slots[idx % c.slots.length];
                     const x = colX[idx];
                     const y = laneY[slot];

@@ -22,6 +22,14 @@ function hasCoords(c: WGS84Coordinates | undefined): c is { lat: number; lon: nu
     return !!c && c.lat != null && c.lon != null;
 }
 
+// globe.gl types per-datum callbacks as `(obj: object) => T` (its data arrays
+// are untyped `object[]`), so strict function-type variance rejects our
+// concretely-typed callbacks even though the shapes match at runtime — this
+// narrows the parameter back without a broad `any`.
+function accessor<In, Out>(fn: (d: In) => Out): (d: object) => Out {
+    return fn as (d: object) => Out;
+}
+
 // Ring of [lng, lat] points (GeoJSON order) at a given great-circle distance
 // from a center, used to render a location's real-world radius as a polygon.
 function circleRing(lat: number, lon: number, radiusKm: number, segments = 64): [number, number][] {
@@ -93,15 +101,24 @@ export function WorldMap() {
                 .atmosphereColor("#4da6ff")
                 .atmosphereAltitude(0.2)
                 .lights([ambientLight, sunLight])
-                .polygonGeoJsonGeometry((d: LocationRingDatum) => d.geometry)
+                // three-globe's own .d.ts declares GeoJsonGeometry.coordinates as a flat
+                // `number[]`, which no real GeoJSON geometry (Polygon, MultiPolygon, ...)
+                // actually has — it's an upstream typing bug, and the type isn't even
+                // exported publicly so we can't align with it by name. Cast past it.
+                .polygonGeoJsonGeometry(
+                    accessor(
+                        (d: LocationRingDatum) =>
+                            d.geometry as unknown as { type: string; coordinates: number[] },
+                    ),
+                )
                 .polygonCapColor(() => "rgba(255,138,61,0.35)")
                 .polygonSideColor(() => "rgba(255,138,61,0.15)")
                 .polygonStrokeColor(() => "#ff8a3d")
                 .polygonAltitude(0.005)
-                .polygonLabel((d: LocationRingDatum) => d.label)
-                .htmlLat((d: MarkerDatum) => d.lat)
-                .htmlLng((d: MarkerDatum) => d.lng)
-                .htmlElement((d: MarkerDatum) => buildMarkerEl(d))
+                .polygonLabel(accessor((d: LocationRingDatum) => d.label))
+                .htmlLat(accessor((d: MarkerDatum) => d.lat))
+                .htmlLng(accessor((d: MarkerDatum) => d.lng))
+                .htmlElement(accessor((d: MarkerDatum) => buildMarkerEl(d)))
                 .pointOfView({ lat: 20, lng: 45, altitude: 2.5 });
 
             // Real satellite imagery via Mapbox tiles when a token is configured;

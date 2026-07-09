@@ -6,10 +6,18 @@
         "jsx": "react-jsx",
         "strict": true,
         "skipLibCheck": true,
+        "esModuleInterop": true,
+        "isolatedModules": true,
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "allowUnreachableCode": false,
+        "allowUnusedLabels": false,
         "noUnusedLocals": false,
-        "noUnusedParameters": false,
+        "noUnusedParameters": true,
         "allowImportingTsExtensions": true,
-        "noEmit": true
+        "noEmit": true,
+        "incremental": true
     },
     "include": ["app/**/*", "vite.config.ts"],
     "exclude": ["app/sw.js", "dist", "prototypes", "node_modules"]

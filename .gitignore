@@ -14,6 +14,10 @@ Thumbs.db
 desktop.ini
 .DS_Store
 *.swp
+*.pem
+.idea/
+.vscode/
+.history
 
 # Env — never commit real keys
 .env*.local
@@ -21,3 +25,8 @@ desktop.ini
 # Node
 node_modules/
 dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+/coverage
