@@ -126,14 +126,20 @@ export function usePresetDatabase(
         JSON.stringify(snapshot) !== JSON.stringify(storedSnapshot);
 
     const onSelect = (name: string) => {
-        updateNodeParams(node.id, { selectedItem: name, ...(presets[name] ?? {}) });
+        // `name` param defaults to the picked preset's key, then the stored
+        // snapshot's own `name` (if any) wins — a preset can carry a name
+        // that has since drifted from the key it's filed under.
+        updateNodeParams(node.id, { selectedItem: name, name, ...(presets[name] ?? {}) });
     };
 
     const onAdd = (name: string) => {
         const existing = db.find((c) => c.toLowerCase() === name.toLowerCase());
         if (existing) return onSelect(existing);
-        addPreset(entityType, name, snapshot);
-        updateNodeParams(node.id, { selectedItem: name });
+        // Default the node's own name field to the new preset's key unless
+        // the user already typed a custom one before adding.
+        const snap = snapshot.name ? snapshot : { ...snapshot, name };
+        addPreset(entityType, name, snap);
+        updateNodeParams(node.id, { selectedItem: name, name: snap.name as string });
     };
 
     const onUpdate = () => {

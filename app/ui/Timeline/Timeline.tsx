@@ -18,6 +18,10 @@ export function Timeline() {
         setActiveSceneId,
         showMontageMonitor,
         setShowMontageMonitor,
+        showMiniMap,
+        setShowMiniMap,
+        showWorldMap,
+        setShowWorldMap,
         totalDuration,
         setTotalDuration,
     } = useGraphContext();
@@ -365,12 +369,29 @@ export function Timeline() {
                     <span>Автомонтаж</span>
                 </button>
 
+                <span className={styles.divider} />
+
+                <button
+                    className={cn(styles.tbBtn, showMiniMap && styles.tbBtnActive)}
+                    onClick={() => setShowMiniMap(!showMiniMap)}
+                    aria-pressed={showMiniMap}
+                    title={showMiniMap ? "Скрыть миникарту холста" : "Показать миникарту холста"}>
+                    <i className="ti ti-map-2" />
+                </button>
+
+                <button
+                    className={cn(styles.tbBtn, showWorldMap && styles.tbBtnActive)}
+                    onClick={() => setShowWorldMap(!showWorldMap)}
+                    aria-pressed={showWorldMap}
+                    title={showWorldMap ? "Скрыть карту мира" : "Показать карту мира"}>
+                    <i className="ti ti-world" />
+                </button>
+
                 <button
                     className={cn(styles.tbBtn, showMontageMonitor && styles.tbBtnActive)}
                     onClick={() => setShowMontageMonitor(!showMontageMonitor)}
                     title="Открыть Главный Экран Монтажа">
                     <i className="ti ti-device-tv" />
-                    <span>Монитор Монтажа</span>
                 </button>
 
                 <span className={styles.spacer} />

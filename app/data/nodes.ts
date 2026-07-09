@@ -244,6 +244,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         ],
         params: {
             selectedItem: "Ара Гехецик",
+            name: "Ара Гехецик",
             inFrame: true,
             age: 34,
             emotion: "спокойствие",
@@ -256,7 +257,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             birthPlace: { lat: null, lon: null },
             deathPlace: { lat: null, lon: null },
             currentPosition: { lat: null, lon: null },
-            name: "",
             arcWho: "",
             arcWants: "",
             arcHow: "",
@@ -278,6 +278,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         outputs: [{ name: "Location Out", type: "any" as PortType }],
         params: {
             selectedItem: "Старый Конд",
+            name: "Старый Конд",
             weather: "туман",
             timeOfDay: "рассвет",
             interiorExterior: "Экстерьер",
@@ -299,6 +300,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         outputs: [{ name: "Building Out", type: "any" as PortType }],
         params: {
             selectedItem: "Дом с эркером",
+            name: "Дом с эркером",
             inFrame: true,
             floor: 2,
         },
@@ -313,6 +315,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         outputs: [{ name: "Clothing Out", type: "any" as PortType }],
         params: {
             selectedItem: "Tigran Avetisyan",
+            name: "Tigran Avetisyan",
             season: "FW26",
             wear: 12,
         },
@@ -327,6 +330,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         outputs: [{ name: "Artwork Out", type: "any" as PortType }],
         params: {
             selectedItem: "Минас Аветисян",
+            name: "Минас Аветисян",
             inFrame: true,
             scale: 120,
         },
@@ -341,6 +345,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         outputs: [{ name: "Furniture Out", type: "any" as PortType }],
         params: {
             selectedItem: "Тахта + ковёр",
+            name: "Тахта + ковёр",
             inFrame: true,
             density: 5,
         },
@@ -355,6 +360,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         outputs: [{ name: "Audio Out", type: PORT_TYPES.AUDIO }],
         params: {
             selectedItem: "Армянский дудук",
+            name: "Армянский дудук",
             mood: "элегия",
         },
     },
@@ -368,6 +374,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         outputs: [{ name: "Text Out", type: PORT_TYPES.TEXT }],
         params: {
             selectedItem: "Сцена 04: Утро в Конде",
+            name: "Сцена 04: Утро в Конде",
             tone: "драма",
         },
     },
@@ -381,6 +388,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         outputs: [{ name: "Image Out", type: PORT_TYPES.IMAGE }],
         params: {
             selectedItem: "Утро в Конде v4",
+            name: "Утро в Конде v4",
             shots: 6,
         },
     },
@@ -394,6 +402,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         outputs: [{ name: "Transport Out", type: "any" as PortType }],
         params: {
             selectedItem: "Советский Москвич",
+            name: "Советский Москвич",
             inFrame: false,
         },
     },

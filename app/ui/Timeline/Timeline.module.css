@@ -157,6 +157,12 @@
     border-color: var(--color-bg-accent);
 }
 
+.divider {
+    width: 1px;
+    height: 20px;
+    background: var(--color-border);
+}
+
 /* Volume control popover */
 .volumeWrapper {
     position: relative;

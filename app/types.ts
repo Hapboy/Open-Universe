@@ -129,6 +129,7 @@ export interface CharacterNodeParams extends Record<string, unknown> {
 
 export interface LocationNodeParams extends Record<string, unknown> {
     selectedItem: string;
+    name: string;
     weather: string;
     timeOfDay: string;
     interiorExterior: "Интерьер" | "Экстерьер";
@@ -139,44 +140,52 @@ export interface LocationNodeParams extends Record<string, unknown> {
 
 export interface BuildingNodeParams extends Record<string, unknown> {
     selectedItem: string;
+    name: string;
     inFrame: boolean;
     floor: number;
 }
 
 export interface ClothingNodeParams extends Record<string, unknown> {
     selectedItem: string;
+    name: string;
     season: string;
     wear: number;
 }
 
 export interface ArtworkNodeParams extends Record<string, unknown> {
     selectedItem: string;
+    name: string;
     inFrame: boolean;
     scale: number;
 }
 
 export interface FurnitureNodeParams extends Record<string, unknown> {
     selectedItem: string;
+    name: string;
     inFrame: boolean;
     density: number;
 }
 
 export interface MusicNodeParams extends Record<string, unknown> {
     selectedItem: string;
+    name: string;
     mood: string;
 }
 
 export interface ScriptNodeParams extends Record<string, unknown> {
     selectedItem: string;
+    name: string;
     tone: string;
 }
 
 export interface StoryboardNodeParams extends Record<string, unknown> {
     selectedItem: string;
+    name: string;
     shots: number;
 }
 
 export interface TransportNodeParams extends Record<string, unknown> {
     selectedItem: string;
+    name: string;
     inFrame: boolean;
 }

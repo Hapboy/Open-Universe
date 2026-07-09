@@ -6,8 +6,7 @@ import { useFullscreenToggle } from "../hooks/useFullscreenToggle.ts";
 import styles from "./Topbar.module.css";
 
 export function Topbar() {
-    const { executeGraph, showMiniMap, setShowMiniMap, showWorldMap, setShowWorldMap } =
-        useGraphContext();
+    const { executeGraph } = useGraphContext();
     const { deferredInstallPrompt, setDeferredInstallPrompt } = usePwaContext();
     const toggleFullscreen = useFullscreenToggle(() => document.getElementById("app"));
 
@@ -29,20 +28,6 @@ export function Topbar() {
             <div className={styles.spacer} />
 
             <div className={styles.iconGroup}>
-                <button
-                    className={cn(styles.iconBtn, showMiniMap && styles.iconBtnActive)}
-                    onClick={() => setShowMiniMap(!showMiniMap)}
-                    aria-pressed={showMiniMap}
-                    title={showMiniMap ? "Скрыть миникарту холста" : "Показать миникарту холста"}>
-                    <i className="ti ti-map-2" />
-                </button>
-                <button
-                    className={cn(styles.iconBtn, showWorldMap && styles.iconBtnActive)}
-                    onClick={() => setShowWorldMap(!showWorldMap)}
-                    aria-pressed={showWorldMap}
-                    title={showWorldMap ? "Скрыть карту мира" : "Показать карту мира"}>
-                    <i className="ti ti-world" />
-                </button>
                 <button
                     className={styles.iconBtn}
                     onClick={toggleFullscreen}

@@ -377,6 +377,11 @@ export function LocationParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 addLabel="Добавить локацию"
             />
+            <TextField
+                label="Имя"
+                value={params.name}
+                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
             <CoordinateField
                 label="Координаты"
                 value={params.coordinates}
@@ -456,6 +461,11 @@ export function BuildingParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 addLabel="Добавить здание"
             />
+            <TextField
+                label="Имя"
+                value={params.name}
+                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
             <NumberField
                 label="Этаж"
                 min={1}
@@ -494,6 +504,11 @@ export function ClothingParams({
                 onUpdate={onUpdate}
                 hasUnsavedChanges={hasUnsavedChanges}
                 addLabel="Добавить дизайнера"
+            />
+            <TextField
+                label="Имя"
+                value={params.name}
+                onChange={(v) => updateNodeParam(node.id, "name", v)}
             />
             <SelectField
                 label="Сезон"
@@ -536,6 +551,11 @@ export function ArtworkParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 addLabel="Добавить произведение"
             />
+            <TextField
+                label="Имя"
+                value={params.name}
+                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
             <RangeField
                 label={`Масштаб (${params.scale}%)`}
                 min={20}
@@ -574,6 +594,11 @@ export function FurnitureParams({
                 onUpdate={onUpdate}
                 hasUnsavedChanges={hasUnsavedChanges}
                 addLabel="Добавить мебель"
+            />
+            <TextField
+                label="Имя"
+                value={params.name}
+                onChange={(v) => updateNodeParam(node.id, "name", v)}
             />
             <RangeField
                 label={`Плотность (${params.density})`}
@@ -614,6 +639,11 @@ export function MusicParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 addLabel="Добавить трек"
             />
+            <TextField
+                label="Имя"
+                value={params.name}
+                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
             <SelectField
                 label="Настроение"
                 value={params.mood}
@@ -647,6 +677,11 @@ export function ScriptParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 addLabel="Добавить сцену"
             />
+            <TextField
+                label="Имя"
+                value={params.name}
+                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
             <SelectField
                 label="Тон"
                 value={params.tone}
@@ -679,6 +714,11 @@ export function StoryboardParams({
                 onUpdate={onUpdate}
                 hasUnsavedChanges={hasUnsavedChanges}
                 addLabel="Добавить версию"
+            />
+            <TextField
+                label="Имя"
+                value={params.name}
+                onChange={(v) => updateNodeParam(node.id, "name", v)}
             />
             <NumberField
                 label="Кадров"
@@ -714,6 +754,11 @@ export function TransportParams({
                 onUpdate={onUpdate}
                 hasUnsavedChanges={hasUnsavedChanges}
                 addLabel="Добавить транспорт"
+            />
+            <TextField
+                label="Имя"
+                value={params.name}
+                onChange={(v) => updateNodeParam(node.id, "name", v)}
             />
             <InFrameToggle
                 value={params.inFrame}
