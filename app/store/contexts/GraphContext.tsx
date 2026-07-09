@@ -26,6 +26,7 @@ import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
 import type { SceneOutput } from "../../core/graph.ts";
 import { useToastContext } from "./ToastContext.tsx";
 import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from "../../core/browserStorage.ts";
+import { putGeneratedBlob } from "../../core/blobStore.ts";
 
 const SCENE_GRAPHS_KEY = "hv_scene_graphs";
 const ACTIVE_SCENE_KEY = "hv_active_scene_id";
@@ -632,14 +633,48 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         });
     }, []);
 
+    // Caches a fresh Imagen/Nano Banana result to IndexedDB and stores its
+    // ref on the node so the image survives a reload (shown by NodeCard as a
+    // fallback for when `resolved` is empty, e.g. right after page load,
+    // before the node has been re-run this session). `resolved` itself keeps
+    // holding the raw data: URL untouched — other nodes/edges consuming it
+    // (e.g. wiring this output into another Gemini call, or into
+    // output_scene's Visual Render pin) still get a directly usable value.
+    // `persistedImageRef` dedups against repeated "Прогнать граф" clicks: a
+    // node whose output didn't change since the last persist is skipped.
+    const persistedImageRef = useRef<Map<string, string>>(new Map());
+    const persistGeneratedImages = useCallback(
+        (currentNodes: Node<NodeParams>[], resolvedMap: Record<string, unknown>) => {
+            for (const node of currentNodes) {
+                if (
+                    node.data.nodeType !== "gemini_imagen" &&
+                    node.data.nodeType !== "gemini_nanobanana"
+                )
+                    continue;
+                const outputId = node.data.outputs[0]?.id;
+                const value = outputId ? resolvedMap[outputId] : undefined;
+                if (typeof value !== "string" || !value.startsWith("data:image")) continue;
+                if (persistedImageRef.current.get(node.id) === value) continue;
+                persistedImageRef.current.set(node.id, value);
+                fetch(value)
+                    .then((r) => r.blob())
+                    .then(putGeneratedBlob)
+                    .then((ref) => updateNodeParam(node.id, "lastGeneratedRef", ref))
+                    .catch(console.error);
+            }
+        },
+        [updateNodeParam],
+    );
+
     const executeGraph = useCallback(async () => {
         const { runGraph } = await import("../../core/graph.ts");
         const sceneId = activeSceneId;
         resolvedRef.current = {};
         const output = await runGraph(nodes, edges, resolvedRef.current, showToast);
         setResolved({ ...resolvedRef.current });
+        persistGeneratedImages(nodes, resolvedRef.current);
         cacheSceneOutput(sceneId, output);
-    }, [nodes, edges, showToast, activeSceneId, cacheSceneOutput]);
+    }, [nodes, edges, showToast, activeSceneId, cacheSceneOutput, persistGeneratedImages]);
 
     const runNode = useCallback(
         async (nodeId: string) => {
@@ -659,11 +694,12 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
                         return next;
                     });
                     setResolved({ ...resolvedRef.current });
+                    persistGeneratedImages(nodes, resolvedRef.current);
                 },
             );
             cacheSceneOutput(sceneId, output);
         },
-        [nodes, edges, showToast, activeSceneId, cacheSceneOutput],
+        [nodes, edges, showToast, activeSceneId, cacheSceneOutput, persistGeneratedImages],
     );
 
     // Reactively keeps free/non-AI nodes (Pinterest pin, text passthrough,

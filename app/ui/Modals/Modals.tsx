@@ -193,14 +193,21 @@ function StorageModal({ onClose }: { onClose: () => void }) {
     const { allSceneGraphs } = useGraphContext();
     const { library } = usePresetLibraryContext();
     const { showToast } = useToastContext();
-    const [count, setCount] = useState<number | null>(null);
+    const [uploadedCount, setUploadedCount] = useState<number | null>(null);
+    const [generatedCount, setGeneratedCount] = useState<number | null>(null);
     const [usedBytes, setUsedBytes] = useState<number | null>(null);
     const [sweeping, setSweeping] = useState(false);
 
     const refreshStats = useCallback(() => {
         listBlobIds()
-            .then((ids) => setCount(ids.length))
-            .catch(() => setCount(null));
+            .then(({ uploaded, generated }) => {
+                setUploadedCount(uploaded.length);
+                setGeneratedCount(generated.length);
+            })
+            .catch(() => {
+                setUploadedCount(null);
+                setGeneratedCount(null);
+            });
         navigator.storage
             ?.estimate?.()
             .then((est) => setUsedBytes(est.usage ?? null))
@@ -239,13 +246,17 @@ function StorageModal({ onClose }: { onClose: () => void }) {
                 </div>
                 <div className={styles.sheetBody}>
                     <p className={styles.sub}>
-                        Загруженные фото и обложки сцен хранятся в IndexedDB браузера, а не в
-                        localStorage — очистка ниже удаляет только те файлы, на которые больше не
-                        ссылается ни одна сцена или пресет.
+                        Загруженные фото/обложки и сгенерированные изображения хранятся в IndexedDB
+                        браузера, а не в localStorage — очистка ниже удаляет только те файлы, на
+                        которые больше не ссылается ни одна сцена или пресет.
                     </p>
                     <div className={styles.statRow}>
-                        <span>Файлов сохранено</span>
-                        <strong>{count ?? "…"}</strong>
+                        <span>Загружено файлов</span>
+                        <strong>{uploadedCount ?? "…"}</strong>
+                    </div>
+                    <div className={styles.statRow}>
+                        <span>Сгенерировано изображений</span>
+                        <strong>{generatedCount ?? "…"}</strong>
                     </div>
                     {usedBytes != null && (
                         <div className={styles.statRow}>

@@ -4,7 +4,7 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import type { NodeParams, PortType } from "../../types.ts";
 import { AI_MODEL_NODE_TYPES, NODE_TEMPLATES } from "../../data/nodes.ts";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import { useResolvedMediaUrls } from "../../core/blobStore.ts";
+import { useResolvedMediaUrl, useResolvedMediaUrls } from "../../core/blobStore.ts";
 import { CircleLoader } from "../components/CircleLoader/CircleLoader.tsx";
 import { MediaSlider } from "./MediaSlider/MediaSlider.tsx";
 import { NodeParamsPanel } from "./params/NodeParamsPanel.tsx";
@@ -61,10 +61,19 @@ export const NodeCard = memo(function NodeCard({
         (data.nodeType === "gemini_text" || data.nodeType === "gemini_vision") && outputId
             ? (resolved[outputId] as string | undefined)
             : undefined;
-    const generatedImage =
-        (data.nodeType === "gemini_imagen" || data.nodeType === "gemini_nanobanana") && outputId
-            ? (resolved[outputId] as string | undefined)
+    const isImageGenNode =
+        data.nodeType === "gemini_imagen" || data.nodeType === "gemini_nanobanana";
+    const liveGeneratedImage =
+        isImageGenNode && outputId ? (resolved[outputId] as string | undefined) : undefined;
+    // Falls back to the last generation cached in IndexedDB (see
+    // GraphContext's persistGeneratedImages) when `resolved` is empty — i.e.
+    // right after a page reload, before the node has been re-run this session.
+    const persistedGeneratedRef =
+        !liveGeneratedImage && isImageGenNode
+            ? (data.params.lastGeneratedRef as string | undefined)
             : undefined;
+    const resolvedPersistedImage = useResolvedMediaUrl(persistedGeneratedRef);
+    const generatedImage = liveGeneratedImage ?? resolvedPersistedImage;
     const generatedVideo =
         data.nodeType === "gemini_veo" && outputId
             ? (resolved[outputId] as string | undefined)

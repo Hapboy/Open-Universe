@@ -1,12 +1,13 @@
-// Local blob storage for uploaded/reference media (character photos, scene
-// covers), backed by IndexedDB instead of localStorage — localStorage's
-// ~5-10MB per-origin quota gets blown through almost instantly once photos
-// are embedded as base64 in node params, while IndexedDB is built for blobs
-// and has a much larger quota. Node params store a short `idb:<uuid>` ref
-// instead of the raw bytes; `resolveMediaRef`/`resolveMediaRefCached` turn a
-// ref back into a usable URL. Legacy raw `data:`/`http(s)` strings already
-// saved before this module existed pass straight through unchanged, so no
-// migration of existing data is needed.
+// Local blob storage for media that shouldn't live in localStorage:
+// uploaded/reference media (character photos, scene covers) and generated
+// AI images, each in their own IndexedDB object store. localStorage's
+// ~5-10MB per-origin quota gets blown through almost instantly once media
+// is embedded as base64 in node params, while IndexedDB is built for blobs
+// and has a much larger quota. Node params store a short ref instead of the
+// raw bytes; `resolveMediaRef`/`resolveMediaRefCached` turn a ref back into
+// a usable URL. Legacy raw `data:`/`http(s)` strings already saved before
+// this module existed pass straight through unchanged, so no migration of
+// existing data is needed.
 //
 // Swapping this for a real backend later only means changing this module's
 // internals (upload to the server, ref becomes a real object-storage key),
@@ -15,9 +16,28 @@
 import { useEffect, useState } from "react";
 
 const DB_NAME = "hv_media_store";
-const STORE_NAME = "blobs";
-const DB_VERSION = 1;
-const REF_PREFIX = "idb:";
+const DB_VERSION = 2;
+
+// Two separate tables: "uploaded" is user-provided media (photos, covers),
+// "generated" is AI output the app chooses to cache for redisplay. Kept
+// distinct since they'll likely have different ownership/retention rules
+// once a real backend exists.
+const STORES = { uploaded: "blobs", generated: "generated" } as const;
+const PREFIXES = { uploaded: "idb:", generated: "gen:" } as const;
+type Kind = keyof typeof STORES;
+
+function isMediaRef(value: unknown): value is string {
+    return (
+        typeof value === "string" &&
+        (value.startsWith(PREFIXES.uploaded) || value.startsWith(PREFIXES.generated))
+    );
+}
+
+function storeForRef(ref: string): string | undefined {
+    if (ref.startsWith(PREFIXES.uploaded)) return STORES.uploaded;
+    if (ref.startsWith(PREFIXES.generated)) return STORES.generated;
+    return undefined;
+}
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -25,7 +45,12 @@ function openDB(): Promise<IDBDatabase> {
     if (!dbPromise) {
         dbPromise = new Promise((resolve, reject) => {
             const req = indexedDB.open(DB_NAME, DB_VERSION);
-            req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
+            req.onupgradeneeded = () => {
+                const db = req.result;
+                for (const name of Object.values(STORES)) {
+                    if (!db.objectStoreNames.contains(name)) db.createObjectStore(name);
+                }
+            };
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => reject(req.error);
         });
@@ -34,26 +59,38 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 async function getBlob(ref: string): Promise<Blob | undefined> {
+    const storeName = storeForRef(ref);
+    if (!storeName) return undefined;
     const db = await openDB();
     return new Promise((resolve, reject) => {
-        const req = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).get(ref);
+        const req = db.transaction(storeName, "readonly").objectStore(storeName).get(ref);
         req.onsuccess = () => resolve(req.result as Blob | undefined);
         req.onerror = () => reject(req.error);
     });
 }
 
-// Stores a blob and returns its ref. Callers push this ref into node params
-// instead of the raw bytes.
-export async function putBlob(file: Blob): Promise<string> {
-    const ref = `${REF_PREFIX}${crypto.randomUUID()}`;
+async function putBlobAs(kind: Kind, file: Blob): Promise<string> {
+    const ref = `${PREFIXES[kind]}${crypto.randomUUID()}`;
     const db = await openDB();
     await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, "readwrite");
-        tx.objectStore(STORE_NAME).put(file, ref);
+        const tx = db.transaction(STORES[kind], "readwrite");
+        tx.objectStore(STORES[kind]).put(file, ref);
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
     return ref;
+}
+
+// Stores an uploaded file and returns its ref. Callers push this ref into
+// node params instead of the raw bytes.
+export function putBlob(file: Blob): Promise<string> {
+    return putBlobAs("uploaded", file);
+}
+
+// Stores a generated-media blob (currently: AI images only) and returns its
+// ref, in a separate table from uploads.
+export function putGeneratedBlob(file: Blob): Promise<string> {
+    return putBlobAs("generated", file);
 }
 
 // object URLs are cached per ref for the life of the session — re-resolving
@@ -61,12 +98,12 @@ export async function putBlob(file: Blob): Promise<string> {
 // creates a duplicate URL.
 const objectUrlCache = new Map<string, string>();
 
-// Synchronous, cache-only lookup: legacy strings resolve instantly, `idb:`
-// refs resolve instantly only if already loaded once this session. Lets
+// Synchronous, cache-only lookup: legacy strings resolve instantly, refs
+// resolve instantly only if already loaded once this session. Lets
 // render-site hooks show a value on the very first render.
 export function resolveMediaRefCached(ref: string | undefined): string | undefined {
     if (!ref) return undefined;
-    if (!ref.startsWith(REF_PREFIX)) return ref;
+    if (!isMediaRef(ref)) return ref;
     return objectUrlCache.get(ref);
 }
 
@@ -75,7 +112,7 @@ export function resolveMediaRefCached(ref: string | undefined): string | undefin
 // ref string itself — an invalid src that just renders as a broken
 // image/video, not a crash.
 export async function resolveMediaRef(ref: string): Promise<string> {
-    if (!ref.startsWith(REF_PREFIX)) return ref;
+    if (!isMediaRef(ref)) return ref;
     const cached = objectUrlCache.get(ref);
     if (cached) return cached;
     const blob = await getBlob(ref);
@@ -136,25 +173,49 @@ export function useResolvedMediaUrls(refs: string[]): (string | undefined)[] {
     return state.forKey === key ? state.urls : refs.map(resolveMediaRefCached);
 }
 
-export async function listBlobIds(): Promise<string[]> {
+async function listStoreKeys(kind: Kind): Promise<string[]> {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-        const req = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).getAllKeys();
+        const req = db.transaction(STORES[kind], "readonly").objectStore(STORES[kind]).getAllKeys();
         req.onsuccess = () => resolve(req.result as string[]);
         req.onerror = () => reject(req.error);
     });
 }
 
+// Counts per table, so the Storage modal can show uploaded vs. generated
+// media separately rather than one combined number.
+export async function listBlobIds(): Promise<Record<Kind, string[]>> {
+    const [uploaded, generated] = await Promise.all([
+        listStoreKeys("uploaded"),
+        listStoreKeys("generated"),
+    ]);
+    return { uploaded, generated };
+}
+
 export async function deleteBlobs(ids: string[]): Promise<void> {
     if (!ids.length) return;
+    const byStore = new Map<string, string[]>();
+    for (const id of ids) {
+        const storeName = storeForRef(id);
+        if (!storeName) continue;
+        const bucket = byStore.get(storeName) ?? [];
+        bucket.push(id);
+        byStore.set(storeName, bucket);
+    }
+    if (!byStore.size) return;
     const db = await openDB();
-    await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, "readwrite");
-        const store = tx.objectStore(STORE_NAME);
-        for (const id of ids) store.delete(id);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
+    await Promise.all(
+        [...byStore.entries()].map(
+            ([storeName, storeIds]) =>
+                new Promise<void>((resolve, reject) => {
+                    const tx = db.transaction(storeName, "readwrite");
+                    const store = tx.objectStore(storeName);
+                    for (const id of storeIds) store.delete(id);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                }),
+        ),
+    );
     for (const id of ids) {
         const url = objectUrlCache.get(id);
         if (url) {
@@ -165,20 +226,20 @@ export async function deleteBlobs(ids: string[]): Promise<void> {
 }
 
 // Scans every given params object (node params, preset snapshots) for
-// `idb:` refs — top-level string fields and string arrays — so the sweep
-// below never deletes a blob still referenced anywhere. Generic rather than
-// hardcoding `photos`/`coverUrl` by name, so it keeps working if another
-// field starts using the same ref convention later.
+// refs — top-level string fields and string arrays — so the sweep below
+// never deletes a blob still referenced anywhere. Generic rather than
+// hardcoding `photos`/`coverUrl`/`lastGeneratedRef` by name, so it keeps
+// working if another field starts using the same ref convention later.
 export function collectLiveMediaRefs(...paramsLists: Record<string, unknown>[][]): Set<string> {
     const refs = new Set<string>();
     for (const list of paramsLists) {
         for (const params of list) {
             for (const value of Object.values(params)) {
-                if (typeof value === "string" && value.startsWith(REF_PREFIX)) {
+                if (isMediaRef(value)) {
                     refs.add(value);
                 } else if (Array.isArray(value)) {
                     for (const item of value) {
-                        if (typeof item === "string" && item.startsWith(REF_PREFIX)) refs.add(item);
+                        if (isMediaRef(item)) refs.add(item);
                     }
                 }
             }
@@ -187,13 +248,13 @@ export function collectLiveMediaRefs(...paramsLists: Record<string, unknown>[][]
     return refs;
 }
 
-// Deletes every stored blob not present in `liveRefs`. Safe by construction
-// (it deletes only what's absent from the full live set passed in), so it's
-// exposed as a user-triggered action rather than run automatically on every
-// param change.
+// Deletes every stored blob (in either table) not present in `liveRefs`.
+// Safe by construction (it deletes only what's absent from the full live
+// set passed in), so it's exposed as a user-triggered action rather than
+// run automatically on every param change.
 export async function sweepUnusedBlobs(liveRefs: Set<string>): Promise<number> {
-    const allIds = await listBlobIds();
-    const unused = allIds.filter((id) => !liveRefs.has(id));
+    const { uploaded, generated } = await listBlobIds();
+    const unused = [...uploaded, ...generated].filter((id) => !liveRefs.has(id));
     await deleteBlobs(unused);
     return unused.length;
 }
