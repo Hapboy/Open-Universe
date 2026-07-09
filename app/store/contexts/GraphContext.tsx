@@ -23,13 +23,14 @@ import {
 } from "@xyflow/react";
 import { NODE_TEMPLATES } from "../../data/nodes.ts";
 import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
+import type { SceneOutput } from "../../core/graph.ts";
 import { useToastContext } from "./ToastContext.tsx";
 import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from "../../core/browserStorage.ts";
 
 const SCENE_GRAPHS_KEY = "hv_scene_graphs";
 const ACTIVE_SCENE_KEY = "hv_active_scene_id";
 const TIMELINE_DURATION_KEY = "hv_timeline_duration";
-const DEFAULT_TOTAL_DURATION = 872; // 14:32 in seconds
+const DEFAULT_TOTAL_DURATION = 60; // 01:00 in seconds
 const MAX_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
 
 type SceneGraphs = Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>;
@@ -191,6 +192,7 @@ interface GraphCtx {
     nodes: Node<NodeParams>[];
     edges: Edge[];
     resolved: Record<string, unknown>;
+    sceneOutputs: Record<string, SceneOutput>;
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
@@ -614,29 +616,40 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     const resolvedRef = useRef<Record<string, unknown>>({});
     const [resolved, setResolved] = useState<Record<string, unknown>>({});
     const [runningNodeIds, setRunningNodeIds] = useState<Set<string>>(new Set());
+    const [sceneOutputs, setSceneOutputs] = useState<Record<string, SceneOutput>>({});
+
+    const cacheSceneOutput = useCallback((sceneId: string | null, output: SceneOutput | null) => {
+        if (!sceneId) return;
+        setSceneOutputs((prev) => {
+            if (!output) {
+                if (!(sceneId in prev)) return prev;
+                const next = { ...prev };
+                delete next[sceneId];
+                return next;
+            }
+            return { ...prev, [sceneId]: output };
+        });
+    }, []);
 
     const executeGraph = useCallback(async () => {
         const { runGraph } = await import("../../core/graph.ts");
+        const sceneId = activeSceneId;
         resolvedRef.current = {};
-        await runGraph(nodes, edges, resolvedRef.current, showToast, (img: string | null) => {
-            (window as Window & { customRenderImage?: string | null }).customRenderImage = img;
-        });
+        const output = await runGraph(nodes, edges, resolvedRef.current, showToast);
         setResolved({ ...resolvedRef.current });
-    }, [nodes, edges, showToast]);
+        cacheSceneOutput(sceneId, output);
+    }, [nodes, edges, showToast, activeSceneId, cacheSceneOutput]);
 
     const runNode = useCallback(
         async (nodeId: string) => {
             const { runNodeCascade } = await import("../../core/graph.ts");
-            await runNodeCascade(
+            const sceneId = activeSceneId;
+            const output = await runNodeCascade(
                 nodeId,
                 nodes,
                 edges,
                 resolvedRef.current,
                 showToast,
-                (img: string | null) => {
-                    (window as Window & { customRenderImage?: string | null }).customRenderImage =
-                        img;
-                },
                 (id) => setRunningNodeIds((s) => new Set(s).add(id)),
                 (id) => {
                     setRunningNodeIds((s) => {
@@ -647,8 +660,9 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
                     setResolved({ ...resolvedRef.current });
                 },
             );
+            cacheSceneOutput(sceneId, output);
         },
-        [nodes, edges, showToast],
+        [nodes, edges, showToast, activeSceneId, cacheSceneOutput],
     );
 
     // ── Assemble and expose ─────────────────────────────────────────────────────
@@ -657,6 +671,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         nodes,
         edges,
         resolved,
+        sceneOutputs,
         onNodesChange,
         onEdgesChange,
         onConnect,

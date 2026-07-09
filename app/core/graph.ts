@@ -3,7 +3,6 @@ import type { NodeParams } from "../types.ts";
 import { GeminiService, HiggsfieldService } from "./services/index.ts";
 
 type ShowToast = (msg: string) => void;
-type SetRenderImage = (img: string | null) => void;
 type Resolved = Record<string, unknown>;
 
 const ENTITY_TYPES = [
@@ -173,26 +172,36 @@ function computeCharacterExtraOutputs(node: Node<NodeParams>, resolved: Resolved
     }
 }
 
-function updateOutputScene(
+export interface SceneOutput {
+    url: string;
+    type: "video" | "image";
+}
+
+// The scene's actual output: whatever is wired into the `output_scene`
+// node's Visual Render (Image) / Motion Render (Video) input pins, picking
+// whichever the node's own `activeOutput` toggle prefers and falling back to
+// the other pin if the preferred one isn't wired/resolved yet.
+function resolveSceneOutput(
     nodes: Node<NodeParams>[],
     edges: Edge[],
     resolved: Resolved,
-    setRenderImage: SetRenderImage,
-    showToast: ShowToast,
-): void {
+): SceneOutput | null {
     const outNode = nodes.find((n) => n.data.nodeType === "output_scene");
-    if (!outNode) return;
+    if (!outNode) return null;
     const vEdge = edges.find((e) => e.targetHandle === outNode.data.inputs[0]?.id);
     const mEdge = edges.find((e) => e.targetHandle === outNode.data.inputs[1]?.id);
-    const img =
-        (vEdge && resolved[vEdge.sourceHandle ?? ""]) ||
-        (mEdge && resolved[mEdge.sourceHandle ?? ""]) ||
-        null;
-    const prev = (window as Window & { customRenderImage?: string | null }).customRenderImage;
-    if (img !== prev) {
-        setRenderImage(img as string | null);
-        showToast("Кадр фильма обновлен на основе выходов графа!");
-    }
+    const imageUrl = vEdge ? resolved[vEdge.sourceHandle ?? ""] : undefined;
+    const videoUrl = mEdge ? resolved[mEdge.sourceHandle ?? ""] : undefined;
+    const wantsVideo = (outNode.data.params.activeOutput ?? "video") === "video";
+    const primary: SceneOutput = wantsVideo
+        ? { url: videoUrl as string, type: "video" }
+        : { url: imageUrl as string, type: "image" };
+    const fallback: SceneOutput = wantsVideo
+        ? { url: imageUrl as string, type: "image" }
+        : { url: videoUrl as string, type: "video" };
+    if (typeof primary.url === "string") return primary;
+    if (typeof fallback.url === "string") return fallback;
+    return null;
 }
 
 // Full-graph pass: recomputes every node from scratch into `resolved`
@@ -202,8 +211,7 @@ export async function runGraph(
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
-    setRenderImage: SetRenderImage,
-): Promise<void> {
+): Promise<SceneOutput | null> {
     for (let pass = 0; pass < nodes.length; pass++) {
         for (const node of nodes) {
             const d = node.data;
@@ -218,7 +226,7 @@ export async function runGraph(
         }
     }
 
-    updateOutputScene(nodes, edges, resolved, setRenderImage, showToast);
+    return resolveSceneOutput(nodes, edges, resolved);
 }
 
 // Computes and caches a single node's output into `resolved`, first
@@ -279,10 +287,9 @@ export async function runNodeCascade(
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
-    setRenderImage: SetRenderImage,
     onNodeStart?: (nodeId: string) => void,
     onNodeDone?: (nodeId: string) => void,
-): Promise<void> {
+): Promise<SceneOutput | null> {
     const queue = [startNodeId];
     const visited = new Set<string>();
 
@@ -307,5 +314,5 @@ export async function runNodeCascade(
         }
     }
 
-    updateOutputScene(nodes, edges, resolved, setRenderImage, showToast);
+    return resolveSceneOutput(nodes, edges, resolved);
 }

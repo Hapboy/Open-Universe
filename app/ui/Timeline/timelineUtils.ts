@@ -34,6 +34,20 @@ export function computeRulerTicks(maxTime: number, targetMajorTicks = 8): RulerT
     return ticks;
 }
 
+// Finds whichever scene's [start, start+duration) window contains `time`,
+// honoring the packed (collapsed-empty-space) start offsets when active.
+export function findSceneAtTime(
+    scenes: TimelineScene[],
+    time: number,
+    collapseEmptySpace: boolean,
+    packedStarts: Record<number, number>,
+): TimelineScene | undefined {
+    return scenes.find((s) => {
+        const start = collapseEmptySpace ? packedStarts[s.start] : s.start;
+        return time >= start && time < start + s.duration;
+    });
+}
+
 export interface ScenePositionContext {
     collapseEmptySpace: boolean;
     totalDuration: number;

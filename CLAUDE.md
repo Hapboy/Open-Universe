@@ -23,7 +23,7 @@ app/
 ├── store/       AppProviders.tsx + contexts/ (Graph/Player/User/Toast/Pwa —
 │                React Context per concern, глобальное состояние)
 ├── ui/          App.tsx (+ App.module.css), NodeEditor/, NodeCard/,
-│                Palette/, PlayerPanel/ (MiniPlayer only), Topbar/,
+│                NodeBrowser/, PlayerPanel/ (MiniPlayer only), Topbar/,
 │                Modals/, Toast/, inspector/, game.ts — каждый компонент =
 │                папка с колокейтед `Name.module.css`
 ├── styles/      global.css (CSS-переменные, reset), shared.module.css

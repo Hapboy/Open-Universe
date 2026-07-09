@@ -1,19 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
+import { usePlayerContext } from "../../store/contexts/PlayerContext.tsx";
 import styles from "./MontageMonitor.module.css";
 
-function readResolvedUrl(
-    resolved: Record<string, unknown>,
-    outId: string | undefined,
-): string | null {
-    if (!outId) return null;
-    const value = resolved[outId];
-    return typeof value === "string" ? value : null;
-}
-
 export function MontageMonitor() {
-    const { nodes, resolved, activeSceneId, scenes, showMontageMonitor, setShowMontageMonitor } =
-        useGraphContext();
+    const { scenes, sceneOutputs, showMontageMonitor, setShowMontageMonitor } = useGraphContext();
+    const { playingSceneId, playingSceneRelativeTime, isPlaying } = usePlayerContext();
 
     const [position, setPosition] = useState({ x: window.innerWidth - 460, y: 80 });
     const [size] = useState({ width: 420, height: 280 });
@@ -21,8 +13,15 @@ export function MontageMonitor() {
     const dragAbortRef = useRef<AbortController | null>(null);
 
     const monitorRef = useRef<HTMLDivElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
 
-    const activeScene = scenes.find((s) => s.id === activeSceneId);
+    // The Monitor strictly reflects the playhead — no scene under it means a
+    // black screen, not a fallback to whatever's loaded in the editor.
+    const activeScene = scenes.find((s) => s.id === playingSceneId);
+    const media = activeScene
+        ? (sceneOutputs[activeScene.id] ?? { url: activeScene.coverUrl, type: "image" as const })
+        : null;
+    const sceneRelativeTime = activeScene ? playingSceneRelativeTime : null;
 
     // Dragging event handlers
     const handleMouseMove = useCallback(
@@ -93,21 +92,24 @@ export function MontageMonitor() {
         }
     };
 
-    if (!showMontageMonitor || !activeScene) return null;
+    // Play/pause the scene's video in lockstep with the timeline.
+    useEffect(() => {
+        const el = videoRef.current;
+        if (!el) return;
+        if (isPlaying) el.play().catch(() => {});
+        else el.pause();
+    }, [isPlaying]);
 
-    // Find generated image/video outputs from nodes in the active graph,
-    // falling back to the scene's own cover image.
-    const imagenNode = nodes.find(
-        (n) => n.data.nodeType === "gemini_imagen" || n.data.nodeType === "gemini_nanobanana",
-    );
-    const veoNode = nodes.find((n) => n.data.nodeType === "gemini_veo");
-    const veoUrl = veoNode ? readResolvedUrl(resolved, veoNode.data.outputs[0]?.id) : null;
-    const imagenUrl = imagenNode ? readResolvedUrl(resolved, imagenNode.data.outputs[0]?.id) : null;
-    const media = veoUrl
-        ? { url: veoUrl, type: "video" as const }
-        : imagenUrl
-          ? { url: imagenUrl, type: "image" as const }
-          : { url: activeScene.coverUrl, type: "image" as const };
+    // While paused, keep the video's frame in sync as the user scrubs (and
+    // land on the right frame the instant a pause happens), so resuming
+    // continues from here instead of restarting.
+    useEffect(() => {
+        const el = videoRef.current;
+        if (!el || isPlaying || sceneRelativeTime == null) return;
+        el.currentTime = sceneRelativeTime;
+    }, [sceneRelativeTime, isPlaying]);
+
+    if (!showMontageMonitor) return null;
 
     return (
         <div
@@ -122,7 +124,7 @@ export function MontageMonitor() {
             <div className={styles.header} onMouseDown={handleMouseDown}>
                 <div className={styles.headerTitle}>
                     <i className="ti ti-device-tv" />
-                    <span>Монитор Монтажа: {activeScene.title}</span>
+                    <span>Монитор Монтажа{activeScene ? `: ${activeScene.title}` : ""}</span>
                 </div>
                 <div className={styles.headerActions}>
                     <button onClick={toggleFullscreen} title="На весь экран">
@@ -135,26 +137,36 @@ export function MontageMonitor() {
             </div>
 
             <div className={styles.screenArea}>
-                {media.type === "video" ? (
-                    <video
-                        src={media.url}
-                        className={styles.mediaOutput}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                    />
-                ) : (
-                    <img src={media.url} alt="Scene Frame" className={styles.mediaOutput} />
-                )}
+                {media &&
+                    (media.type === "video" ? (
+                        <video
+                            key={media.url}
+                            ref={videoRef}
+                            src={media.url}
+                            className={styles.mediaOutput}
+                            loop
+                            muted
+                            playsInline
+                            onLoadedMetadata={() => {
+                                const el = videoRef.current;
+                                if (!el || sceneRelativeTime == null) return;
+                                el.currentTime = sceneRelativeTime;
+                                if (isPlaying) el.play().catch(() => {});
+                            }}
+                        />
+                    ) : (
+                        <img src={media.url} alt="Scene Frame" className={styles.mediaOutput} />
+                    ))}
 
                 {/* Tech Details Badge Overlay */}
-                <div className={styles.techBadge}>
-                    <span>
-                        Scene {activeScene.num} ·{" "}
-                        {media.type === "video" ? "Motion (Veo)" : "Stills (Imagen)"}
-                    </span>
-                </div>
+                {activeScene && (
+                    <div className={styles.techBadge}>
+                        <span>
+                            Scene {activeScene.num} ·{" "}
+                            {media?.type === "video" ? "Motion (Veo)" : "Stills (Imagen)"}
+                        </span>
+                    </div>
+                )}
             </div>
         </div>
     );

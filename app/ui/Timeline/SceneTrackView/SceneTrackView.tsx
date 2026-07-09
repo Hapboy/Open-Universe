@@ -2,7 +2,12 @@ import { useRef } from "react";
 import cn from "classnames";
 import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
 import type { TimelineScene } from "../../../types.ts";
-import { computeRulerTicks, formatTime, getScenePosition } from "../timelineUtils.ts";
+import {
+    computeRulerTicks,
+    findSceneAtTime,
+    formatTime,
+    getScenePosition,
+} from "../timelineUtils.ts";
 import styles from "../Timeline.module.css";
 
 interface SceneTrackViewProps {
@@ -41,10 +46,7 @@ export function SceneTrackView({
         const targetTime = percent * maxTime;
         setCurrentTime(targetTime);
 
-        const active = scenes.find((s) => {
-            const start = collapseEmptySpace ? packedStarts[s.start] : s.start;
-            return targetTime >= start && targetTime < start + s.duration;
-        });
+        const active = findSceneAtTime(scenes, targetTime, collapseEmptySpace, packedStarts);
         if (active && active.id !== activeSceneId) setActiveSceneId(active.id);
     };
 
@@ -71,10 +73,8 @@ export function SceneTrackView({
         setCurrentTime(collapseEmptySpace ? packedStarts[sceneStart] : sceneStart);
     };
 
-    const isSceneActive = (scene: TimelineScene) => {
-        const start = collapseEmptySpace ? packedStarts[scene.start] : scene.start;
-        return currentTime >= start && currentTime < start + scene.duration;
-    };
+    const isSceneActive = (scene: TimelineScene) =>
+        findSceneAtTime(scenes, currentTime, collapseEmptySpace, packedStarts)?.id === scene.id;
 
     const scrubberPercent = (currentTime / maxTime) * 100;
 
@@ -97,7 +97,6 @@ export function SceneTrackView({
                         styles.sceneCard,
                         isSceneActive(scene) && styles.sceneCardActive,
                         scene.id === activeSceneId && styles.sceneCardSelected,
-                        scene.cameraActive && styles.sceneCardCameraSelected,
                     )}
                     style={{
                         ...getScenePosition(scene, {
@@ -108,6 +107,7 @@ export function SceneTrackView({
                         }),
                         backgroundImage: `url(${scene.coverUrl})`,
                     }}
+                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={() => handleSceneTabClick(scene.id, scene.start)}>
                     <div className={styles.cardOverlay}>
                         <span className={styles.sceneNum}>Scene {scene.num}</span>
@@ -126,7 +126,9 @@ export function SceneTrackView({
 
     return (
         <>
-            <div className={styles.rulerContainer}>{renderRulerTicks()}</div>
+            <div className={styles.rulerContainer} onMouseDown={handleScrubStart}>
+                {renderRulerTicks()}
+            </div>
 
             <div className={styles.tracksWrapper} ref={containerRef} onMouseDown={handleScrubStart}>
                 <div className={styles.playhead} style={{ left: `${scrubberPercent}%` }}>

@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import cn from "classnames";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
+import { usePlayerContext } from "../../store/contexts/PlayerContext.tsx";
 import { formatTime } from "./timelineUtils.ts";
 import { SceneTrackView } from "./SceneTrackView/SceneTrackView.tsx";
 import { SynapsesCanvas } from "./SynapsesCanvas/SynapsesCanvas.tsx";
 import { SceneArcSettings } from "./SceneArcSettings/SceneArcSettings.tsx";
 import { DurationEditor } from "./DurationEditor/DurationEditor.tsx";
 import styles from "./Timeline.module.css";
-
-const SPEED_LIST = [0.5, 1.0, 1.5, 2.0];
 
 export function Timeline() {
     const {
@@ -26,16 +25,28 @@ export function Timeline() {
         setTotalDuration,
     } = useGraphContext();
 
+    const {
+        currentTime,
+        setCurrentTime,
+        isPlaying,
+        togglePlay,
+        stopPlay,
+        playSpeed,
+        cycleSpeed,
+        collapseEmptySpace,
+        setCollapseEmptySpace,
+        uniqueStarts,
+        packedStarts,
+        totalPackedDuration,
+        editorFollowsPlayback,
+        setEditorFollowsPlayback,
+    } = usePlayerContext();
+
     // Tab State
     const [activeTab, setActiveTab] = useState<"scenes" | "synapses" | "settings">("scenes");
 
-    // Playback state
-    const [currentTime, setCurrentTime] = useState<number>(0);
-    const [isPlaying, setIsPlaying] = useState<boolean>(false);
-    const [playSpeed, setPlaySpeed] = useState<number>(1.0);
     const [volume, setVolume] = useState<number>(80); // 0 to 100
     const [isMuted, setIsMuted] = useState<boolean>(false);
-    const [collapseEmptySpace, setCollapseEmptySpace] = useState<boolean>(false);
     const [isAutoMontage, setIsAutoMontage] = useState<boolean>(false);
     const [showVolumeSlider, setShowVolumeSlider] = useState<boolean>(false);
 
@@ -52,69 +63,6 @@ export function Timeline() {
             })),
         [baseScenes, activeCameras],
     );
-
-    // Calculate packed segments for collapsed mode
-    const { uniqueStarts, packedStarts, totalPackedDuration } = useMemo(() => {
-        const uniqueStarts = Array.from(new Set(scenes.map((s) => s.start))).sort((a, b) => a - b);
-        const startDurations = uniqueStarts.map((start) => {
-            const activeScenesAtStart = scenes.filter((s) => s.start === start);
-            return Math.max(...activeScenesAtStart.map((s) => s.duration), 0);
-        });
-
-        const packedStarts: Record<number, number> = {};
-        let currentPackedTime = 0;
-        for (let i = 0; i < uniqueStarts.length; i++) {
-            packedStarts[uniqueStarts[i]] = currentPackedTime;
-            currentPackedTime += startDurations[i];
-        }
-        return { uniqueStarts, packedStarts, totalPackedDuration: currentPackedTime };
-    }, [scenes]);
-
-    // Playback timer loop
-    useEffect(() => {
-        if (!isPlaying) return;
-
-        let lastTime = performance.now();
-        let frameId: number;
-
-        const tick = (now: number) => {
-            const delta = (now - lastTime) / 1000;
-            lastTime = now;
-
-            setCurrentTime((prevTime) => {
-                const nextTime = prevTime + delta * playSpeed;
-                const maxTime = collapseEmptySpace ? totalPackedDuration : totalDuration;
-                if (nextTime >= maxTime) {
-                    setIsPlaying(false);
-                    return maxTime;
-                }
-                return nextTime;
-            });
-
-            frameId = requestAnimationFrame(tick);
-        };
-
-        frameId = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(frameId);
-    }, [isPlaying, playSpeed, collapseEmptySpace, totalDuration, totalPackedDuration]);
-
-    // Toggle play/pause
-    const togglePlay = () => setIsPlaying(!isPlaying);
-
-    // Stop playback and reset
-    const stopPlay = () => {
-        setIsPlaying(false);
-        setCurrentTime(0);
-    };
-
-    // Cycle playback speed
-    const cycleSpeed = (forward = true) => {
-        const idx = SPEED_LIST.indexOf(playSpeed);
-        let nextIdx = forward ? idx + 1 : idx - 1;
-        if (nextIdx >= SPEED_LIST.length) nextIdx = 0;
-        if (nextIdx < 0) nextIdx = SPEED_LIST.length - 1;
-        setPlaySpeed(SPEED_LIST[nextIdx]);
-    };
 
     // Next/Prev scene jumps
     const jumpScene = (forward = true) => {
@@ -392,6 +340,17 @@ export function Timeline() {
                     onClick={() => setShowMontageMonitor(!showMontageMonitor)}
                     title="Открыть Главный Экран Монтажа">
                     <i className="ti ti-device-tv" />
+                </button>
+
+                <button
+                    className={cn(styles.tbBtn, editorFollowsPlayback && styles.tbBtnActive)}
+                    onClick={() => setEditorFollowsPlayback(!editorFollowsPlayback)}
+                    title={
+                        editorFollowsPlayback
+                            ? "Редактор следует за плейхедом во время воспроизведения"
+                            : "Редактор закреплён на редактируемой сцене"
+                    }>
+                    <i className={cn(editorFollowsPlayback ? "ti ti-lock-open" : "ti ti-lock")} />
                 </button>
 
                 <span className={styles.spacer} />

@@ -74,6 +74,21 @@ export function OutputParams({
                 </div>
             </div>
             <div className={styles.fld}>
+                <span>Выход монитора</span>
+                <div className={styles.segBtn}>
+                    <button
+                        className={cn((params.activeOutput ?? "video") === "video" && styles.isOn)}
+                        onClick={() => updateNodeParam(node.id, "activeOutput", "video")}>
+                        Видео
+                    </button>
+                    <button
+                        className={cn((params.activeOutput ?? "video") === "image" && styles.isOn)}
+                        onClick={() => updateNodeParam(node.id, "activeOutput", "image")}>
+                        Картинка
+                    </button>
+                </div>
+            </div>
+            <div className={styles.fld}>
                 <span>Обложка сцены</span>
                 {params.coverUrl ? (
                     <div className={styles.coverPreviewWrapper}>

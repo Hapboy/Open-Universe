@@ -4,6 +4,7 @@ import { PwaProvider } from "./contexts/PwaContext.tsx";
 import { UserProvider } from "./contexts/UserContext.tsx";
 import { GraphProvider } from "./contexts/GraphContext.tsx";
 import { NarrativeProvider } from "./contexts/NarrativeContext.tsx";
+import { PlayerProvider } from "./contexts/PlayerContext.tsx";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
     return (
@@ -12,7 +13,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                 <PwaProvider>
                     <UserProvider>
                         <NarrativeProvider>
-                            <GraphProvider>{children}</GraphProvider>
+                            <GraphProvider>
+                                <PlayerProvider>{children}</PlayerProvider>
+                            </GraphProvider>
                         </NarrativeProvider>
                     </UserProvider>
                 </PwaProvider>

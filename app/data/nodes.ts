@@ -215,9 +215,10 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             renderingEngine: "Hayverse Realtime Veo 3",
             title: "",
             start: 0,
-            duration: 60,
+            duration: 5,
             track: 1,
             coverUrl: "",
+            activeOutput: "video",
         },
     },
 
@@ -408,8 +409,8 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
     },
 };
 
-// Ordered list for palette display
-export const PALETTE_GROUPS: { label: string; types: string[] }[] = [
+// Ordered list for NodeBrowser display
+export const NODE_BROWSER_GROUPS: { label: string; types: string[] }[] = [
     {
         label: "Сущности",
         types: ["character", "location", "building", "clothing", "artwork", "furniture"],

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import cn from "classnames";
-import { NODE_TEMPLATES, PALETTE_GROUPS } from "../../data/nodes.ts";
+import { NODE_TEMPLATES, NODE_BROWSER_GROUPS } from "../../data/nodes.ts";
 import { CategoryTagGroup } from "../components/CategoryTagGroup/CategoryTagGroup.tsx";
 import { SearchField } from "../components/SearchField/SearchField.tsx";
 import styles from "./NodeBrowser.module.css";
@@ -23,14 +23,14 @@ export function NodeBrowser({
     const ref = useRef<HTMLDivElement>(null);
 
     const categoryOptions = useMemo(
-        () => PALETTE_GROUPS.map((g) => ({ key: g.label, label: g.label })),
+        () => NODE_BROWSER_GROUPS.map((g) => ({ key: g.label, label: g.label })),
         [],
     );
     const isAnyCategoryActive = Object.values(activeCategories).some(Boolean);
 
     const items = useMemo(() => {
         const q = query.trim().toLowerCase();
-        return PALETTE_GROUPS.flatMap((group) => {
+        return NODE_BROWSER_GROUPS.flatMap((group) => {
             if (isAnyCategoryActive && !activeCategories[group.label]) return [];
             return group.types
                 .map((type) => NODE_TEMPLATES[type])

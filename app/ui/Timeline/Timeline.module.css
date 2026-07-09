@@ -252,16 +252,10 @@
 
 .sceneCardSelected {
     border-color: var(--color-node-scene) !important;
-    box-shadow: 0 0 10px rgba(29, 158, 117, 0.5) !important;
 }
 
 .sceneCardActive {
-    border-color: var(--color-node-scene) !important;
-}
-
-.sceneCardCameraSelected {
-    border-color: var(--color-bg-accent) !important;
-    box-shadow: 0 0 8px rgba(239, 159, 39, 0.4);
+    box-shadow: 0 0 10px rgba(29, 158, 117, 0.5);
 }
 
 .cardOverlay {
