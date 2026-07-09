@@ -45,6 +45,7 @@ function StatusBar() {
             </span>
             <span className={styles.spacer} />
             <span className={styles.muted}>{sel ? `${sel.data.label} (${sel.id})` : "—"}</span>
+            <span className={styles.muted}>{import.meta.env.DEV ? "local" : __GIT_HASH__}</span>
         </>
     );
 }
