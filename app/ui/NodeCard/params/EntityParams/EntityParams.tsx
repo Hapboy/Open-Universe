@@ -12,8 +12,8 @@ import { TextField } from "../../../components/TextField/TextField.tsx";
 import { TextAreaField } from "../../../components/TextAreaField/TextAreaField.tsx";
 import { CategoryTagGroup } from "../../../components/CategoryTagGroup/CategoryTagGroup.tsx";
 import { SearchField } from "../../../components/SearchField/SearchField.tsx";
+import { DropdownWithPreviews } from "../../../components/DropdownWithPreviews/DropdownWithPreviews.tsx";
 import {
-    DropdownWithPreviews,
     haircutOptions,
     tattooOptions,
     accessoryOptions,
