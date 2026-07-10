@@ -26,13 +26,14 @@ import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
 import type { SceneOutput } from "../../core/graph.ts";
 import { useToastContext } from "./ToastContext.tsx";
 import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from "../../core/browserStorage.ts";
-import { putGeneratedBlob } from "../../core/blobStore.ts";
+import { deleteBlobs, putGeneratedBlob } from "../../core/blobStore.ts";
 
 const SCENE_GRAPHS_KEY = "hv_scene_graphs";
 const ACTIVE_SCENE_KEY = "hv_active_scene_id";
 const TIMELINE_DURATION_KEY = "hv_timeline_duration";
 const DEFAULT_TOTAL_DURATION = 60; // 01:00 in seconds
 const MAX_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
+const MAX_GENERATED_HISTORY = 20; // cap per-node generated-image history
 
 type SceneGraphs = Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>;
 
@@ -633,16 +634,44 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         });
     }, []);
 
-    // Caches a fresh Imagen/Nano Banana result to IndexedDB and stores its
-    // ref on the node so the image survives a reload (shown by NodeCard as a
-    // fallback for when `resolved` is empty, e.g. right after page load,
-    // before the node has been re-run this session). `resolved` itself keeps
-    // holding the raw data: URL untouched — other nodes/edges consuming it
-    // (e.g. wiring this output into another Gemini call, or into
-    // output_scene's Visual Render pin) still get a directly usable value.
-    // `persistedImageRef` dedups against repeated "Прогнать граф" clicks: a
-    // node whose output didn't change since the last persist is skipped.
+    // Caches a fresh Imagen/Nano Banana result to IndexedDB and appends its
+    // ref onto the node's `generatedHistory` (shown by NodeCard as a photo
+    // slider, and as a fallback for when `resolved` is empty, e.g. right
+    // after page load, before the node has been re-run this session).
+    // `resolved` itself keeps holding the raw data: URL untouched — other
+    // nodes/edges consuming it (e.g. wiring this output into another Gemini
+    // call, or into output_scene's Visual Render pin) still get a directly
+    // usable value. `persistedImageRef` dedups against repeated "Прогнать
+    // граф" clicks: a node whose output didn't change since the last persist
+    // is skipped.
     const persistedImageRef = useRef<Map<string, string>>(new Map());
+    const appendGeneratedRef = useCallback((nodeId: string, ref: string) => {
+        setNodes((ns) =>
+            ns.map((n) => {
+                if (n.id !== nodeId) return n;
+                const prevHistory = Array.isArray(n.data.params.generatedHistory)
+                    ? (n.data.params.generatedHistory as string[])
+                    : n.data.params.lastGeneratedRef
+                      ? [n.data.params.lastGeneratedRef as string]
+                      : [];
+                const history = [...prevHistory, ref];
+                const overflow = history.length - MAX_GENERATED_HISTORY;
+                if (overflow > 0)
+                    void deleteBlobs(history.splice(0, overflow)).catch(console.error);
+                return {
+                    ...n,
+                    data: {
+                        ...n.data,
+                        params: {
+                            ...n.data.params,
+                            generatedHistory: history,
+                            generatedIdx: history.length - 1,
+                        },
+                    },
+                };
+            }),
+        );
+    }, []);
     const persistGeneratedImages = useCallback(
         (currentNodes: Node<NodeParams>[], resolvedMap: Record<string, unknown>) => {
             for (const node of currentNodes) {
@@ -659,11 +688,11 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
                 fetch(value)
                     .then((r) => r.blob())
                     .then(putGeneratedBlob)
-                    .then((ref) => updateNodeParam(node.id, "lastGeneratedRef", ref))
+                    .then((ref) => appendGeneratedRef(node.id, ref))
                     .catch(console.error);
             }
         },
-        [updateNodeParam],
+        [appendGeneratedRef],
     );
 
     const executeGraph = useCallback(async () => {

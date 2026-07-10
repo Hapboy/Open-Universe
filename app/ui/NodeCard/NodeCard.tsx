@@ -4,7 +4,7 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import type { NodeParams, PortType } from "../../types.ts";
 import { AI_MODEL_NODE_TYPES, NODE_TEMPLATES } from "../../data/nodes.ts";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import { useResolvedMediaUrl, useResolvedMediaUrls } from "../../core/blobStore.ts";
+import { deleteBlobs, useResolvedMediaUrls } from "../../core/blobStore.ts";
 import { CircleLoader } from "../components/CircleLoader/CircleLoader.tsx";
 import { MediaSlider } from "./MediaSlider/MediaSlider.tsx";
 import { NodeParamsPanel } from "./params/NodeParamsPanel.tsx";
@@ -65,15 +65,39 @@ export const NodeCard = memo(function NodeCard({
         data.nodeType === "gemini_imagen" || data.nodeType === "gemini_nanobanana";
     const liveGeneratedImage =
         isImageGenNode && outputId ? (resolved[outputId] as string | undefined) : undefined;
-    // Falls back to the last generation cached in IndexedDB (see
-    // GraphContext's persistGeneratedImages) when `resolved` is empty — i.e.
-    // right after a page reload, before the node has been re-run this session.
-    const persistedGeneratedRef =
-        !liveGeneratedImage && isImageGenNode
-            ? (data.params.lastGeneratedRef as string | undefined)
-            : undefined;
-    const resolvedPersistedImage = useResolvedMediaUrl(persistedGeneratedRef);
-    const generatedImage = liveGeneratedImage ?? resolvedPersistedImage;
+    // Every past generation cached in IndexedDB (see GraphContext's
+    // persistGeneratedImages/appendGeneratedRef), browsable via the photo
+    // slider below. Falls back to the legacy single `lastGeneratedRef` for
+    // nodes generated before this history array existed.
+    const generatedHistory = isImageGenNode
+        ? Array.isArray(data.params.generatedHistory)
+            ? (data.params.generatedHistory as string[])
+            : data.params.lastGeneratedRef
+              ? [data.params.lastGeneratedRef as string]
+              : []
+        : [];
+    const resolvedGeneratedHistory = useResolvedMediaUrls(generatedHistory);
+    // The freshly-generated image (this session, not yet round-tripped
+    // through IndexedDB) is shown in place of the newest slot immediately,
+    // rather than waiting on the async blob write to land.
+    const generatedItems = generatedHistory.length
+        ? generatedHistory.map((_, i) => ({
+              url:
+                  liveGeneratedImage && i === generatedHistory.length - 1
+                      ? liveGeneratedImage
+                      : resolvedGeneratedHistory[i],
+              type: "image" as const,
+          }))
+        : liveGeneratedImage
+          ? [{ url: liveGeneratedImage, type: "image" as const }]
+          : [];
+    const generatedIdx = Math.max(
+        0,
+        Math.min(
+            (data.params.generatedIdx as number) ?? generatedItems.length - 1,
+            generatedItems.length - 1,
+        ),
+    );
     const generatedVideo =
         data.nodeType === "gemini_veo" && outputId
             ? (resolved[outputId] as string | undefined)
@@ -247,7 +271,25 @@ export const NodeCard = memo(function NodeCard({
                     />
                 </div>
 
-                {generatedImage && <MediaSlider items={[{ url: generatedImage, type: "image" }]} />}
+                {generatedItems.length > 0 && (
+                    <MediaSlider
+                        items={generatedItems}
+                        index={generatedIdx}
+                        onIndexChange={(i) => updateNodeParam(id, "generatedIdx", i)}
+                        onDelete={(i) => {
+                            const ref = generatedHistory[i];
+                            const nextHistory = generatedHistory.filter((_, idx) => idx !== i);
+                            if (ref) void deleteBlobs([ref]).catch(console.error);
+                            updateNodeParams(id, {
+                                generatedHistory: nextHistory,
+                                generatedIdx: Math.max(
+                                    0,
+                                    Math.min(generatedIdx, nextHistory.length - 1),
+                                ),
+                            });
+                        }}
+                    />
+                )}
 
                 {generatedVideo && <MediaSlider items={[{ url: generatedVideo, type: "video" }]} />}
 
