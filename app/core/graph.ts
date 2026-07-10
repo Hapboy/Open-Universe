@@ -1,8 +1,9 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeParams } from "../types.ts";
 import { GeminiService, HiggsfieldService } from "./services/index.ts";
-import { AI_MODEL_NODE_TYPES } from "../data/nodes.ts";
+import { AI_MODEL_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "../data/nodes.ts";
 import { resolveMediaRef } from "./blobStore.ts";
+import { photoPortId } from "./characterPorts.ts";
 
 type ShowToast = (msg: string) => void;
 type Resolved = Record<string, unknown>;
@@ -62,7 +63,7 @@ async function computeNodeOutput(
         const input = edgeInput(d, edges, resolved, 0);
         const val = (input.wired ? input.value : null) as string | null;
         return await HiggsfieldService.runMotion(val, d.params.motionPreset as string, showToast);
-    } else if (ENTITY_TYPES.includes(d.nodeType) && d.nodeType !== "character") {
+    } else if (ENTITY_TYPES.includes(d.nodeType) && !RICH_ENTITY_NODE_TYPES.has(d.nodeType)) {
         return d.params.selectedItem;
     } else if (d.nodeType === "gemini_text") {
         const prompt = edgeInput(d, edges, resolved, 0);
@@ -156,23 +157,28 @@ async function computeNodeOutput(
     return undefined;
 }
 
-// Fills a character node's fixed pins (Photos/Description/JSON) — pure
-// derivations of its own params, independent of edges/resolution order.
+// Fills a rich entity node's pins (one per photo, plus Description/JSON) —
+// pure derivations of its own params, independent of edges/resolution order.
 // Photos are stored as blobStore refs (`idb:<uuid>`), not raw data — resolve
 // them to real URLs here so downstream AI-model nodes (e.g. Nano Banana
-// reference images) get usable image data, not an id string.
-async function computeCharacterExtraOutputs(
+// reference images) get usable image data, not an id string. Each photo's
+// pin id is derived from its own ref (see characterPorts.ts), not its
+// position, so this doesn't need to know the pins' order.
+async function computeRichEntityExtraOutputs(
     node: Node<NodeParams>,
     resolved: Resolved,
 ): Promise<void> {
     const d = node.data;
-    if (d.nodeType !== "character") return;
-    const [photosPort, descPort, jsonPort] = d.outputs;
-    if (photosPort) {
-        const photos = (d.params.photos as string[] | undefined) ?? [];
-        resolved[photosPort.id] = await Promise.all(photos.map(resolveMediaRef));
-    }
+    if (!RICH_ENTITY_NODE_TYPES.has(d.nodeType)) return;
+    const photos = (d.params.photos as string[] | undefined) ?? [];
+    await Promise.all(
+        photos.map(async (ref) => {
+            resolved[photoPortId(node.id, ref)] = await resolveMediaRef(ref);
+        }),
+    );
+    const descPort = d.outputs.find((p) => p.name === "Description");
     if (descPort) resolved[descPort.id] = d.params.additionalDescription;
+    const jsonPort = d.outputs.find((p) => p.name === "JSON");
     if (jsonPort) {
         resolved[jsonPort.id] = JSON.stringify(
             { id: node.id, nodeType: d.nodeType, label: d.label, ...d.params },
@@ -239,7 +245,7 @@ export async function runGraph(
 
             if (opts?.autoMode && AI_MODEL_NODE_TYPES.includes(d.nodeType)) continue;
 
-            await computeCharacterExtraOutputs(node, resolved);
+            await computeRichEntityExtraOutputs(node, resolved);
 
             // Skip nodes whose output is already resolved from a previous pass
             const alreadyResolved = d.outputs[0]?.id && resolved[d.outputs[0].id] !== undefined;
@@ -296,7 +302,7 @@ async function resolveNode(
             if (out !== undefined) resolved[outputId] = out;
             else delete resolved[outputId];
         }
-        await computeCharacterExtraOutputs(node, resolved);
+        await computeRichEntityExtraOutputs(node, resolved);
     } finally {
         onNodeDone?.(id);
     }

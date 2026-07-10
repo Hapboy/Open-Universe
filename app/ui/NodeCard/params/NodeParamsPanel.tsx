@@ -43,6 +43,7 @@ export function NodeParamsPanel({
     scenes,
     updateNodeParam,
     updateNodeParams,
+    setNodePhotos,
     addImageInput,
     loadPinterestBoards,
     loadPinterestPins,
@@ -186,6 +187,7 @@ export function NodeParamsPanel({
                     params={params as CharacterNodeParams}
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
+                    setNodePhotos={setNodePhotos}
                 />
             )}
             {nodeType === "location" && (
@@ -194,6 +196,7 @@ export function NodeParamsPanel({
                     params={params as LocationNodeParams}
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
+                    setNodePhotos={setNodePhotos}
                 />
             )}
             {nodeType === "building" && (

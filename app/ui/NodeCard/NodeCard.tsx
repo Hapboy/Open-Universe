@@ -2,10 +2,11 @@ import { Fragment, memo, useState } from "react";
 import cn from "classnames";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import type { NodeParams, PortType } from "../../types.ts";
-import { AI_MODEL_NODE_TYPES, NODE_TEMPLATES } from "../../data/nodes.ts";
+import { AI_MODEL_NODE_TYPES, NODE_TEMPLATES, RICH_ENTITY_NODE_TYPES } from "../../data/nodes.ts";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
 import { deleteBlobs, useResolvedMediaUrls } from "../../core/blobStore.ts";
 import { CircleLoader } from "../components/CircleLoader/CircleLoader.tsx";
+import { TextAreaField } from "../components/TextAreaField/TextAreaField.tsx";
 import { MediaSlider } from "./MediaSlider/MediaSlider.tsx";
 import { NodeParamsPanel } from "./params/NodeParamsPanel.tsx";
 import { NodeMenu } from "./NodeMenu/NodeMenu.tsx";
@@ -33,6 +34,7 @@ export const NodeCard = memo(function NodeCard({
         scenes,
         updateNodeParam,
         updateNodeParams,
+        setNodePhotos,
         addImageInput,
         removeImageInput,
         loadPinterestBoards,
@@ -51,9 +53,6 @@ export const NodeCard = memo(function NodeCard({
     const [hoveredInputId, setHoveredInputId] = useState<string | null>(null);
     const templateInputCount = NODE_TEMPLATES[data.nodeType]?.inputs.length ?? data.inputs.length;
 
-    const photos = data.nodeType === "character" ? (data.params.photos as string[]) || [] : [];
-    const resolvedPhotos = useResolvedMediaUrls(photos);
-    const photoIdx = (data.params.photoIdx as number) || 0;
     const isAiModel = AI_MODEL_NODE_TYPES.includes(data.nodeType);
     const isRunning = runningNodeIds.has(id);
     const outputId = data.outputs[0]?.id;
@@ -106,8 +105,8 @@ export const NodeCard = memo(function NodeCard({
         data.nodeType === "gemini_lyria" && outputId
             ? (resolved[outputId] as string | undefined)
             : undefined;
-    const characterJson =
-        data.nodeType === "character" && data.showJsonPreview
+    const entityJson =
+        RICH_ENTITY_NODE_TYPES.has(data.nodeType) && data.showJsonPreview
             ? JSON.stringify(
                   { id, nodeType: data.nodeType, label: data.label, ...data.params },
                   null,
@@ -121,6 +120,7 @@ export const NodeCard = memo(function NodeCard({
                 styles.card,
                 selected && styles.isSelected,
                 data.pinLabelsWide && styles.cardWide,
+                data.promptPanelOpen && styles.promptOpen,
             )}
             style={{ "--nc": data.color } as React.CSSProperties}>
             {/* Input handles */}
@@ -221,17 +221,41 @@ export const NodeCard = memo(function NodeCard({
                     title="Показать подписи пинов"
                     onClick={(e) => {
                         e.stopPropagation();
-                        setNodeField(id, { pinLabelsWide: !data.pinLabelsWide });
+                        const next = !data.pinLabelsWide;
+                        setNodeField(id, {
+                            pinLabelsWide: next,
+                            ...(next ? { promptPanelOpen: false } : {}),
+                        });
                     }}>
                     <i className="ti ti-arrows-horizontal" />
                 </button>
+                {RICH_ENTITY_NODE_TYPES.has(data.nodeType) && (
+                    <button
+                        className={cn(
+                            styles.promptBtn,
+                            data.promptPanelOpen && styles.promptBtnActive,
+                        )}
+                        aria-pressed={!!data.promptPanelOpen}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        title="Показать доп. описание"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const next = !data.promptPanelOpen;
+                            setNodeField(id, {
+                                promptPanelOpen: next,
+                                ...(next ? { pinLabelsWide: false } : {}),
+                            });
+                        }}>
+                        <i className="ti ti-notes" />
+                    </button>
+                )}
                 <NodeMenu
                     onDuplicate={() => duplicateNode(id)}
                     onDelete={() => {
                         deleteNode(id);
                         selectNode(null);
                     }}
-                    {...(data.nodeType === "character"
+                    {...(RICH_ENTITY_NODE_TYPES.has(data.nodeType)
                         ? {
                               jsonPreviewVisible: !!data.showJsonPreview,
                               onToggleJsonPreview: () =>
@@ -257,18 +281,31 @@ export const NodeCard = memo(function NodeCard({
                 )}
 
                 <div className={cn(styles.paramsWrap, "nodrag", "nowheel")}>
-                    <NodeParamsPanel
-                        node={{ id, data }}
-                        edges={edges}
-                        resolved={resolved}
-                        scenes={scenes}
-                        updateNodeParam={updateNodeParam}
-                        updateNodeParams={updateNodeParams}
-                        addImageInput={addImageInput}
-                        loadPinterestBoards={loadPinterestBoards}
-                        loadPinterestPins={loadPinterestPins}
-                        executeGraph={executeGraph}
-                    />
+                    <div className={styles.paramsMain}>
+                        <NodeParamsPanel
+                            node={{ id, data }}
+                            edges={edges}
+                            resolved={resolved}
+                            scenes={scenes}
+                            updateNodeParam={updateNodeParam}
+                            updateNodeParams={updateNodeParams}
+                            setNodePhotos={setNodePhotos}
+                            addImageInput={addImageInput}
+                            loadPinterestBoards={loadPinterestBoards}
+                            loadPinterestPins={loadPinterestPins}
+                            executeGraph={executeGraph}
+                        />
+                    </div>
+                    {RICH_ENTITY_NODE_TYPES.has(data.nodeType) && data.promptPanelOpen && (
+                        <div className={styles.promptCol}>
+                            <TextAreaField
+                                label="Дополнительное описание"
+                                rows={12}
+                                value={(data.params.additionalDescription as string) ?? ""}
+                                onChange={(v) => updateNodeParam(id, "additionalDescription", v)}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {generatedItems.length > 0 && (
@@ -301,24 +338,7 @@ export const NodeCard = memo(function NodeCard({
                     />
                 )}
 
-                {photos.length > 0 && (
-                    <MediaSlider
-                        items={resolvedPhotos.map((url) => ({ url, type: "image" }))}
-                        index={photoIdx}
-                        onIndexChange={(i) => updateNodeParam(id, "photoIdx", i)}
-                        onDelete={(i) => {
-                            const next = photos.filter((_, idx) => idx !== i);
-                            updateNodeParam(id, "photos", next);
-                            updateNodeParam(
-                                id,
-                                "photoIdx",
-                                Math.max(0, Math.min(photoIdx, next.length - 1)),
-                            );
-                        }}
-                    />
-                )}
-
-                {characterJson && (
+                {entityJson && (
                     <div className={styles.body}>
                         <pre
                             className={cn(
@@ -328,7 +348,7 @@ export const NodeCard = memo(function NodeCard({
                                 "nowheel",
                             )}
                             style={{ whiteSpace: "pre-wrap" }}>
-                            {characterJson}
+                            {entityJson}
                         </pre>
                     </div>
                 )}

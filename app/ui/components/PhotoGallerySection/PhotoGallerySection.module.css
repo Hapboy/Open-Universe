@@ -1,0 +1,51 @@
+.fld {
+    composes: fld from "../../../styles/shared.module.css";
+}
+
+.iconBtn {
+    composes: iconBtn from "../../../styles/shared.module.css";
+}
+
+.photoActions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    align-items: center;
+}
+
+.photoActions input[type="text"] {
+    flex: 1;
+    min-width: 0;
+}
+
+.thumbnailsList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    max-height: 100px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.thumbCell {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition:
+        transform 0.2s,
+        border-color 0.2s;
+}
+
+.thumbCell:hover {
+    transform: scale(1.08);
+}
+
+.thumbCell.thumbCellActive {
+    border-color: var(--color-bg-accent);
+    box-shadow: 0 0 6px var(--color-bg-accent);
+}

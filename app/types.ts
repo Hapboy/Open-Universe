@@ -20,6 +20,7 @@ export interface NodeParams {
     // preset snapshots (which only ever look at `params`).
     showJsonPreview?: boolean;
     pinLabelsWide?: boolean;
+    promptPanelOpen?: boolean;
     [key: string]: unknown;
 }
 
@@ -130,12 +131,16 @@ export interface CharacterNodeParams extends Record<string, unknown> {
 export interface LocationNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
+    photos: string[];
+    photoIdx: number;
+    pinterestUrl: string;
     weather: string;
     timeOfDay: string;
     interiorExterior: "Интерьер" | "Экстерьер";
     damageLevel: number;
     coordinates: WGS84Coordinates;
     radiusKm: number;
+    additionalDescription: string;
 }
 
 export interface BuildingNodeParams extends Record<string, unknown> {

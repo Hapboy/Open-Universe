@@ -30,6 +30,10 @@
     width: 580px;
 }
 
+.card.promptOpen {
+    width: 640px;
+}
+
 .header {
     display: flex;
     align-items: center;
@@ -134,6 +138,36 @@
     color: #fff;
 }
 
+.promptBtn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.promptBtn:hover {
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+}
+
+.promptBtn i {
+    font-size: 11px;
+}
+
+.promptBtnActive {
+    background: var(--nc, var(--color-bg-accent));
+    color: #fff;
+}
+
 .handle {
     width: 12px;
     height: 12px;
@@ -218,6 +252,22 @@
 
 .paramsWrap {
     padding: 8px 12px 12px;
+}
+
+.card.promptOpen .paramsWrap {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.paramsMain {
+    flex: 1 1 320px;
+    min-width: 0;
+}
+
+.promptCol {
+    flex: 1 1 260px;
+    min-width: 200px;
 }
 
 .audioPlayer {

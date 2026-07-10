@@ -23,6 +23,11 @@ export const AI_MODEL_NODE_TYPES = [
     "higgsfield_speak",
 ];
 
+// Entity node types with the "rich" editing UI: a photo gallery (with
+// per-photo output pins), a toggleable prompt column for additionalDescription,
+// and Description/JSON output pins (instead of a plain selectedItem passthrough).
+export const RICH_ENTITY_NODE_TYPES = new Set(["character", "location"]);
+
 export interface NodeTemplate {
     type: string;
     label: string;
@@ -239,7 +244,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         color: "var(--color-node-higgsfield)",
         inputs: [{ name: "Clothing", type: "any" as PortType }],
         outputs: [
-            { name: "Photos", type: PORT_TYPES.IMAGE },
             { name: "Description", type: PORT_TYPES.TEXT },
             { name: "JSON", type: PORT_TYPES.TEXT },
         ],
@@ -276,16 +280,23 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         icon: "ti-map-pin",
         color: "var(--color-node-scene)",
         inputs: [{ name: "Building", type: "any" as PortType }],
-        outputs: [{ name: "Location Out", type: "any" as PortType }],
+        outputs: [
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
         params: {
             selectedItem: "Старый Конд",
             name: "Старый Конд",
+            photos: [] as string[],
+            photoIdx: 0,
+            pinterestUrl: "",
             weather: "туман",
             timeOfDay: "рассвет",
             interiorExterior: "Экстерьер",
             damageLevel: 0,
             coordinates: { lat: null, lon: null },
             radiusKm: 5,
+            additionalDescription: "",
         },
     },
 

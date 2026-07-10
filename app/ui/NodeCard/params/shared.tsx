@@ -14,6 +14,7 @@ export interface NodeParamsProps {
     scenes: TimelineScene[];
     updateNodeParam: (id: string, key: string, value: unknown) => void;
     updateNodeParams: (id: string, patch: Record<string, unknown>) => void;
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
     addImageInput: (id: string) => void;
     loadPinterestBoards: (node: NodeRef) => Promise<void>;
     loadPinterestPins: (node: NodeRef, boardId: string) => Promise<void>;

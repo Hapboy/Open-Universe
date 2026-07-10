@@ -21,19 +21,27 @@ import {
     type OnEdgesChange,
     type OnNodesChange,
 } from "@xyflow/react";
-import { NODE_TEMPLATES } from "../../data/nodes.ts";
+import { NODE_TEMPLATES, RICH_ENTITY_NODE_TYPES } from "../../data/nodes.ts";
 import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
 import type { SceneOutput } from "../../core/graph.ts";
 import { useToastContext } from "./ToastContext.tsx";
 import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from "../../core/browserStorage.ts";
 import { deleteBlobs, putGeneratedBlob } from "../../core/blobStore.ts";
+import { buildPhotoPorts } from "../../core/characterPorts.ts";
 
 const SCENE_GRAPHS_KEY = "hv_scene_graphs";
 const ACTIVE_SCENE_KEY = "hv_active_scene_id";
 const TIMELINE_DURATION_KEY = "hv_timeline_duration";
 const DEFAULT_TOTAL_DURATION = 60; // 01:00 in seconds
 const MAX_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
+const MAX_ENTITY_PHOTOS = 10;
 const MAX_GENERATED_HISTORY = 20; // cap per-node generated-image history
+
+function withPhotoOutputs(nodeId: string, outputs: Port[], photos: string[]): Port[] {
+    const photoPrefix = `${nodeId}_photo_`;
+    const fixedOutputs = outputs.filter((p) => !p.id.startsWith(photoPrefix));
+    return [...fixedOutputs, ...buildPhotoPorts(nodeId, photos)];
+}
 
 type SceneGraphs = Record<string, { nodes: Node<NodeParams>[]; edges: Edge[] }>;
 
@@ -211,6 +219,7 @@ interface GraphCtx {
     setNodeField: (nodeId: string, patch: Partial<NodeParams>) => void;
     updateNodeParam: (nodeId: string, key: string, value: unknown) => void;
     updateNodeParams: (nodeId: string, patch: Record<string, unknown>) => void;
+    setNodePhotos: (nodeId: string, photos: string[], photoIdx: number) => void;
     addImageInput: (nodeId: string) => void;
     removeImageInput: (nodeId: string, portId: string) => void;
     executeGraph: () => Promise<void>;
@@ -484,20 +493,25 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
             if (!source) return ns;
 
             const newId = `node_${Date.now()}_${++nodeCounter.current}`;
+            const clonedData = structuredClone(source.data);
+            const outputs = RICH_ENTITY_NODE_TYPES.has(source.data.nodeType)
+                ? withPhotoOutputs(
+                      newId,
+                      clonedData.outputs.map((out, i) => ({ ...out, id: `${newId}_out_${i}` })),
+                      (clonedData.params.photos as string[] | undefined) ?? [],
+                  )
+                : clonedData.outputs.map((out, i) => ({ ...out, id: `${newId}_out_${i}` }));
             const duplicated: Node<NodeParams> = {
                 ...source,
                 id: newId,
                 position: { x: source.position.x + 40, y: source.position.y + 40 },
                 data: {
-                    ...structuredClone(source.data),
+                    ...clonedData,
                     inputs: source.data.inputs.map((inp, i) => ({
                         ...inp,
                         id: `${newId}_in_${i}`,
                     })),
-                    outputs: source.data.outputs.map((out, i) => ({
-                        ...out,
-                        id: `${newId}_out_${i}`,
-                    })),
+                    outputs,
                 },
                 selected: false,
             };
@@ -575,6 +589,37 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
                 n.id !== nodeId
                     ? n
                     : { ...n, data: { ...n.data, params: { ...n.data.params, ...patch } } },
+            ),
+        );
+    }, []);
+
+    // Single place that mutates a rich entity node's photos — keeps its
+    // per-photo output pins (one per photo, id'd by blob ref) in sync with
+    // the array, and prunes edges wired to any pin that no longer exists.
+    const setNodePhotos = useCallback((nodeId: string, photos: string[], photoIdx: number) => {
+        const capped = photos.slice(0, MAX_ENTITY_PHOTOS);
+        setNodes((ns) =>
+            ns.map((n) =>
+                n.id !== nodeId
+                    ? n
+                    : {
+                          ...n,
+                          data: {
+                              ...n.data,
+                              outputs: withPhotoOutputs(nodeId, n.data.outputs, capped),
+                              params: { ...n.data.params, photos: capped, photoIdx },
+                          },
+                      },
+            ),
+        );
+        const photoPrefix = `${nodeId}_photo_`;
+        const validIds = new Set(capped.map((ref) => `${photoPrefix}${ref}`));
+        setEdges((es) =>
+            es.filter(
+                (e) =>
+                    e.source !== nodeId ||
+                    !e.sourceHandle?.startsWith(photoPrefix) ||
+                    validIds.has(e.sourceHandle),
             ),
         );
     }, []);
@@ -776,6 +821,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         setNodeField,
         updateNodeParam,
         updateNodeParams,
+        setNodePhotos,
         addImageInput,
         removeImageInput,
         executeGraph,

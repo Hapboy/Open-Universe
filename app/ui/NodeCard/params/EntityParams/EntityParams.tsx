@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import cn from "classnames";
 import { DatabaseSelect, InFrameToggle, usePresetDatabase } from "../shared.tsx";
 import type { EP } from "../shared.tsx";
-import { putBlob, useResolvedMediaUrl, useResolvedMediaUrls } from "../../../../core/blobStore.ts";
+import { PhotoGallerySection } from "../../../components/PhotoGallerySection/PhotoGallerySection.tsx";
 import { SelectField } from "../../../components/SelectField/SelectField.tsx";
 import { RangeField } from "../../../components/RangeField/RangeField.tsx";
 import { NumberField } from "../../../components/NumberField/NumberField.tsx";
@@ -40,21 +40,25 @@ const CHARACTER_CATEGORIES = [
     { key: "styling", label: "Стиль" },
 ];
 
+const LOCATION_CATEGORIES = [
+    { key: "general", label: "Общие" },
+    { key: "atmosphere", label: "Атмосфера" },
+];
+
 export function CharacterParams({
     node,
     params,
     updateNodeParam,
     updateNodeParams,
-}: EP<CharacterNodeParams>) {
+    setNodePhotos,
+}: EP<CharacterNodeParams> & {
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
     const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
     );
-    const photos = params.photos || [];
-    const resolvedCover = useResolvedMediaUrl(photos[params.photoIdx ?? 0]);
-    const resolvedThumbs = useResolvedMediaUrls(photos);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Toggle Category Tags and Search State
     const [activeTags, setActiveTags] = useState<Record<string, boolean>>({
@@ -92,17 +96,6 @@ export function CharacterParams({
         return label.toLowerCase().includes(searchQuery.toLowerCase());
     };
 
-    const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (!files.length) return;
-        Promise.all(files.map((file) => putBlob(file))).then((newPhotos) => {
-            const next = [...photos, ...newPhotos];
-            updateNodeParam(node.id, "photos", next);
-            updateNodeParam(node.id, "photoIdx", next.length - 1);
-        }, console.error);
-        e.target.value = "";
-    };
-
     return (
         <>
             {/* Category selector tags and Search input */}
@@ -131,16 +124,6 @@ export function CharacterParams({
                 />
             )}
 
-            {shouldShow("general", "Обложка Персонажа") && photos.length > 0 && (
-                <div className={styles.coverPreviewWrapper}>
-                    <img
-                        src={resolvedCover}
-                        className={styles.coverPreviewImg}
-                        alt="Character Cover"
-                    />
-                </div>
-            )}
-
             {shouldShow("general", "Имя") && (
                 <TextField
                     label="Имя"
@@ -149,11 +132,16 @@ export function CharacterParams({
                 />
             )}
 
-            {shouldShow("general", "Дополнительное описание") && (
-                <TextAreaField
-                    label="Дополнительное описание"
-                    value={params.additionalDescription}
-                    onChange={(v) => updateNodeParam(node.id, "additionalDescription", v)}
+            {shouldShow("general", "Фото Персонажа") && (
+                <PhotoGallerySection
+                    node={node}
+                    label="Фото персонажа"
+                    photos={params.photos || []}
+                    photoIdx={params.photoIdx ?? 0}
+                    pinterestUrl={params.pinterestUrl}
+                    updateNodeParam={updateNodeParam}
+                    setNodePhotos={setNodePhotos}
+                    resetKey={params.selectedItem}
                 />
             )}
 
@@ -163,51 +151,6 @@ export function CharacterParams({
                     value={params.currentPosition}
                     onChange={(v) => updateNodeParam(node.id, "currentPosition", v)}
                 />
-            )}
-
-            {shouldShow("general", "Фото Персонажа") && (
-                <div className={styles.fld}>
-                    <span>Фото персонажа ({photos.length})</span>
-                    <div className={styles.charPhotoActions}>
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            style={{ display: "none" }}
-                            onChange={handleUpload}
-                        />
-                        <input
-                            key={params.selectedItem}
-                            type="text"
-                            placeholder="Pinterest board URL"
-                            defaultValue={params.pinterestUrl || ""}
-                            onBlur={(e) => updateNodeParam(node.id, "pinterestUrl", e.target.value)}
-                        />
-                        <button
-                            className={styles.iconBtn}
-                            onClick={() => fileInputRef.current?.click()}
-                            title="Загрузить фото">
-                            <i className="ti ti-upload" />
-                        </button>
-                    </div>
-                    {photos.length > 0 && (
-                        <div className={styles.thumbnailsList}>
-                            {resolvedThumbs.map((url, idx) => (
-                                <div
-                                    key={idx}
-                                    className={cn(
-                                        styles.thumbCell,
-                                        idx === params.photoIdx && styles.thumbCellActive,
-                                    )}
-                                    onClick={() => updateNodeParam(node.id, "photoIdx", idx)}
-                                    style={{ backgroundImage: url ? `url(${url})` : undefined }}
-                                    title="Установить как обложку"
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
             )}
 
             {/* 2. BIRTH CATEGORY */}
@@ -352,82 +295,161 @@ export function LocationParams({
     params,
     updateNodeParam,
     updateNodeParams,
-}: EP<LocationNodeParams>) {
+    setNodePhotos,
+}: EP<LocationNodeParams> & {
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
     const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
     );
 
+    // Toggle Category Tags and Search State
+    const [activeTags, setActiveTags] = useState<Record<string, boolean>>({
+        general: true,
+        atmosphere: false,
+    });
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const isAllActive = activeTags.general && activeTags.atmosphere;
+
+    const toggleTag = (tag: string) => {
+        setActiveTags((prev) => ({
+            ...prev,
+            [tag]: !prev[tag],
+        }));
+    };
+
+    const toggleAll = () => {
+        const nextVal = !isAllActive;
+        setActiveTags({ general: nextVal, atmosphere: nextVal });
+    };
+
+    const shouldShow = (category: string, label: string) => {
+        if (!activeTags[category as keyof typeof activeTags]) return false;
+        if (!searchQuery) return true;
+        return label.toLowerCase().includes(searchQuery.toLowerCase());
+    };
+
     return (
         <>
-            <DatabaseSelect
-                label="Локация"
-                items={db}
-                selected={params.selectedItem}
-                onSelect={onSelect}
-                onAdd={onAdd}
-                onUpdate={onUpdate}
-                hasUnsavedChanges={hasUnsavedChanges}
-                addLabel="Добавить локацию"
-            />
-            <TextField
-                label="Имя"
-                value={params.name}
-                onChange={(v) => updateNodeParam(node.id, "name", v)}
-            />
-            <CoordinateField
-                label="Координаты"
-                value={params.coordinates}
-                onChange={(v) => updateNodeParam(node.id, "coordinates", v)}
-            />
-            <NumberField
-                label={`Радиус зоны (${params.radiusKm ?? 0} км)`}
-                min={0.1}
-                max={500}
-                step={0.5}
-                value={params.radiusKm}
-                onChange={(v) => updateNodeParam(node.id, "radiusKm", v)}
-            />
-            <SelectField
-                label="Погода"
-                value={params.weather}
-                onChange={(v) => updateNodeParam(node.id, "weather", v)}
-                options={["туман", "солнце", "дождь", "снег", "пасмурно"]}
-            />
-            <SelectField
-                label="Время суток"
-                value={params.timeOfDay}
-                onChange={(v) => updateNodeParam(node.id, "timeOfDay", v)}
-                options={["рассвет", "утро", "день", "закат", "ночь"]}
-            />
-            <div className={styles.fld}>
-                <span>Интерьер / Экстерьер</span>
-                <div className={styles.segBtn}>
-                    {["Интерьер", "Экстерьер"].map((v) => (
-                        <button
-                            key={v}
-                            className={cn(params.interiorExterior === v && styles.isOn)}
-                            onClick={() =>
-                                updateNodeParam(
-                                    node.id,
-                                    "interiorExterior",
-                                    v as "Интерьер" | "Экстерьер",
-                                )
-                            }>
-                            {v}
-                        </button>
-                    ))}
-                </div>
+            <div className={styles.searchContainer}>
+                <SearchField value={searchQuery} onChange={setSearchQuery} />
+                <CategoryTagGroup
+                    options={LOCATION_CATEGORIES}
+                    active={activeTags}
+                    onToggle={toggleTag}
+                    onToggleAll={toggleAll}
+                    isAllActive={isAllActive}
+                />
             </div>
-            <RangeField
-                label={`Уровень повреждения дома (${params.damageLevel ?? 0}%)`}
-                min={0}
-                max={100}
-                step={5}
-                value={params.damageLevel ?? 0}
-                onChange={(v) => updateNodeParam(node.id, "damageLevel", v)}
-            />
+
+            {/* 1. GENERAL CATEGORY */}
+            {shouldShow("general", "Локация Preset") && (
+                <DatabaseSelect
+                    label="Локация"
+                    items={db}
+                    selected={params.selectedItem}
+                    onSelect={onSelect}
+                    onAdd={onAdd}
+                    onUpdate={onUpdate}
+                    hasUnsavedChanges={hasUnsavedChanges}
+                    addLabel="Добавить локацию"
+                />
+            )}
+
+            {shouldShow("general", "Имя") && (
+                <TextField
+                    label="Имя"
+                    value={params.name}
+                    onChange={(v) => updateNodeParam(node.id, "name", v)}
+                />
+            )}
+
+            {shouldShow("general", "Фото Локации") && (
+                <PhotoGallerySection
+                    node={node}
+                    label="Фото локации"
+                    photos={params.photos || []}
+                    photoIdx={params.photoIdx ?? 0}
+                    pinterestUrl={params.pinterestUrl}
+                    updateNodeParam={updateNodeParam}
+                    setNodePhotos={setNodePhotos}
+                    resetKey={params.selectedItem}
+                />
+            )}
+
+            {shouldShow("general", "Координаты") && (
+                <CoordinateField
+                    label="Координаты"
+                    value={params.coordinates}
+                    onChange={(v) => updateNodeParam(node.id, "coordinates", v)}
+                />
+            )}
+
+            {shouldShow("general", "Радиус зоны") && (
+                <NumberField
+                    label={`Радиус зоны (${params.radiusKm ?? 0} км)`}
+                    min={0.1}
+                    max={500}
+                    step={0.5}
+                    value={params.radiusKm}
+                    onChange={(v) => updateNodeParam(node.id, "radiusKm", v)}
+                />
+            )}
+
+            {/* 2. ATMOSPHERE CATEGORY */}
+            {shouldShow("atmosphere", "Погода") && (
+                <SelectField
+                    label="Погода"
+                    value={params.weather}
+                    onChange={(v) => updateNodeParam(node.id, "weather", v)}
+                    options={["туман", "солнце", "дождь", "снег", "пасмурно"]}
+                />
+            )}
+
+            {shouldShow("atmosphere", "Время суток") && (
+                <SelectField
+                    label="Время суток"
+                    value={params.timeOfDay}
+                    onChange={(v) => updateNodeParam(node.id, "timeOfDay", v)}
+                    options={["рассвет", "утро", "день", "закат", "ночь"]}
+                />
+            )}
+
+            {shouldShow("atmosphere", "Интерьер / Экстерьер") && (
+                <div className={styles.fld}>
+                    <span>Интерьер / Экстерьер</span>
+                    <div className={styles.segBtn}>
+                        {["Интерьер", "Экстерьер"].map((v) => (
+                            <button
+                                key={v}
+                                className={cn(params.interiorExterior === v && styles.isOn)}
+                                onClick={() =>
+                                    updateNodeParam(
+                                        node.id,
+                                        "interiorExterior",
+                                        v as "Интерьер" | "Экстерьер",
+                                    )
+                                }>
+                                {v}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {shouldShow("atmosphere", "Уровень повреждения дома") && (
+                <RangeField
+                    label={`Уровень повреждения дома (${params.damageLevel ?? 0}%)`}
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={params.damageLevel ?? 0}
+                    onChange={(v) => updateNodeParam(node.id, "damageLevel", v)}
+                />
+            )}
         </>
     );
 }
