@@ -79,9 +79,16 @@ function buildMarkerEl(d: MarkerDatum): HTMLElement {
 }
 
 export function WorldMap() {
-    const { nodes, showWorldMap, setShowWorldMap } = useGraphContext();
+    const { nodes, showWorldMap, setShowWorldMap, worldMapFullscreen, setWorldMapFullscreen } =
+        useGraphContext();
     const containerRef = useRef<HTMLDivElement>(null);
     const [globe, setGlobe] = useState<GlobeInstance | null>(null);
+
+    // Always reopen in the 50/50 split, regardless of how the panel was
+    // previously closed (× button or the Timeline toggle button).
+    useEffect(() => {
+        if (!showWorldMap) setWorldMapFullscreen(false);
+    }, [showWorldMap, setWorldMapFullscreen]);
 
     // Lazy-init on first open; kept alive across later toggles so the texture
     // and WebGL scene are never reloaded/rebuilt.
@@ -151,6 +158,23 @@ export function WorldMap() {
         };
     }, [showWorldMap, globe]);
 
+    // globe.gl/three-render-objects has no built-in container-resize tracking —
+    // its width/height default to (and stay pinned at) window.innerWidth/
+    // innerHeight unless told otherwise, which only looked correct before
+    // because the panel used to be a fixed full-viewport overlay. Now that
+    // it's a partial-width pane, the renderer must be explicitly kept in
+    // sync with its actual container size (initial split width, fullscreen
+    // toggle, window resize, ...).
+    useEffect(() => {
+        if (!globe || !containerRef.current) return;
+        const el = containerRef.current;
+        const applySize = () => globe.width(el.clientWidth).height(el.clientHeight);
+        applySize();
+        const observer = new ResizeObserver(applySize);
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [globe]);
+
     // Push the active scene's characters/locations whenever either changes.
     // `nodes` already reflects only the active scene's graph (GraphContext
     // swaps it on activeSceneId change), so no extra scene filtering is needed.
@@ -199,7 +223,12 @@ export function WorldMap() {
     }, [globe, nodes]);
 
     return (
-        <div className={cn(styles.overlay, !showWorldMap && styles.hidden)}>
+        <div
+            className={cn(
+                styles.overlay,
+                worldMapFullscreen && styles.fullscreen,
+                !showWorldMap && styles.hidden,
+            )}>
             <div className={styles.header}>
                 <div className={styles.headerTitle}>
                     <i className="ti ti-world" />
@@ -208,9 +237,28 @@ export function WorldMap() {
                         Mapbox: {MAPBOX_TOKEN ? "live" : "mock"}
                     </span>
                 </div>
-                <button className={styles.x} onClick={() => setShowWorldMap(false)} title="Закрыть">
-                    <i className="ti ti-x" />
-                </button>
+                <div className={styles.headerActions}>
+                    <button
+                        className={styles.fullscreenBtn}
+                        onClick={() => setWorldMapFullscreen(!worldMapFullscreen)}
+                        title={
+                            worldMapFullscreen ? "Свернуть до половины экрана" : "На весь экран"
+                        }>
+                        <i
+                            className={
+                                worldMapFullscreen
+                                    ? "ti ti-arrows-minimize"
+                                    : "ti ti-arrows-maximize"
+                            }
+                        />
+                    </button>
+                    <button
+                        className={styles.x}
+                        onClick={() => setShowWorldMap(false)}
+                        title="Закрыть">
+                        <i className="ti ti-x" />
+                    </button>
+                </div>
             </div>
             <div className={styles.globeContainer}>
                 <div ref={containerRef} className={styles.globeMount} />

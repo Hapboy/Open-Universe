@@ -243,6 +243,9 @@ interface GraphCtx {
     showWorldMap: boolean;
     setShowWorldMap: (v: boolean) => void;
 
+    worldMapFullscreen: boolean;
+    setWorldMapFullscreen: (v: boolean) => void;
+
     totalDuration: number;
     setTotalDuration: (seconds: number) => void;
 }
@@ -265,6 +268,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     const [showMiniMap, setShowMiniMap] = useState<boolean>(true);
     const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false);
     const [showWorldMap, setShowWorldMap] = useState<boolean>(false);
+    const [worldMapFullscreen, setWorldMapFullscreen] = useState<boolean>(false);
 
     const [totalDuration, setTotalDurationState] = useState<number>(loadStoredTotalDuration);
     const setTotalDuration = useCallback(
@@ -839,6 +843,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         setShowMontageMonitor,
         showWorldMap,
         setShowWorldMap,
+        worldMapFullscreen,
+        setWorldMapFullscreen,
         totalDuration,
         setTotalDuration,
     };

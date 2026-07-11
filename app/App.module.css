@@ -17,6 +17,20 @@
     overflow: hidden;
 }
 
+.editorPane {
+    width: 100%;
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.editorPaneSplit {
+    width: 50%;
+}
+
+.editorPaneCollapsed {
+    width: 0%;
+}
+
 .statusbar {
     height: 28px;
     background-color: var(--color-bg-secondary);

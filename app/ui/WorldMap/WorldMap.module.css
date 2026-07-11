@@ -1,17 +1,34 @@
 .overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 90;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 100%;
+    z-index: 10;
     display: flex;
     flex-direction: column;
-    background: var(--color-bg-primary);
+    background: var(--color-bg-secondary);
+    border-left: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+    transform: translateX(0);
+    transition:
+        transform 0.3s ease,
+        width 0.3s ease;
 }
 
-/* visibility (not display:none) so the container never collapses to 0x0 while
-   hidden — globe.gl's internal ResizeObserver otherwise resets the camera
-   framing when the panel is reopened. */
+.fullscreen {
+    width: 100%;
+}
+
+/* Box size never touches 0 here — hiding is done purely via transform,
+   sliding the (always non-zero) panel past the stage's clipped edge.
+   globe.gl's internal ResizeObserver resets camera framing if the container
+   ever actually collapses to 0x0, so we avoid animating width/visibility
+   for the open/close case (the fullscreen toggle above is safe since it only
+   moves between two non-zero sizes). */
 .hidden {
-    visibility: hidden;
+    transform: translateX(100%);
+    pointer-events: none;
 }
 
 .header {
@@ -31,19 +48,45 @@
     color: var(--color-text-primary);
 }
 
+.headerTitle i {
+    color: var(--color-border-active);
+    font-size: 16px;
+}
+
 .mapboxStatus {
     font-size: 11px;
     font-weight: 400;
     color: var(--color-text-tertiary);
 }
 
-.x {
-    background: transparent;
-    border: none;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    font-size: 16px;
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin-left: auto;
+}
+
+.x,
+.fullscreenBtn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.x:hover,
+.fullscreenBtn:hover {
+    background: var(--color-border-hover);
+    color: var(--color-text-primary);
 }
 
 .globeContainer {

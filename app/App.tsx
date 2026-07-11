@@ -1,3 +1,4 @@
+import cn from "classnames";
 import { AppProviders } from "./store/AppProviders.tsx";
 import { useGraphContext } from "./store/contexts/GraphContext.tsx";
 import { Topbar } from "./ui/Topbar/Topbar.tsx";
@@ -10,12 +11,23 @@ import { Toast } from "./ui/Toast/Toast.tsx";
 import styles from "./App.module.css";
 
 function AppShell() {
+    const { showWorldMap, worldMapFullscreen } = useGraphContext();
     return (
         <div id="app" data-theme="dark">
             <Topbar />
             <div className={styles.body}>
                 <main className={styles.stage}>
-                    <NodeEditor />
+                    <div
+                        className={cn(
+                            styles.editorPane,
+                            showWorldMap &&
+                                (worldMapFullscreen
+                                    ? styles.editorPaneCollapsed
+                                    : styles.editorPaneSplit),
+                        )}>
+                        <NodeEditor />
+                    </div>
+                    <WorldMap />
                 </main>
             </div>
             <Timeline />
@@ -23,7 +35,6 @@ function AppShell() {
                 <StatusBar />
             </footer>
             <MontageMonitor />
-            <WorldMap />
             <Modals />
             <Toast />
         </div>
