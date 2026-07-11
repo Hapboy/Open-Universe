@@ -77,6 +77,14 @@ export const NodeCard = memo(function NodeCard({
               : []
         : [];
     const resolvedGeneratedHistory = useResolvedMediaUrls(generatedHistory);
+    // Snapshot of the params that produced each history entry, keyed by ref —
+    // see GraphContext's appendGeneratedRef. Missing for entries generated
+    // before this map existed, in which case the slider just leaves current
+    // params untouched.
+    const generatedParamsHistory = (data.params.generatedParamsHistory ?? {}) as Record<
+        string,
+        Record<string, unknown>
+    >;
     // The freshly-generated image (this session, not yet round-tripped
     // through IndexedDB) is shown in place of the newest slot immediately,
     // rather than waiting on the async blob write to land.
@@ -325,13 +333,22 @@ export const NodeCard = memo(function NodeCard({
                     <MediaSlider
                         items={generatedItems}
                         index={generatedIdx}
-                        onIndexChange={(i) => updateNodeParam(id, "generatedIdx", i)}
+                        onIndexChange={(i) => {
+                            const snapshot = generatedParamsHistory[generatedHistory[i]];
+                            updateNodeParams(
+                                id,
+                                snapshot ? { ...snapshot, generatedIdx: i } : { generatedIdx: i },
+                            );
+                        }}
                         onDelete={(i) => {
                             const ref = generatedHistory[i];
                             const nextHistory = generatedHistory.filter((_, idx) => idx !== i);
                             if (ref) void deleteBlobs([ref]).catch(console.error);
+                            const nextParamsHistory = { ...generatedParamsHistory };
+                            if (ref) delete nextParamsHistory[ref];
                             updateNodeParams(id, {
                                 generatedHistory: nextHistory,
+                                generatedParamsHistory: nextParamsHistory,
                                 generatedIdx: Math.max(
                                     0,
                                     Math.min(generatedIdx, nextHistory.length - 1),

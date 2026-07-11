@@ -39,6 +39,22 @@ const MAX_TEXT_INPUTS = 8; // text_prompt's own dynamic-field cap
 const MAX_ENTITY_PHOTOS = 10;
 const MAX_GENERATED_HISTORY = 20; // cap per-node generated-image history
 
+// Runtime bookkeeping keys on gemini_imagen/gemini_nanobanana params — never
+// part of the "params that produced this image" snapshot, since they're
+// written by the history mechanism itself, not by the user.
+const GENERATION_BOOKKEEPING_KEYS = new Set([
+    "generatedHistory",
+    "generatedIdx",
+    "generatedParamsHistory",
+    "lastGeneratedRef",
+]);
+
+function snapshotGenerationParams(params: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(
+        Object.entries(params).filter(([key]) => !GENERATION_BOOKKEEPING_KEYS.has(key)),
+    );
+}
+
 function withPhotoOutputs(nodeId: string, outputs: Port[], photos: string[]): Port[] {
     const photoPrefix = `${nodeId}_photo_`;
     const fixedOutputs = outputs.filter((p) => !p.id.startsWith(photoPrefix));
@@ -720,33 +736,43 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     // граф" clicks: a node whose output didn't change since the last persist
     // is skipped.
     const persistedImageRef = useRef<Map<string, string>>(new Map());
-    const appendGeneratedRef = useCallback((nodeId: string, ref: string) => {
-        setNodes((ns) =>
-            ns.map((n) => {
-                if (n.id !== nodeId) return n;
-                const prevHistory = Array.isArray(n.data.params.generatedHistory)
-                    ? (n.data.params.generatedHistory as string[])
-                    : n.data.params.lastGeneratedRef
-                      ? [n.data.params.lastGeneratedRef as string]
-                      : [];
-                const history = [...prevHistory, ref];
-                const overflow = history.length - MAX_GENERATED_HISTORY;
-                if (overflow > 0)
-                    void deleteBlobs(history.splice(0, overflow)).catch(console.error);
-                return {
-                    ...n,
-                    data: {
-                        ...n.data,
-                        params: {
-                            ...n.data.params,
-                            generatedHistory: history,
-                            generatedIdx: history.length - 1,
+    const appendGeneratedRef = useCallback(
+        (nodeId: string, ref: string, paramsSnapshot: Record<string, unknown>) => {
+            setNodes((ns) =>
+                ns.map((n) => {
+                    if (n.id !== nodeId) return n;
+                    const prevHistory = Array.isArray(n.data.params.generatedHistory)
+                        ? (n.data.params.generatedHistory as string[])
+                        : n.data.params.lastGeneratedRef
+                          ? [n.data.params.lastGeneratedRef as string]
+                          : [];
+                    const history = [...prevHistory, ref];
+                    const prevParamsHistory = (n.data.params.generatedParamsHistory ??
+                        {}) as Record<string, Record<string, unknown>>;
+                    const paramsHistory = { ...prevParamsHistory, [ref]: paramsSnapshot };
+                    const overflow = history.length - MAX_GENERATED_HISTORY;
+                    if (overflow > 0) {
+                        const dropped = history.splice(0, overflow);
+                        void deleteBlobs(dropped).catch(console.error);
+                        for (const droppedRef of dropped) delete paramsHistory[droppedRef];
+                    }
+                    return {
+                        ...n,
+                        data: {
+                            ...n.data,
+                            params: {
+                                ...n.data.params,
+                                generatedHistory: history,
+                                generatedIdx: history.length - 1,
+                                generatedParamsHistory: paramsHistory,
+                            },
                         },
-                    },
-                };
-            }),
-        );
-    }, []);
+                    };
+                }),
+            );
+        },
+        [],
+    );
     const persistGeneratedImages = useCallback(
         (currentNodes: Node<NodeParams>[], resolvedMap: Record<string, unknown>) => {
             for (const node of currentNodes) {
@@ -760,10 +786,11 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
                 if (typeof value !== "string" || !value.startsWith("data:image")) continue;
                 if (persistedImageRef.current.get(node.id) === value) continue;
                 persistedImageRef.current.set(node.id, value);
+                const paramsSnapshot = snapshotGenerationParams(node.data.params);
                 fetch(value)
                     .then((r) => r.blob())
                     .then(putGeneratedBlob)
-                    .then((ref) => appendGeneratedRef(node.id, ref))
+                    .then((ref) => appendGeneratedRef(node.id, ref, paramsSnapshot))
                     .catch(console.error);
             }
         },
