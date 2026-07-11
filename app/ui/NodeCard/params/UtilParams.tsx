@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
 import cn from "classnames";
-import type { EEP, NodeParamsProps } from "./shared.tsx";
+import { WirableTextField, type EEP, type NodeParamsProps } from "./shared.tsx";
 import type { SceneNarrativeSettings } from "../../../store/contexts/NarrativeContext.tsx";
 import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
 import { useNarrativeContext } from "../../../store/contexts/NarrativeContext.tsx";
+import { edgeInput } from "../../../core/graph.ts";
 import { SelectField } from "../../components/SelectField/SelectField.tsx";
 import { Select } from "../../components/Select/Select.tsx";
 import { TextField } from "../../components/TextField/TextField.tsx";
@@ -329,12 +330,63 @@ export function OutputParams({
     );
 }
 
-export function TextParams({ node, params, updateNodeParam }: EEP) {
+const MAX_TEXT_INPUTS = 8; // mirrors GraphContext's own dynamic-field cap
+
+export function TextParams({
+    node,
+    params,
+    edges,
+    resolved,
+    updateNodeParam,
+    addTextInput,
+}: EEP & { addTextInput: (id: string) => void }) {
+    // Pin 0 is the node's own fixed, non-removable "Text" pin (see nodes.ts)
+    // backing this field — legacy graphs saved before that pin existed have
+    // none yet, so fall back to a plain unwired field in that case.
+    const basePin = node.data.inputs[0];
+    const baseInput = basePin
+        ? edgeInput(node.data, edges, resolved, 0)
+        : { wired: false, value: undefined };
+    const extraPins = node.data.inputs.slice(1);
+    const atLimit = extraPins.length >= MAX_TEXT_INPUTS;
     return (
-        <TextField
-            label="Текстовое значение"
-            defaultValue={params.text as string}
-            onBlur={(v) => updateNodeParam(node.id, "text", v)}
-        />
+        <>
+            <WirableTextField
+                label="Текстовое значение"
+                node={node}
+                paramKey="text"
+                params={params}
+                wired={baseInput.wired}
+                liveValue={baseInput.value}
+                updateNodeParam={updateNodeParam}
+            />
+            {extraPins.map((port, idx) => {
+                const input = edgeInput(node.data, edges, resolved, idx + 1);
+                return (
+                    <WirableTextField
+                        key={port.id}
+                        label={port.name}
+                        node={node}
+                        paramKey={port.id}
+                        params={params}
+                        wired={input.wired}
+                        liveValue={input.value}
+                        updateNodeParam={updateNodeParam}
+                    />
+                );
+            })}
+            <button
+                className={styles.btn}
+                disabled={atLimit}
+                onClick={() => addTextInput(node.id)}
+                title={
+                    atLimit
+                        ? `Достигнут лимит — ${MAX_TEXT_INPUTS} полей`
+                        : "Добавить текстовое поле"
+                }>
+                <i className="ti ti-plus" />
+                <span>Добавить текстовое поле</span>
+            </button>
+        </>
     );
 }

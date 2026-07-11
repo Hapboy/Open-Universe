@@ -45,6 +45,7 @@ export function NodeParamsPanel({
     updateNodeParams,
     setNodePhotos,
     addImageInput,
+    addTextInput,
     loadPinterestBoards,
     loadPinterestPins,
     executeGraph,
@@ -118,6 +119,7 @@ export function NodeParamsPanel({
                     resolved={resolved}
                     updateNodeParam={updateNodeParam}
                     executeGraph={executeGraph}
+                    addTextInput={addTextInput}
                 />
             )}
             {nodeType === "gemini_text" && (

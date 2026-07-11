@@ -232,7 +232,10 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         label: "Текстовый Промпт",
         icon: "ti-notes",
         color: "var(--color-node-util)",
-        inputs: [],
+        // Fixed, non-removable pin backing the node's own "text" field (same
+        // wirable-or-own-value pattern as gemini_text's Prompt pin). Extra
+        // pins can be appended via addTextInput — see GraphContext.tsx.
+        inputs: [{ name: "Text", type: PORT_TYPES.TEXT }],
         outputs: [{ name: "Text Out", type: PORT_TYPES.TEXT }],
         params: { text: "Винтажные тона, Кондский дворик в дымке" },
     },

@@ -36,7 +36,8 @@ export const NodeCard = memo(function NodeCard({
         updateNodeParams,
         setNodePhotos,
         addImageInput,
-        removeImageInput,
+        addTextInput,
+        removePinInput,
         loadPinterestBoards,
         loadPinterestPins,
         executeGraph,
@@ -165,7 +166,7 @@ export const NodeCard = memo(function NodeCard({
                                     onMouseDown={(e) => e.stopPropagation()}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        removeImageInput(id, port.id);
+                                        removePinInput(id, port.id);
                                     }}
                                     title="Удалить пин">
                                     <i className="ti ti-x" />
@@ -302,6 +303,7 @@ export const NodeCard = memo(function NodeCard({
                             updateNodeParams={updateNodeParams}
                             setNodePhotos={setNodePhotos}
                             addImageInput={addImageInput}
+                            addTextInput={addTextInput}
                             loadPinterestBoards={loadPinterestBoards}
                             loadPinterestPins={loadPinterestPins}
                             executeGraph={executeGraph}

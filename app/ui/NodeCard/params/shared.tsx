@@ -16,6 +16,7 @@ export interface NodeParamsProps {
     updateNodeParams: (id: string, patch: Record<string, unknown>) => void;
     setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
     addImageInput: (id: string) => void;
+    addTextInput: (id: string) => void;
     loadPinterestBoards: (node: NodeRef) => Promise<void>;
     loadPinterestPins: (node: NodeRef, boardId: string) => Promise<void>;
     executeGraph: () => Promise<void>;

@@ -53,7 +53,19 @@ async function computeNodeOutput(
     if (d.nodeType === "pinterest_board") {
         return d.params.selectedPin;
     } else if (d.nodeType === "text_prompt") {
-        return d.params.text;
+        // Legacy graphs saved before this node had any pins at all — fall
+        // back to the plain param, same as the node's original behavior.
+        if (d.inputs.length === 0) return d.params.text;
+        // Pin 0 is the node's own fixed "Text" pin, backing its own field
+        // (paramKey "text", same wired-or-own pattern as gemini_text's
+        // Prompt). Every pin after it is a dynamically added extra field,
+        // keyed by its own pin id (see WirableTextField usage in TextParams).
+        const slots = d.inputs.map((port, i) => {
+            const input = edgeInput(d, edges, resolved, i);
+            const ownKey = i === 0 ? "text" : port.id;
+            return (input.wired ? input.value : d.params[ownKey]) as string | undefined;
+        });
+        return slots.filter((t) => typeof t === "string" && t !== "").join(", ");
     } else if (d.nodeType === "higgsfield_soul") {
         const face = edgeInput(d, edges, resolved, 0);
         const prompt = edgeInput(d, edges, resolved, 1);

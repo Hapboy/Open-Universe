@@ -35,6 +35,7 @@ const ACTIVE_SCENE_KEY = "hv_active_scene_id";
 const TIMELINE_DURATION_KEY = "hv_timeline_duration";
 const DEFAULT_TOTAL_DURATION = 60; // 01:00 in seconds
 const MAX_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
+const MAX_TEXT_INPUTS = 8; // text_prompt's own dynamic-field cap
 const MAX_ENTITY_PHOTOS = 10;
 const MAX_GENERATED_HISTORY = 20; // cap per-node generated-image history
 
@@ -222,7 +223,8 @@ interface GraphCtx {
     updateNodeParams: (nodeId: string, patch: Record<string, unknown>) => void;
     setNodePhotos: (nodeId: string, photos: string[], photoIdx: number) => void;
     addImageInput: (nodeId: string) => void;
-    removeImageInput: (nodeId: string, portId: string) => void;
+    addTextInput: (nodeId: string) => void;
+    removePinInput: (nodeId: string, portId: string) => void;
     executeGraph: () => Promise<void>;
     runNode: (nodeId: string) => Promise<void>;
     runningNodeIds: Set<string>;
@@ -574,7 +576,30 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         );
     }, []);
 
-    const removeImageInput = useCallback((nodeId: string, portId: string) => {
+    // Appends a new "Text N" input pin to a node (used by text_prompt, which
+    // pairs each pin with its own wirable field — see WirableTextField usage
+    // in TextParams). Ids use a random suffix rather than a position index:
+    // unlike addImageInput's pins, these are keyed into `params` by their own
+    // id, so a stale/colliding id after a mid-array removal would silently
+    // alias a surviving pin's stored text. Capped like addImageInput's
+    // imageCount — excluding the node's own fixed "Text" pin (index 0).
+    const addTextInput = useCallback((nodeId: string) => {
+        setNodes((ns) =>
+            ns.map((n) => {
+                if (n.id !== nodeId) return n;
+                const extraCount = n.data.inputs.length - 1;
+                if (extraCount >= MAX_TEXT_INPUTS) return n;
+                const newPort: Port = {
+                    id: `${nodeId}_in_${crypto.randomUUID()}`,
+                    name: `Text ${n.data.inputs.length + 1}`,
+                    type: "Text",
+                };
+                return { ...n, data: { ...n.data, inputs: [...n.data.inputs, newPort] } };
+            }),
+        );
+    }, []);
+
+    const removePinInput = useCallback((nodeId: string, portId: string) => {
         setNodes((ns) =>
             ns.map((n) =>
                 n.id !== nodeId
@@ -857,7 +882,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         updateNodeParams,
         setNodePhotos,
         addImageInput,
-        removeImageInput,
+        addTextInput,
+        removePinInput,
         executeGraph,
         runNode,
         runningNodeIds,
