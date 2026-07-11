@@ -300,35 +300,6 @@ export const NodeCard = memo(function NodeCard({
                     </div>
                 )}
 
-                <div className={cn(styles.paramsWrap, "nodrag", "nowheel")}>
-                    <div className={styles.paramsMain}>
-                        <NodeParamsPanel
-                            node={{ id, data }}
-                            edges={edges}
-                            resolved={resolved}
-                            scenes={scenes}
-                            updateNodeParam={updateNodeParam}
-                            updateNodeParams={updateNodeParams}
-                            setNodePhotos={setNodePhotos}
-                            addImageInput={addImageInput}
-                            addTextInput={addTextInput}
-                            loadPinterestBoards={loadPinterestBoards}
-                            loadPinterestPins={loadPinterestPins}
-                            executeGraph={executeGraph}
-                        />
-                    </div>
-                    {RICH_ENTITY_NODE_TYPES.has(data.nodeType) && data.promptPanelOpen && (
-                        <div className={styles.promptCol}>
-                            <TextAreaField
-                                label="Дополнительное описание"
-                                rows={12}
-                                value={(data.params.additionalDescription as string) ?? ""}
-                                onChange={(v) => updateNodeParam(id, "additionalDescription", v)}
-                            />
-                        </div>
-                    )}
-                </div>
-
                 {generatedItems.length > 0 && (
                     <MediaSlider
                         items={generatedItems}
@@ -359,6 +330,35 @@ export const NodeCard = memo(function NodeCard({
                 )}
 
                 {generatedVideo && <MediaSlider items={[{ url: generatedVideo, type: "video" }]} />}
+
+                <div className={cn(styles.paramsWrap, "nodrag", "nowheel")}>
+                    <div className={styles.paramsMain}>
+                        <NodeParamsPanel
+                            node={{ id, data }}
+                            edges={edges}
+                            resolved={resolved}
+                            scenes={scenes}
+                            updateNodeParam={updateNodeParam}
+                            updateNodeParams={updateNodeParams}
+                            setNodePhotos={setNodePhotos}
+                            addImageInput={addImageInput}
+                            addTextInput={addTextInput}
+                            loadPinterestBoards={loadPinterestBoards}
+                            loadPinterestPins={loadPinterestPins}
+                            executeGraph={executeGraph}
+                        />
+                    </div>
+                    {RICH_ENTITY_NODE_TYPES.has(data.nodeType) && data.promptPanelOpen && (
+                        <div className={styles.promptCol}>
+                            <TextAreaField
+                                label="Дополнительное описание"
+                                rows={12}
+                                value={(data.params.additionalDescription as string) ?? ""}
+                                onChange={(v) => updateNodeParam(id, "additionalDescription", v)}
+                            />
+                        </div>
+                    )}
+                </div>
 
                 {generatedAudio && (
                     <audio
