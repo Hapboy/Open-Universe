@@ -2,25 +2,12 @@ import type { Edge, Node } from "@xyflow/react";
 import type { NodeParams } from "../types.ts";
 import type { SceneNarrativeSettings } from "../store/contexts/NarrativeContext.tsx";
 import { GeminiService, HiggsfieldService } from "./services/index.ts";
-import { AI_MODEL_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "../data/nodes.ts";
+import { AI_MODEL_NODE_TYPES, ENTITY_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "../data/nodes.ts";
 import { resolveMediaRef } from "./blobStore.ts";
 import { photoPortId } from "./characterPorts.ts";
 
 type ShowToast = (msg: string) => void;
 type Resolved = Record<string, unknown>;
-
-const ENTITY_TYPES = [
-    "character",
-    "location",
-    "building",
-    "clothing",
-    "artwork",
-    "furniture",
-    "music",
-    "script",
-    "storyboard",
-    "transport",
-];
 
 // Mirrors the original inline lookup: if the input is wired to an edge, use
 // whatever is currently resolved for its source (even if that's still
@@ -76,7 +63,7 @@ async function computeNodeOutput(
         const input = edgeInput(d, edges, resolved, 0);
         const val = (input.wired ? input.value : null) as string | null;
         return await HiggsfieldService.runMotion(val, d.params.motionPreset as string, showToast);
-    } else if (ENTITY_TYPES.includes(d.nodeType) && !RICH_ENTITY_NODE_TYPES.has(d.nodeType)) {
+    } else if (ENTITY_NODE_TYPES.has(d.nodeType) && !RICH_ENTITY_NODE_TYPES.has(d.nodeType)) {
         return d.params.selectedItem;
     } else if (d.nodeType === "gemini_text") {
         const prompt = edgeInput(d, edges, resolved, 0);
@@ -170,19 +157,20 @@ async function computeNodeOutput(
     return undefined;
 }
 
-// Fills a rich entity node's pins (one per photo, plus Description/JSON) —
-// pure derivations of its own params, independent of edges/resolution order.
-// Photos are stored as blobStore refs (`idb:<uuid>`), not raw data — resolve
-// them to real URLs here so downstream AI-model nodes (e.g. Nano Banana
-// reference images) get usable image data, not an id string. Each photo's
-// pin id is derived from its own ref (see characterPorts.ts), not its
-// position, so this doesn't need to know the pins' order.
+// Fills an entity node's per-photo output pins, plus Description/JSON for the
+// "rich" entity types that have those ports — pure derivations of its own
+// params, independent of edges/resolution order. Photos are stored as
+// blobStore refs (`idb:<uuid>`), not raw data — resolve them to real URLs
+// here so downstream AI-model nodes (e.g. Nano Banana reference images) get
+// usable image data, not an id string. Each photo's pin id is derived from
+// its own ref (see characterPorts.ts), not its position, so this doesn't
+// need to know the pins' order.
 async function computeRichEntityExtraOutputs(
     node: Node<NodeParams>,
     resolved: Resolved,
 ): Promise<void> {
     const d = node.data;
-    if (!RICH_ENTITY_NODE_TYPES.has(d.nodeType)) return;
+    if (!ENTITY_NODE_TYPES.has(d.nodeType)) return;
     const photos = (d.params.photos as string[] | undefined) ?? [];
     await Promise.all(
         photos.map(async (ref) => {

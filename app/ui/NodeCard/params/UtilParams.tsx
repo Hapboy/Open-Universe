@@ -352,7 +352,7 @@ export function TextParams({
     return (
         <>
             <WirableTextField
-                label="Текстовое значение"
+                label={basePin?.name ?? "Text 1"}
                 node={node}
                 paramKey="text"
                 params={params}

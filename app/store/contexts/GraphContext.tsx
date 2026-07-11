@@ -21,7 +21,7 @@ import {
     type OnEdgesChange,
     type OnNodesChange,
 } from "@xyflow/react";
-import { NODE_TEMPLATES, RICH_ENTITY_NODE_TYPES } from "../../data/nodes.ts";
+import { ENTITY_NODE_TYPES, NODE_TEMPLATES } from "../../data/nodes.ts";
 import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
 import type { SceneOutput } from "../../core/graph.ts";
 import { useToastContext } from "./ToastContext.tsx";
@@ -501,7 +501,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
             const newId = `node_${Date.now()}_${++nodeCounter.current}`;
             const clonedData = structuredClone(source.data);
-            const outputs = RICH_ENTITY_NODE_TYPES.has(source.data.nodeType)
+            const outputs = ENTITY_NODE_TYPES.has(source.data.nodeType)
                 ? withPhotoOutputs(
                       newId,
                       clonedData.outputs.map((out, i) => ({ ...out, id: `${newId}_out_${i}` })),

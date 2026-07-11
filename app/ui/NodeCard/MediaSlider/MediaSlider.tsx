@@ -1,3 +1,4 @@
+import { useState } from "react";
 import cn from "classnames";
 import styles from "./MediaSlider.module.css";
 
@@ -17,21 +18,41 @@ export function MediaSlider({
     onIndexChange?: (i: number) => void;
     onDelete?: (i: number) => void;
 }) {
+    const [ratios, setRatios] = useState<Record<string, number>>({});
+
     if (items.length === 0) return null;
     const activeIndex = Math.min(index, items.length - 1);
     const item = items[activeIndex];
+    const ratio = item.url ? ratios[item.url] : undefined;
+
+    const rememberRatio = (w: number, h: number) => {
+        if (!item.url || !w || !h) return;
+        const r = w / h;
+        if (ratios[item.url] === r) return;
+        setRatios((prev) => ({ ...prev, [item.url as string]: r }));
+    };
 
     return (
-        <div className={styles.slider}>
+        <div className={styles.slider} style={ratio ? { aspectRatio: String(ratio) } : undefined}>
             {item.type === "video" ? (
                 <video
                     src={item.url}
                     className={cn(styles.media, "nodrag", "nowheel")}
                     controls
                     muted
+                    onLoadedMetadata={(e) =>
+                        rememberRatio(e.currentTarget.videoWidth, e.currentTarget.videoHeight)
+                    }
                 />
             ) : (
-                <img src={item.url} alt="" className={styles.media} />
+                <img
+                    src={item.url}
+                    alt=""
+                    className={styles.media}
+                    onLoad={(e) =>
+                        rememberRatio(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)
+                    }
+                />
             )}
             {items.length > 1 && onIndexChange && (
                 <>

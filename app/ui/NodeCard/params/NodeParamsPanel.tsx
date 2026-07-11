@@ -207,6 +207,7 @@ export function NodeParamsPanel({
                     params={params as BuildingNodeParams}
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
+                    setNodePhotos={setNodePhotos}
                 />
             )}
             {nodeType === "clothing" && (
@@ -215,6 +216,7 @@ export function NodeParamsPanel({
                     params={params as ClothingNodeParams}
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
+                    setNodePhotos={setNodePhotos}
                 />
             )}
             {nodeType === "artwork" && (
@@ -223,6 +225,7 @@ export function NodeParamsPanel({
                     params={params as ArtworkNodeParams}
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
+                    setNodePhotos={setNodePhotos}
                 />
             )}
             {nodeType === "furniture" && (
@@ -231,6 +234,7 @@ export function NodeParamsPanel({
                     params={params as FurnitureNodeParams}
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
+                    setNodePhotos={setNodePhotos}
                 />
             )}
             {nodeType === "music" && (
@@ -239,6 +243,7 @@ export function NodeParamsPanel({
                     params={params as MusicNodeParams}
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
+                    setNodePhotos={setNodePhotos}
                 />
             )}
             {nodeType === "script" && (
@@ -247,6 +252,7 @@ export function NodeParamsPanel({
                     params={params as ScriptNodeParams}
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
+                    setNodePhotos={setNodePhotos}
                 />
             )}
             {nodeType === "storyboard" && (
@@ -263,6 +269,7 @@ export function NodeParamsPanel({
                     params={params as TransportNodeParams}
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
+                    setNodePhotos={setNodePhotos}
                 />
             )}
         </>

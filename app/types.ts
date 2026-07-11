@@ -146,6 +146,9 @@ export interface LocationNodeParams extends Record<string, unknown> {
 export interface BuildingNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
+    photos: string[];
+    photoIdx: number;
+    pinterestUrl: string;
     inFrame: boolean;
     floor: number;
 }
@@ -153,6 +156,9 @@ export interface BuildingNodeParams extends Record<string, unknown> {
 export interface ClothingNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
+    photos: string[];
+    photoIdx: number;
+    pinterestUrl: string;
     season: string;
     wear: number;
 }
@@ -160,6 +166,9 @@ export interface ClothingNodeParams extends Record<string, unknown> {
 export interface ArtworkNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
+    photos: string[];
+    photoIdx: number;
+    pinterestUrl: string;
     inFrame: boolean;
     scale: number;
 }
@@ -167,6 +176,9 @@ export interface ArtworkNodeParams extends Record<string, unknown> {
 export interface FurnitureNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
+    photos: string[];
+    photoIdx: number;
+    pinterestUrl: string;
     inFrame: boolean;
     density: number;
 }
@@ -174,12 +186,18 @@ export interface FurnitureNodeParams extends Record<string, unknown> {
 export interface MusicNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
+    photos: string[];
+    photoIdx: number;
+    pinterestUrl: string;
     mood: string;
 }
 
 export interface ScriptNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
+    photos: string[];
+    photoIdx: number;
+    pinterestUrl: string;
     tone: string;
 }
 
@@ -192,5 +210,8 @@ export interface StoryboardNodeParams extends Record<string, unknown> {
 export interface TransportNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
+    photos: string[];
+    photoIdx: number;
+    pinterestUrl: string;
     inFrame: boolean;
 }

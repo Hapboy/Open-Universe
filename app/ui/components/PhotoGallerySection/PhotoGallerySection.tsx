@@ -5,16 +5,61 @@ import { putBlob, useResolvedMediaUrls } from "../../../core/blobStore.ts";
 import { MediaSlider } from "../../NodeCard/MediaSlider/MediaSlider.tsx";
 import styles from "./PhotoGallerySection.module.css";
 
+// MediaSlider + clickable thumbnail strip for picking the cover photo, split
+// out so it can be positioned independently of the upload/Pinterest controls
+// (e.g. pinned to the top of a node, above the search field).
+export function PhotoPreview({
+    node,
+    photos,
+    photoIdx,
+    updateNodeParam,
+    setNodePhotos,
+}: {
+    node: NodeRef;
+    photos: string[];
+    photoIdx: number;
+    updateNodeParam: (id: string, key: string, value: unknown) => void;
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
+    const resolvedThumbs = useResolvedMediaUrls(photos);
+    if (photos.length === 0) return null;
+
+    return (
+        <>
+            <MediaSlider
+                items={resolvedThumbs.map((url) => ({ url, type: "image" }))}
+                index={photoIdx}
+                onIndexChange={(i) => updateNodeParam(node.id, "photoIdx", i)}
+                onDelete={(i) => {
+                    const next = photos.filter((_, idx) => idx !== i);
+                    setNodePhotos(node.id, next, Math.max(0, Math.min(photoIdx, next.length - 1)));
+                }}
+            />
+            <div className={styles.thumbnailsList}>
+                {resolvedThumbs.map((url, idx) => (
+                    <div
+                        key={idx}
+                        className={cn(styles.thumbCell, idx === photoIdx && styles.thumbCellActive)}
+                        onClick={() => updateNodeParam(node.id, "photoIdx", idx)}
+                        style={{ backgroundImage: url ? `url(${url})` : undefined }}
+                        title="Установить как обложку"
+                    />
+                ))}
+            </div>
+        </>
+    );
+}
+
 // Reusable "photo section" for entity nodes: an upload button + Pinterest
-// board URL field, a MediaSlider preview, and a clickable thumbnail gallery
-// for picking the cover photo. Backed by a rich entity's `photos`/`photoIdx`/
-// `pinterestUrl` params and the shared `setNodePhotos` mutator (see
-// GraphContext.tsx), which keeps per-photo output pins in sync with the array.
+// board URL field. The slider/thumbnail preview lives separately in
+// `PhotoPreview` above (typically pinned to the top of the node) — backed by
+// the same entity's `photos`/`photoIdx`/`pinterestUrl` params and the shared
+// `setNodePhotos` mutator (see GraphContext.tsx), which keeps per-photo
+// output pins in sync with the array.
 export function PhotoGallerySection({
     node,
     label,
     photos,
-    photoIdx,
     pinterestUrl,
     updateNodeParam,
     setNodePhotos,
@@ -24,14 +69,12 @@ export function PhotoGallerySection({
     node: NodeRef;
     label: string;
     photos: string[];
-    photoIdx: number;
     pinterestUrl: string;
     updateNodeParam: (id: string, key: string, value: unknown) => void;
     setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
     maxPhotos?: number;
     resetKey?: string;
 }) {
-    const resolvedThumbs = useResolvedMediaUrls(photos);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,37 +116,6 @@ export function PhotoGallerySection({
                     <i className="ti ti-upload" />
                 </button>
             </div>
-            {photos.length > 0 && (
-                <MediaSlider
-                    items={resolvedThumbs.map((url) => ({ url, type: "image" }))}
-                    index={photoIdx}
-                    onIndexChange={(i) => updateNodeParam(node.id, "photoIdx", i)}
-                    onDelete={(i) => {
-                        const next = photos.filter((_, idx) => idx !== i);
-                        setNodePhotos(
-                            node.id,
-                            next,
-                            Math.max(0, Math.min(photoIdx, next.length - 1)),
-                        );
-                    }}
-                />
-            )}
-            {photos.length > 0 && (
-                <div className={styles.thumbnailsList}>
-                    {resolvedThumbs.map((url, idx) => (
-                        <div
-                            key={idx}
-                            className={cn(
-                                styles.thumbCell,
-                                idx === photoIdx && styles.thumbCellActive,
-                            )}
-                            onClick={() => updateNodeParam(node.id, "photoIdx", idx)}
-                            style={{ backgroundImage: url ? `url(${url})` : undefined }}
-                            title="Установить как обложку"
-                        />
-                    ))}
-                </div>
-            )}
         </div>
     );
 }

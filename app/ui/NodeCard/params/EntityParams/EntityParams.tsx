@@ -2,7 +2,10 @@ import { useState } from "react";
 import cn from "classnames";
 import { DatabaseSelect, InFrameToggle, usePresetDatabase } from "../shared.tsx";
 import type { EP } from "../shared.tsx";
-import { PhotoGallerySection } from "../../../components/PhotoGallerySection/PhotoGallerySection.tsx";
+import {
+    PhotoGallerySection,
+    PhotoPreview,
+} from "../../../components/PhotoGallerySection/PhotoGallerySection.tsx";
 import { SelectField } from "../../../components/SelectField/SelectField.tsx";
 import { RangeField } from "../../../components/RangeField/RangeField.tsx";
 import { NumberField } from "../../../components/NumberField/NumberField.tsx";
@@ -98,6 +101,15 @@ export function CharacterParams({
 
     return (
         <>
+            {/* Photo preview pinned to the top, above the search field */}
+            <PhotoPreview
+                node={node}
+                photos={params.photos || []}
+                photoIdx={params.photoIdx ?? 0}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+            />
+
             {/* Category selector tags and Search input */}
             <div className={styles.searchContainer}>
                 <SearchField value={searchQuery} onChange={setSearchQuery} />
@@ -137,7 +149,6 @@ export function CharacterParams({
                     node={node}
                     label="Фото персонажа"
                     photos={params.photos || []}
-                    photoIdx={params.photoIdx ?? 0}
                     pinterestUrl={params.pinterestUrl}
                     updateNodeParam={updateNodeParam}
                     setNodePhotos={setNodePhotos}
@@ -334,6 +345,15 @@ export function LocationParams({
 
     return (
         <>
+            {/* Photo preview pinned to the top, above the search field */}
+            <PhotoPreview
+                node={node}
+                photos={params.photos || []}
+                photoIdx={params.photoIdx ?? 0}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+            />
+
             <div className={styles.searchContainer}>
                 <SearchField value={searchQuery} onChange={setSearchQuery} />
                 <CategoryTagGroup
@@ -372,7 +392,6 @@ export function LocationParams({
                     node={node}
                     label="Фото локации"
                     photos={params.photos || []}
-                    photoIdx={params.photoIdx ?? 0}
                     pinterestUrl={params.pinterestUrl}
                     updateNodeParam={updateNodeParam}
                     setNodePhotos={setNodePhotos}
@@ -459,7 +478,10 @@ export function BuildingParams({
     params,
     updateNodeParam,
     updateNodeParams,
-}: EP<BuildingNodeParams>) {
+    setNodePhotos,
+}: EP<BuildingNodeParams> & {
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
     const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
         node,
         params,
@@ -467,6 +489,13 @@ export function BuildingParams({
     );
     return (
         <>
+            <PhotoPreview
+                node={node}
+                photos={params.photos || []}
+                photoIdx={params.photoIdx ?? 0}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+            />
             <DatabaseSelect
                 label="Здание"
                 items={db}
@@ -481,6 +510,15 @@ export function BuildingParams({
                 label="Имя"
                 value={params.name}
                 onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
+            <PhotoGallerySection
+                node={node}
+                label="Фото здания"
+                photos={params.photos || []}
+                pinterestUrl={params.pinterestUrl}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+                resetKey={params.selectedItem}
             />
             <NumberField
                 label="Этаж"
@@ -503,7 +541,10 @@ export function ClothingParams({
     params,
     updateNodeParam,
     updateNodeParams,
-}: EP<ClothingNodeParams>) {
+    setNodePhotos,
+}: EP<ClothingNodeParams> & {
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
     const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
         node,
         params,
@@ -511,6 +552,13 @@ export function ClothingParams({
     );
     return (
         <>
+            <PhotoPreview
+                node={node}
+                photos={params.photos || []}
+                photoIdx={params.photoIdx ?? 0}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+            />
             <DatabaseSelect
                 label="Дизайнер"
                 items={db}
@@ -525,6 +573,15 @@ export function ClothingParams({
                 label="Имя"
                 value={params.name}
                 onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
+            <PhotoGallerySection
+                node={node}
+                label="Фото одежды"
+                photos={params.photos || []}
+                pinterestUrl={params.pinterestUrl}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+                resetKey={params.selectedItem}
             />
             <SelectField
                 label="Сезон"
@@ -549,7 +606,10 @@ export function ArtworkParams({
     params,
     updateNodeParam,
     updateNodeParams,
-}: EP<ArtworkNodeParams>) {
+    setNodePhotos,
+}: EP<ArtworkNodeParams> & {
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
     const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
         node,
         params,
@@ -557,6 +617,13 @@ export function ArtworkParams({
     );
     return (
         <>
+            <PhotoPreview
+                node={node}
+                photos={params.photos || []}
+                photoIdx={params.photoIdx ?? 0}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+            />
             <DatabaseSelect
                 label="Произведение"
                 items={db}
@@ -571,6 +638,15 @@ export function ArtworkParams({
                 label="Имя"
                 value={params.name}
                 onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
+            <PhotoGallerySection
+                node={node}
+                label="Фото произведения"
+                photos={params.photos || []}
+                pinterestUrl={params.pinterestUrl}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+                resetKey={params.selectedItem}
             />
             <RangeField
                 label={`Масштаб (${params.scale}%)`}
@@ -593,7 +669,10 @@ export function FurnitureParams({
     params,
     updateNodeParam,
     updateNodeParams,
-}: EP<FurnitureNodeParams>) {
+    setNodePhotos,
+}: EP<FurnitureNodeParams> & {
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
     const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
         node,
         params,
@@ -601,6 +680,13 @@ export function FurnitureParams({
     );
     return (
         <>
+            <PhotoPreview
+                node={node}
+                photos={params.photos || []}
+                photoIdx={params.photoIdx ?? 0}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+            />
             <DatabaseSelect
                 label="Мебель"
                 items={db}
@@ -615,6 +701,15 @@ export function FurnitureParams({
                 label="Имя"
                 value={params.name}
                 onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
+            <PhotoGallerySection
+                node={node}
+                label="Фото мебели"
+                photos={params.photos || []}
+                pinterestUrl={params.pinterestUrl}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+                resetKey={params.selectedItem}
             />
             <RangeField
                 label={`Плотность (${params.density})`}
@@ -637,7 +732,10 @@ export function MusicParams({
     params,
     updateNodeParam,
     updateNodeParams,
-}: EP<MusicNodeParams>) {
+    setNodePhotos,
+}: EP<MusicNodeParams> & {
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
     const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
         node,
         params,
@@ -645,6 +743,13 @@ export function MusicParams({
     );
     return (
         <>
+            <PhotoPreview
+                node={node}
+                photos={params.photos || []}
+                photoIdx={params.photoIdx ?? 0}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+            />
             <DatabaseSelect
                 label="Трек"
                 items={db}
@@ -659,6 +764,15 @@ export function MusicParams({
                 label="Имя"
                 value={params.name}
                 onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
+            <PhotoGallerySection
+                node={node}
+                label="Фото трека"
+                photos={params.photos || []}
+                pinterestUrl={params.pinterestUrl}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+                resetKey={params.selectedItem}
             />
             <SelectField
                 label="Настроение"
@@ -675,7 +789,10 @@ export function ScriptParams({
     params,
     updateNodeParam,
     updateNodeParams,
-}: EP<ScriptNodeParams>) {
+    setNodePhotos,
+}: EP<ScriptNodeParams> & {
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
     const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
         node,
         params,
@@ -683,6 +800,13 @@ export function ScriptParams({
     );
     return (
         <>
+            <PhotoPreview
+                node={node}
+                photos={params.photos || []}
+                photoIdx={params.photoIdx ?? 0}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+            />
             <DatabaseSelect
                 label="Сцена"
                 items={db}
@@ -697,6 +821,15 @@ export function ScriptParams({
                 label="Имя"
                 value={params.name}
                 onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
+            <PhotoGallerySection
+                node={node}
+                label="Фото сценария"
+                photos={params.photos || []}
+                pinterestUrl={params.pinterestUrl}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+                resetKey={params.selectedItem}
             />
             <SelectField
                 label="Тон"
@@ -753,7 +886,10 @@ export function TransportParams({
     params,
     updateNodeParam,
     updateNodeParams,
-}: EP<TransportNodeParams>) {
+    setNodePhotos,
+}: EP<TransportNodeParams> & {
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
     const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
         node,
         params,
@@ -761,6 +897,13 @@ export function TransportParams({
     );
     return (
         <>
+            <PhotoPreview
+                node={node}
+                photos={params.photos || []}
+                photoIdx={params.photoIdx ?? 0}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+            />
             <DatabaseSelect
                 label="Транспорт"
                 items={db}
@@ -775,6 +918,15 @@ export function TransportParams({
                 label="Имя"
                 value={params.name}
                 onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
+            <PhotoGallerySection
+                node={node}
+                label="Фото транспорта"
+                photos={params.photos || []}
+                pinterestUrl={params.pinterestUrl}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+                resetKey={params.selectedItem}
             />
             <InFrameToggle
                 value={params.inFrame}

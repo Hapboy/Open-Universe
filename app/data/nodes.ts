@@ -23,10 +23,26 @@ export const AI_MODEL_NODE_TYPES = [
     "higgsfield_speak",
 ];
 
-// Entity node types with the "rich" editing UI: a photo gallery (with
-// per-photo output pins), a toggleable prompt column for additionalDescription,
-// and Description/JSON output pins (instead of a plain selectedItem passthrough).
+// Entity node types with the "rich" editing UI: a toggleable prompt column
+// for additionalDescription, and Description/JSON output pins (instead of a
+// plain selectedItem passthrough).
 export const RICH_ENTITY_NODE_TYPES = new Set(["character", "location"]);
+
+// All entity node types with a preset (`DatabaseSelect`) dropdown — the
+// shared source of truth for both the "selectedItem passthrough" fallback
+// and the photo-gallery gating in core/graph.ts and GraphContext.tsx.
+export const ENTITY_NODE_TYPES = new Set([
+    "character",
+    "location",
+    "building",
+    "clothing",
+    "artwork",
+    "furniture",
+    "music",
+    "script",
+    "storyboard",
+    "transport",
+]);
 
 export interface NodeTemplate {
     type: string;
@@ -235,7 +251,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         // Fixed, non-removable pin backing the node's own "text" field (same
         // wirable-or-own-value pattern as gemini_text's Prompt pin). Extra
         // pins can be appended via addTextInput — see GraphContext.tsx.
-        inputs: [{ name: "Text", type: PORT_TYPES.TEXT }],
+        inputs: [{ name: "Text 1", type: PORT_TYPES.TEXT }],
         outputs: [{ name: "Text Out", type: PORT_TYPES.TEXT }],
         params: { text: "Винтажные тона, Кондский дворик в дымке" },
     },
@@ -313,6 +329,9 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         params: {
             selectedItem: "Дом с эркером",
             name: "Дом с эркером",
+            photos: [] as string[],
+            photoIdx: 0,
+            pinterestUrl: "",
             inFrame: true,
             floor: 2,
         },
@@ -328,6 +347,9 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         params: {
             selectedItem: "Tigran Avetisyan",
             name: "Tigran Avetisyan",
+            photos: [] as string[],
+            photoIdx: 0,
+            pinterestUrl: "",
             season: "FW26",
             wear: 12,
         },
@@ -343,6 +365,9 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         params: {
             selectedItem: "Минас Аветисян",
             name: "Минас Аветисян",
+            photos: [] as string[],
+            photoIdx: 0,
+            pinterestUrl: "",
             inFrame: true,
             scale: 120,
         },
@@ -358,6 +383,9 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         params: {
             selectedItem: "Тахта + ковёр",
             name: "Тахта + ковёр",
+            photos: [] as string[],
+            photoIdx: 0,
+            pinterestUrl: "",
             inFrame: true,
             density: 5,
         },
@@ -373,6 +401,9 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         params: {
             selectedItem: "Армянский дудук",
             name: "Армянский дудук",
+            photos: [] as string[],
+            photoIdx: 0,
+            pinterestUrl: "",
             mood: "элегия",
         },
     },
@@ -387,6 +418,9 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         params: {
             selectedItem: "Сцена 04: Утро в Конде",
             name: "Сцена 04: Утро в Конде",
+            photos: [] as string[],
+            photoIdx: 0,
+            pinterestUrl: "",
             tone: "драма",
         },
     },
@@ -415,6 +449,9 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         params: {
             selectedItem: "Советский Москвич",
             name: "Советский Москвич",
+            photos: [] as string[],
+            photoIdx: 0,
+            pinterestUrl: "",
             inFrame: false,
         },
     },
