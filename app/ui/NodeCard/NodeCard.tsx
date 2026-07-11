@@ -105,13 +105,24 @@ export const NodeCard = memo(function NodeCard({
         data.nodeType === "gemini_lyria" && outputId
             ? (resolved[outputId] as string | undefined)
             : undefined;
-    const entityJson =
-        RICH_ENTITY_NODE_TYPES.has(data.nodeType) && data.showJsonPreview
-            ? JSON.stringify(
-                  { id, nodeType: data.nodeType, label: data.label, ...data.params },
-                  null,
-                  2,
-              )
+    // Which node types offer the "show JSON" menu toggle: rich entities show
+    // their own params (computed inline below, for instant live-typing
+    // feedback); output_scene instead mirrors its "Arc JSON" output pin
+    // as-is (that value comes from NarrativeContext, not this node's own
+    // `params`, so it's read from `resolved` rather than recomputed here).
+    const hasJsonPreview =
+        RICH_ENTITY_NODE_TYPES.has(data.nodeType) || data.nodeType === "output_scene";
+    const jsonPreview = !data.showJsonPreview
+        ? undefined
+        : RICH_ENTITY_NODE_TYPES.has(data.nodeType)
+          ? JSON.stringify(
+                { id, nodeType: data.nodeType, label: data.label, ...data.params },
+                null,
+                2,
+            )
+          : data.nodeType === "output_scene"
+            ? (resolved[data.outputs.find((p) => p.name === "Arc JSON")?.id ?? ""] as
+                  string | undefined)
             : undefined;
 
     return (
@@ -255,7 +266,7 @@ export const NodeCard = memo(function NodeCard({
                         deleteNode(id);
                         selectNode(null);
                     }}
-                    {...(RICH_ENTITY_NODE_TYPES.has(data.nodeType)
+                    {...(hasJsonPreview
                         ? {
                               jsonPreviewVisible: !!data.showJsonPreview,
                               onToggleJsonPreview: () =>
@@ -338,7 +349,7 @@ export const NodeCard = memo(function NodeCard({
                     />
                 )}
 
-                {entityJson && (
+                {jsonPreview && (
                     <div className={styles.body}>
                         <pre
                             className={cn(
@@ -348,7 +359,7 @@ export const NodeCard = memo(function NodeCard({
                                 "nowheel",
                             )}
                             style={{ whiteSpace: "pre-wrap" }}>
-                            {entityJson}
+                            {jsonPreview}
                         </pre>
                     </div>
                 )}

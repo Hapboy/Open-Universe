@@ -1,3 +1,37 @@
 .fld {
     composes: fld from "../../../styles/shared.module.css";
 }
+
+.controlRow {
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+}
+
+.controlRow input[type="range"] {
+    width: 100%;
+}
+
+/* Color-coded fill for the colored variant — painted as a gradient on the
+   native track itself (not a separate overlay div), so the browser renders
+   thumb position and fill from the same element and they can't drift apart.
+   Must be qualified with `input[type="range"]` to out-specificity the
+   app-wide `input[type="range"]` reset in styles/global.css, which would
+   otherwise win the cascade over a plain class selector. */
+input[type="range"].coloredInput {
+    background: linear-gradient(
+        to right,
+        var(--range-color) 0%,
+        var(--range-color) var(--range-percent),
+        var(--color-border) var(--range-percent),
+        var(--color-border) 100%
+    );
+}
+
+input[type="range"].coloredInput::-webkit-slider-thumb {
+    box-shadow: 0 0 8px var(--range-color);
+}
+
+input[type="range"].coloredInput::-moz-range-thumb {
+    box-shadow: 0 0 8px var(--range-color);
+}

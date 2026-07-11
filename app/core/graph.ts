@@ -1,5 +1,6 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeParams } from "../types.ts";
+import type { SceneNarrativeSettings } from "../store/contexts/NarrativeContext.tsx";
 import { GeminiService, HiggsfieldService } from "./services/index.ts";
 import { AI_MODEL_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "../data/nodes.ts";
 import { resolveMediaRef } from "./blobStore.ts";
@@ -188,6 +189,22 @@ async function computeRichEntityExtraOutputs(
     }
 }
 
+// Fills the output_scene node's "Arc JSON" pin with the active scene's
+// narrative-arc settings — a pure derivation independent of edges/resolution
+// order, same shape as computeRichEntityExtraOutputs above. The settings
+// themselves live in NarrativeContext (keyed by scene id), not in this
+// node's own `params`, so the caller has to hand them in explicitly.
+function computeOutputSceneExtraOutputs(
+    node: Node<NodeParams>,
+    resolved: Resolved,
+    narrativeSettings: SceneNarrativeSettings | undefined,
+): void {
+    const d = node.data;
+    if (d.nodeType !== "output_scene" || !narrativeSettings) return;
+    const jsonPort = d.outputs.find((p) => p.name === "Arc JSON");
+    if (jsonPort) resolved[jsonPort.id] = JSON.stringify(narrativeSettings, null, 2);
+}
+
 export interface SceneOutput {
     url: string;
     type: "video" | "image";
@@ -237,7 +254,7 @@ export async function runGraph(
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
-    opts?: { autoMode?: boolean },
+    opts?: { autoMode?: boolean; narrativeSettings?: SceneNarrativeSettings },
 ): Promise<SceneOutput | null> {
     for (let pass = 0; pass < nodes.length; pass++) {
         for (const node of nodes) {
@@ -246,6 +263,7 @@ export async function runGraph(
             if (opts?.autoMode && AI_MODEL_NODE_TYPES.includes(d.nodeType)) continue;
 
             await computeRichEntityExtraOutputs(node, resolved);
+            computeOutputSceneExtraOutputs(node, resolved, opts?.narrativeSettings);
 
             // Skip nodes whose output is already resolved from a previous pass
             const alreadyResolved = d.outputs[0]?.id && resolved[d.outputs[0].id] !== undefined;
@@ -268,6 +286,7 @@ async function resolveNode(
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
+    narrativeSettings: SceneNarrativeSettings | undefined,
     onNodeStart: ((nodeId: string) => void) | undefined,
     onNodeDone: ((nodeId: string) => void) | undefined,
     inFlight: Set<string>,
@@ -288,6 +307,7 @@ async function resolveNode(
             edges,
             resolved,
             showToast,
+            narrativeSettings,
             onNodeStart,
             onNodeDone,
             inFlight,
@@ -303,6 +323,7 @@ async function resolveNode(
             else delete resolved[outputId];
         }
         await computeRichEntityExtraOutputs(node, resolved);
+        computeOutputSceneExtraOutputs(node, resolved, narrativeSettings);
     } finally {
         onNodeDone?.(id);
     }
@@ -317,6 +338,7 @@ export async function runNodeCascade(
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
+    narrativeSettings: SceneNarrativeSettings | undefined,
     onNodeStart?: (nodeId: string) => void,
     onNodeDone?: (nodeId: string) => void,
 ): Promise<SceneOutput | null> {
@@ -334,6 +356,7 @@ export async function runNodeCascade(
             edges,
             resolved,
             showToast,
+            narrativeSettings,
             onNodeStart,
             onNodeDone,
             new Set(),

@@ -25,6 +25,7 @@ import { NODE_TEMPLATES, RICH_ENTITY_NODE_TYPES } from "../../data/nodes.ts";
 import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
 import type { SceneOutput } from "../../core/graph.ts";
 import { useToastContext } from "./ToastContext.tsx";
+import { useNarrativeContext } from "./NarrativeContext.tsx";
 import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from "../../core/browserStorage.ts";
 import { deleteBlobs, putGeneratedBlob } from "../../core/blobStore.ts";
 import { buildPhotoPorts } from "../../core/characterPorts.ts";
@@ -133,7 +134,7 @@ function createEmptySceneGraph(
                     { id: `${outId}_in_0`, name: "Visual Render", type: "Image" },
                     { id: `${outId}_in_1`, name: "Motion Render", type: "Video" },
                 ],
-                outputs: [],
+                outputs: [{ id: `${outId}_out_0`, name: "Arc JSON", type: "Text" }],
                 params: templateParams("output_scene", overrides),
             },
         },
@@ -255,6 +256,7 @@ export const useGraphContext = () => useContext(Ctx);
 
 export function GraphProvider({ children }: { children: React.ReactNode }) {
     const { showToast } = useToastContext();
+    const { narrativeSettings, getSceneNarrativeSettings } = useNarrativeContext();
 
     const [initialGraphState] = useState(loadInitialGraphState);
     const [activeSceneId, setActiveSceneIdState] = useState<string | null>(
@@ -748,11 +750,21 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         const { runGraph } = await import("../../core/graph.ts");
         const sceneId = activeSceneId;
         resolvedRef.current = {};
-        const output = await runGraph(nodes, edges, resolvedRef.current, showToast);
+        const output = await runGraph(nodes, edges, resolvedRef.current, showToast, {
+            narrativeSettings: sceneId ? getSceneNarrativeSettings(sceneId) : undefined,
+        });
         setResolved({ ...resolvedRef.current });
         persistGeneratedImages(nodes, resolvedRef.current);
         cacheSceneOutput(sceneId, output);
-    }, [nodes, edges, showToast, activeSceneId, cacheSceneOutput, persistGeneratedImages]);
+    }, [
+        nodes,
+        edges,
+        showToast,
+        activeSceneId,
+        cacheSceneOutput,
+        persistGeneratedImages,
+        getSceneNarrativeSettings,
+    ]);
 
     const runNode = useCallback(
         async (nodeId: string) => {
@@ -764,6 +776,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
                 edges,
                 resolvedRef.current,
                 showToast,
+                sceneId ? getSceneNarrativeSettings(sceneId) : undefined,
                 (id) => setRunningNodeIds((s) => new Set(s).add(id)),
                 (id) => {
                     setRunningNodeIds((s) => {
@@ -777,14 +790,23 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
             );
             cacheSceneOutput(sceneId, output);
         },
-        [nodes, edges, showToast, activeSceneId, cacheSceneOutput, persistGeneratedImages],
+        [
+            nodes,
+            edges,
+            showToast,
+            activeSceneId,
+            cacheSceneOutput,
+            persistGeneratedImages,
+            getSceneNarrativeSettings,
+        ],
     );
 
     // Reactively keeps free/non-AI nodes (Pinterest pin, text passthrough,
-    // entity selectors, ...) resolved without a manual "Прогнать граф" click
-    // — debounced so rapid edits don't thrash. AI-model nodes are skipped
-    // entirely (see runGraph's autoMode) and only ever resolve from an
-    // explicit manual action (the Topbar button or a node's own ▶ button).
+    // entity selectors, output_scene's Arc JSON, ...) resolved without a
+    // manual "Прогнать граф" click — debounced so rapid edits don't thrash.
+    // AI-model nodes are skipped entirely (see runGraph's autoMode) and only
+    // ever resolve from an explicit manual action (the Topbar button or a
+    // node's own ▶ button).
     const autoResolveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
         if (autoResolveTimer.current) clearTimeout(autoResolveTimer.current);
@@ -794,6 +816,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
                 const sceneId = activeSceneId;
                 const output = await runGraph(nodes, edges, resolvedRef.current, showToast, {
                     autoMode: true,
+                    narrativeSettings: sceneId ? getSceneNarrativeSettings(sceneId) : undefined,
                 });
                 setResolved({ ...resolvedRef.current });
                 cacheSceneOutput(sceneId, output);
@@ -802,7 +825,15 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         return () => {
             if (autoResolveTimer.current) clearTimeout(autoResolveTimer.current);
         };
-    }, [nodes, edges, activeSceneId, showToast, cacheSceneOutput]);
+    }, [
+        nodes,
+        edges,
+        activeSceneId,
+        showToast,
+        cacheSceneOutput,
+        narrativeSettings,
+        getSceneNarrativeSettings,
+    ]);
 
     // ── Assemble and expose ─────────────────────────────────────────────────────
 

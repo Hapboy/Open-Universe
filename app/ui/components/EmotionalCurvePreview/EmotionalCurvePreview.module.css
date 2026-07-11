@@ -1,0 +1,27 @@
+.emotionalBox {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    height: 62px;
+    margin-bottom: 12px;
+}
+
+.emotionalSvg {
+    width: 100%;
+    height: 100%;
+}
+
+.svgText {
+    fill: var(--color-text-tertiary);
+    font-size: 8px;
+    font-family: inherit;
+}
+
+.svgLabelText {
+    fill: var(--color-text-secondary);
+    font-size: 9px;
+    font-weight: 500;
+    font-family: inherit;
+    opacity: 0.4;
+}

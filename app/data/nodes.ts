@@ -215,7 +215,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             { name: "Visual Render", type: PORT_TYPES.IMAGE },
             { name: "Motion Render", type: PORT_TYPES.VIDEO },
         ],
-        outputs: [],
+        outputs: [{ name: "Arc JSON", type: PORT_TYPES.TEXT }],
         params: {
             renderingEngine: "Hayverse Realtime Veo 3",
             title: "",
