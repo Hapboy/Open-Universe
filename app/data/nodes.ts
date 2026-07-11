@@ -242,7 +242,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         label: "Персонаж",
         icon: "ti-user",
         color: "var(--color-node-higgsfield)",
-        inputs: [{ name: "Clothing", type: "any" as PortType }],
+        inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
             { name: "JSON", type: PORT_TYPES.TEXT },
@@ -279,7 +279,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         label: "Локация",
         icon: "ti-map-pin",
         color: "var(--color-node-scene)",
-        inputs: [{ name: "Building", type: "any" as PortType }],
+        inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
             { name: "JSON", type: PORT_TYPES.TEXT },
@@ -305,11 +305,8 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         label: "Здание",
         icon: "ti-building-arch",
         color: "var(--color-node-character)",
-        inputs: [
-            { name: "Artwork", type: "any" as PortType },
-            { name: "Furniture", type: "any" as PortType },
-        ],
-        outputs: [{ name: "Building Out", type: "any" as PortType }],
+        inputs: [],
+        outputs: [],
         params: {
             selectedItem: "Дом с эркером",
             name: "Дом с эркером",
@@ -324,7 +321,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         icon: "ti-shirt",
         color: "var(--color-node-clothing)",
         inputs: [],
-        outputs: [{ name: "Clothing Out", type: "any" as PortType }],
+        outputs: [],
         params: {
             selectedItem: "Tigran Avetisyan",
             name: "Tigran Avetisyan",
@@ -339,7 +336,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         icon: "ti-palette",
         color: "var(--color-node-artwork)",
         inputs: [],
-        outputs: [{ name: "Artwork Out", type: "any" as PortType }],
+        outputs: [],
         params: {
             selectedItem: "Минас Аветисян",
             name: "Минас Аветисян",
@@ -354,7 +351,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         icon: "ti-armchair",
         color: "var(--color-node-util)",
         inputs: [],
-        outputs: [{ name: "Furniture Out", type: "any" as PortType }],
+        outputs: [],
         params: {
             selectedItem: "Тахта + ковёр",
             name: "Тахта + ковёр",
@@ -396,7 +393,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         label: "Раскадровка",
         icon: "ti-layout-board",
         color: "var(--color-node-higgsfield)",
-        inputs: [{ name: "Text Out", type: PORT_TYPES.TEXT }],
+        inputs: [],
         outputs: [{ name: "Image Out", type: PORT_TYPES.IMAGE }],
         params: {
             selectedItem: "Утро в Конде v4",
@@ -411,7 +408,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
         icon: "ti-car",
         color: "var(--color-node-character)",
         inputs: [],
-        outputs: [{ name: "Transport Out", type: "any" as PortType }],
+        outputs: [],
         params: {
             selectedItem: "Советский Москвич",
             name: "Советский Москвич",

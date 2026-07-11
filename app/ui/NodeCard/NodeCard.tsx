@@ -20,7 +20,7 @@ function portColor(type: PortType): string {
 }
 
 function portTypeLabel(type: PortType): string {
-    return type === "any" ? "любой тип" : type;
+    return type;
 }
 
 export const NodeCard = memo(function NodeCard({

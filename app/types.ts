@@ -1,4 +1,4 @@
-export type PortType = "Image" | "Video" | "Audio" | "Text" | "any";
+export type PortType = "Image" | "Video" | "Audio" | "Text";
 
 export interface Port {
     id: string;

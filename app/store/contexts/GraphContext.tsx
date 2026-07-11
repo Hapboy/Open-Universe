@@ -356,7 +356,6 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
             const sourcePort = findPort(nodes, conn.source, conn.sourceHandle, "source");
             const targetPort = findPort(nodes, conn.target, conn.targetHandle, "target");
             if (!sourcePort || !targetPort) return false;
-            if (sourcePort.type === "any" || targetPort.type === "any") return true;
             return sourcePort.type === targetPort.type;
         },
         [nodes],
