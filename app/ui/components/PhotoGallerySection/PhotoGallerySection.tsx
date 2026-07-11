@@ -3,6 +3,7 @@ import cn from "classnames";
 import type { NodeRef } from "../../../types.ts";
 import { putBlob, useResolvedMediaUrls } from "../../../core/blobStore.ts";
 import { MediaSlider } from "../../NodeCard/MediaSlider/MediaSlider.tsx";
+import { CircleLoader } from "../CircleLoader/CircleLoader.tsx";
 import styles from "./PhotoGallerySection.module.css";
 
 // MediaSlider + clickable thumbnail strip for picking the cover photo, split
@@ -65,6 +66,8 @@ export function PhotoGallerySection({
     setNodePhotos,
     maxPhotos = 10,
     resetKey,
+    onGenerate,
+    isGenerating,
 }: {
     node: NodeRef;
     label: string;
@@ -74,6 +77,10 @@ export function PhotoGallerySection({
     setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
     maxPhotos?: number;
     resetKey?: string;
+    // Optional AI-generation entry point, opted into per entity type (see
+    // CharacterParams) — rendered as an icon-only button next to Upload.
+    onGenerate?: () => void;
+    isGenerating?: boolean;
 }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -115,6 +122,15 @@ export function PhotoGallerySection({
                     title="Загрузить фото">
                     <i className="ti ti-upload" />
                 </button>
+                {onGenerate && (
+                    <button
+                        className={styles.iconBtn}
+                        onClick={onGenerate}
+                        disabled={isGenerating || photos.length >= maxPhotos}
+                        title="Сгенерировать фото">
+                        {isGenerating ? <CircleLoader /> : <i className="ti ti-wand" />}
+                    </button>
+                )}
             </div>
         </div>
     );

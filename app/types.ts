@@ -125,6 +125,7 @@ export interface CharacterNodeParams extends Record<string, unknown> {
     tattoos: string;
     accessories: string;
     clothing: string;
+    color: string;
     additionalDescription: string;
 }
 

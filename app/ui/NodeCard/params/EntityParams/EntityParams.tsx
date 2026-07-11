@@ -6,6 +6,9 @@ import {
     PhotoGallerySection,
     PhotoPreview,
 } from "../../../components/PhotoGallerySection/PhotoGallerySection.tsx";
+import { useImageGeneration } from "../../../hooks/useImageGeneration.ts";
+import { resolveMediaRef } from "../../../../core/blobStore.ts";
+import { GeminiService } from "../../../../core/services/gemini.ts";
 import { SelectField } from "../../../components/SelectField/SelectField.tsx";
 import { RangeField } from "../../../components/RangeField/RangeField.tsx";
 import { NumberField } from "../../../components/NumberField/NumberField.tsx";
@@ -16,6 +19,7 @@ import { TextAreaField } from "../../../components/TextAreaField/TextAreaField.t
 import { CategoryTagGroup } from "../../../components/CategoryTagGroup/CategoryTagGroup.tsx";
 import { SearchField } from "../../../components/SearchField/SearchField.tsx";
 import { DropdownWithPreviews } from "../../../components/DropdownWithPreviews/DropdownWithPreviews.tsx";
+import { ColorField } from "../../../components/ColorField/ColorField.tsx";
 import {
     haircutOptions,
     tattooOptions,
@@ -48,6 +52,25 @@ const LOCATION_CATEGORIES = [
     { key: "atmosphere", label: "Атмосфера" },
 ];
 
+// Nano Banana's own model id — see NANO_BANANA_MODELS in GeminiParams.tsx.
+// This button always uses the default model; the standalone Nano Banana node
+// still exposes the full model choice for anyone who wants that.
+const CHARACTER_PHOTO_MODEL = "gemini-3.1-flash-image";
+
+function buildCharacterPrompt(params: CharacterNodeParams): string {
+    const parts = [
+        `Портретное фото персонажа${params.name ? ` по имени ${params.name}` : ""}.`,
+        params.age ? `Возраст: ${params.age}.` : "",
+        params.emotion ? `Эмоция: ${params.emotion}.` : "",
+        params.haircut ? `Прическа: ${params.haircut}.` : "",
+        params.clothing ? `Одежда: ${params.clothing}.` : "",
+        params.accessories ? `Аксессуары: ${params.accessories}.` : "",
+        params.tattoos ? `Татуировки: ${params.tattoos}.` : "",
+        params.additionalDescription || "",
+    ];
+    return parts.filter(Boolean).join(" ");
+}
+
 export function CharacterParams({
     node,
     params,
@@ -62,6 +85,22 @@ export function CharacterParams({
         params,
         updateNodeParams,
     );
+    const { generate, isGenerating } = useImageGeneration();
+
+    const handleGeneratePhoto = async () => {
+        const prompt = buildCharacterPrompt(params);
+        const photos = params.photos || [];
+        const referenceUrls = await Promise.all(photos.map(resolveMediaRef));
+        const ref = await generate((showToast) =>
+            GeminiService.runNanoBanana(
+                prompt,
+                referenceUrls,
+                { model: CHARACTER_PHOTO_MODEL },
+                showToast,
+            ),
+        );
+        if (ref) setNodePhotos(node.id, [...photos, ref], photos.length);
+    };
 
     // Toggle Category Tags and Search State
     const [activeTags, setActiveTags] = useState<Record<string, boolean>>({
@@ -153,6 +192,8 @@ export function CharacterParams({
                     updateNodeParam={updateNodeParam}
                     setNodePhotos={setNodePhotos}
                     resetKey={params.selectedItem}
+                    onGenerate={handleGeneratePhoto}
+                    isGenerating={isGenerating}
                 />
             )}
 
@@ -295,6 +336,14 @@ export function CharacterParams({
                     value={params.clothing}
                     onChange={(v) => updateNodeParam(node.id, "clothing", v)}
                     options={clothingOptions}
+                />
+            )}
+
+            {shouldShow("styling", "Цвет") && (
+                <ColorField
+                    label="Цвет"
+                    value={params.color}
+                    onChange={(v) => updateNodeParam(node.id, "color", v)}
                 />
             )}
         </>
