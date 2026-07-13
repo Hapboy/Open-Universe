@@ -140,7 +140,7 @@ export function WorldMap() {
                     )
                     .globeTileEngineMaxLevel(19);
             } else {
-                instance.globeImageUrl("/textures/earth-blue-marble.jpg");
+                instance.globeImageUrl("/assets/textures/earth-blue-marble.jpg");
             }
 
             // Lower shininess/specular so the surface reads as matte rock/water

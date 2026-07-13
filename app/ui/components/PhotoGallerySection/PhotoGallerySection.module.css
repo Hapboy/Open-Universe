@@ -13,11 +13,6 @@
     align-items: center;
 }
 
-.photoActions input[type="text"] {
-    flex: 1;
-    min-width: 0;
-}
-
 .thumbnailsList {
     display: flex;
     flex-wrap: wrap;

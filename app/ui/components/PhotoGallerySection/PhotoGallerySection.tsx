@@ -7,8 +7,8 @@ import { CircleLoader } from "../CircleLoader/CircleLoader.tsx";
 import styles from "./PhotoGallerySection.module.css";
 
 // MediaSlider + clickable thumbnail strip for picking the cover photo, split
-// out so it can be positioned independently of the upload/Pinterest controls
-// (e.g. pinned to the top of a node, above the search field).
+// out so it can be positioned independently of the upload controls (e.g.
+// pinned to the top of a node, above the search field).
 export function PhotoPreview({
     node,
     photos,
@@ -51,32 +51,25 @@ export function PhotoPreview({
     );
 }
 
-// Reusable "photo section" for entity nodes: an upload button + Pinterest
-// board URL field. The slider/thumbnail preview lives separately in
-// `PhotoPreview` above (typically pinned to the top of the node) — backed by
-// the same entity's `photos`/`photoIdx`/`pinterestUrl` params and the shared
-// `setNodePhotos` mutator (see GraphContext.tsx), which keeps per-photo
-// output pins in sync with the array.
+// Reusable "photo section" for entity nodes: an upload button. The
+// slider/thumbnail preview lives separately in `PhotoPreview` above
+// (typically pinned to the top of the node) — backed by the same entity's
+// `photos`/`photoIdx` params and the shared `setNodePhotos` mutator (see
+// GraphContext.tsx), which keeps per-photo output pins in sync with the array.
 export function PhotoGallerySection({
     node,
     label,
     photos,
-    pinterestUrl,
-    updateNodeParam,
     setNodePhotos,
     maxPhotos = 10,
-    resetKey,
     onGenerate,
     isGenerating,
 }: {
     node: NodeRef;
     label: string;
     photos: string[];
-    pinterestUrl: string;
-    updateNodeParam: (id: string, key: string, value: unknown) => void;
     setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
     maxPhotos?: number;
-    resetKey?: string;
     // Optional AI-generation entry point, opted into per entity type (see
     // CharacterParams) — rendered as an icon-only button next to Upload.
     onGenerate?: () => void;
@@ -107,13 +100,6 @@ export function PhotoGallerySection({
                     multiple
                     style={{ display: "none" }}
                     onChange={handleUpload}
-                />
-                <input
-                    key={resetKey}
-                    type="text"
-                    placeholder="Pinterest board URL"
-                    defaultValue={pinterestUrl || ""}
-                    onBlur={(e) => updateNodeParam(node.id, "pinterestUrl", e.target.value)}
                 />
                 <button
                     className={styles.iconBtn}

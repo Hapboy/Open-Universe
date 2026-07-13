@@ -574,17 +574,20 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
     // Appends a new "Reference Image N" input pin to a node (used by nodes
     // like Nano Banana that accept a variable number of reference images).
-    // Capped at 14 reference images — Nano Banana's own API limit.
+    // Capped at 14 reference images — Nano Banana's own API limit. Ids use a
+    // random suffix rather than a position index: a position-based id can
+    // collide with a surviving pin's id after a mid-array removal (see
+    // removePinInput), and React Flow requires unique handle ids per node —
+    // a collision silently breaks connections to one of the duplicate pins.
     const addImageInput = useCallback((nodeId: string) => {
         setNodes((ns) =>
             ns.map((n) => {
                 if (n.id !== nodeId) return n;
                 const imageCount = n.data.inputs.length - 1;
                 if (imageCount >= MAX_REFERENCE_IMAGES) return n;
-                const index = n.data.inputs.length;
                 const newPort: Port = {
-                    id: `${nodeId}_in_${index}`,
-                    name: `Reference Image ${index}`,
+                    id: `${nodeId}_in_${crypto.randomUUID()}`,
+                    name: `Reference Image ${n.data.inputs.length}`,
                     type: "Image",
                 };
                 return { ...n, data: { ...n.data, inputs: [...n.data.inputs, newPort] } };
@@ -594,11 +597,11 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
     // Appends a new "Text N" input pin to a node (used by text_prompt, which
     // pairs each pin with its own wirable field — see WirableTextField usage
-    // in TextParams). Ids use a random suffix rather than a position index:
-    // unlike addImageInput's pins, these are keyed into `params` by their own
-    // id, so a stale/colliding id after a mid-array removal would silently
-    // alias a surviving pin's stored text. Capped like addImageInput's
-    // imageCount — excluding the node's own fixed "Text" pin (index 0).
+    // in TextParams). Same random-suffix id scheme as addImageInput above —
+    // these are additionally keyed into `params` by their own id, so a
+    // colliding id after a mid-array removal would also alias a surviving
+    // pin's stored text. Capped like addImageInput's imageCount — excluding
+    // the node's own fixed "Text" pin (index 0).
     const addTextInput = useCallback((nodeId: string) => {
         setNodes((ns) =>
             ns.map((n) => {

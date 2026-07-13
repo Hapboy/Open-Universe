@@ -37,7 +37,9 @@ import type {
     ScriptNodeParams,
     StoryboardNodeParams,
     TransportNodeParams,
+    MiseEnSceneNodeParams,
 } from "../../../../types.ts";
+import { getMiseEnSceneDiagrams } from "../../../../data/miseEnSceneDiagrams.ts";
 import styles from "./EntityParams.module.css";
 
 const CHARACTER_CATEGORIES = [
@@ -188,10 +190,7 @@ export function CharacterParams({
                     node={node}
                     label="Фото персонажа"
                     photos={params.photos || []}
-                    pinterestUrl={params.pinterestUrl}
-                    updateNodeParam={updateNodeParam}
                     setNodePhotos={setNodePhotos}
-                    resetKey={params.selectedItem}
                     onGenerate={handleGeneratePhoto}
                     isGenerating={isGenerating}
                 />
@@ -441,10 +440,7 @@ export function LocationParams({
                     node={node}
                     label="Фото локации"
                     photos={params.photos || []}
-                    pinterestUrl={params.pinterestUrl}
-                    updateNodeParam={updateNodeParam}
                     setNodePhotos={setNodePhotos}
-                    resetKey={params.selectedItem}
                 />
             )}
 
@@ -522,6 +518,103 @@ export function LocationParams({
     );
 }
 
+export function MiseEnSceneParams({
+    node,
+    params,
+    updateNodeParam,
+    updateNodeParams,
+    setNodePhotos,
+}: EP<MiseEnSceneNodeParams> & {
+    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+}) {
+    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+        node,
+        params,
+        updateNodeParams,
+    );
+
+    const diagrams = getMiseEnSceneDiagrams(params.peopleCount, params.cameraCount);
+    const activeDiagramSrc = (params.photos || [])[params.photoIdx ?? 0];
+
+    const selectDiagram = (src: string) => {
+        const photos = params.photos || [];
+        const existingIdx = photos.indexOf(src);
+        if (existingIdx !== -1) {
+            updateNodeParam(node.id, "photoIdx", existingIdx);
+            return;
+        }
+        setNodePhotos(node.id, [...photos, src], photos.length);
+    };
+
+    return (
+        <>
+            <PhotoPreview
+                node={node}
+                photos={params.photos || []}
+                photoIdx={params.photoIdx ?? 0}
+                updateNodeParam={updateNodeParam}
+                setNodePhotos={setNodePhotos}
+            />
+            <DatabaseSelect
+                label="Мизансцена"
+                items={db}
+                selected={params.selectedItem}
+                onSelect={onSelect}
+                onAdd={onAdd}
+                onUpdate={onUpdate}
+                hasUnsavedChanges={hasUnsavedChanges}
+                addLabel="Добавить мизансцену"
+            />
+            <TextField
+                label="Имя"
+                value={params.name}
+                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            />
+            <PhotoGallerySection
+                node={node}
+                label="Фото мизансцены"
+                photos={params.photos || []}
+                setNodePhotos={setNodePhotos}
+            />
+            <NumberField
+                label="Количество людей в кадре"
+                min={1}
+                max={20}
+                step={1}
+                value={params.peopleCount}
+                onChange={(v) => updateNodeParam(node.id, "peopleCount", v)}
+            />
+            <NumberField
+                label="Количество камер"
+                min={1}
+                max={10}
+                step={1}
+                value={params.cameraCount}
+                onChange={(v) => updateNodeParam(node.id, "cameraCount", v)}
+            />
+            {diagrams.length > 0 && (
+                <div className={styles.fld}>
+                    <span>Схемы расстановки</span>
+                    <div className={styles.diagramGrid}>
+                        {diagrams.map((d) => (
+                            <div
+                                key={d.src}
+                                className={cn(
+                                    styles.diagramCell,
+                                    activeDiagramSrc === d.src && styles.diagramCellActive,
+                                )}
+                                style={{ backgroundImage: `url(${d.src})` }}
+                                onClick={() => selectDiagram(d.src)}
+                                title={d.label}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}
+
 export function BuildingParams({
     node,
     params,
@@ -564,10 +657,7 @@ export function BuildingParams({
                 node={node}
                 label="Фото здания"
                 photos={params.photos || []}
-                pinterestUrl={params.pinterestUrl}
-                updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
-                resetKey={params.selectedItem}
             />
             <NumberField
                 label="Этаж"
@@ -627,10 +717,7 @@ export function ClothingParams({
                 node={node}
                 label="Фото одежды"
                 photos={params.photos || []}
-                pinterestUrl={params.pinterestUrl}
-                updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
-                resetKey={params.selectedItem}
             />
             <SelectField
                 label="Сезон"
@@ -692,10 +779,7 @@ export function ArtworkParams({
                 node={node}
                 label="Фото произведения"
                 photos={params.photos || []}
-                pinterestUrl={params.pinterestUrl}
-                updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
-                resetKey={params.selectedItem}
             />
             <RangeField
                 label={`Масштаб (${params.scale}%)`}
@@ -755,10 +839,7 @@ export function FurnitureParams({
                 node={node}
                 label="Фото мебели"
                 photos={params.photos || []}
-                pinterestUrl={params.pinterestUrl}
-                updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
-                resetKey={params.selectedItem}
             />
             <RangeField
                 label={`Плотность (${params.density})`}
@@ -818,10 +899,7 @@ export function MusicParams({
                 node={node}
                 label="Фото трека"
                 photos={params.photos || []}
-                pinterestUrl={params.pinterestUrl}
-                updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
-                resetKey={params.selectedItem}
             />
             <SelectField
                 label="Настроение"
@@ -875,10 +953,7 @@ export function ScriptParams({
                 node={node}
                 label="Фото сценария"
                 photos={params.photos || []}
-                pinterestUrl={params.pinterestUrl}
-                updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
-                resetKey={params.selectedItem}
             />
             <SelectField
                 label="Тон"
@@ -972,10 +1047,7 @@ export function TransportParams({
                 node={node}
                 label="Фото транспорта"
                 photos={params.photos || []}
-                pinterestUrl={params.pinterestUrl}
-                updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
-                resetKey={params.selectedItem}
             />
             <InFrameToggle
                 value={params.inFrame}

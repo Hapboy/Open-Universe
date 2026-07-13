@@ -26,7 +26,7 @@ export const AI_MODEL_NODE_TYPES = [
 // Entity node types with the "rich" editing UI: a toggleable prompt column
 // for additionalDescription, and Description/JSON output pins (instead of a
 // plain selectedItem passthrough).
-export const RICH_ENTITY_NODE_TYPES = new Set(["character", "location"]);
+export const RICH_ENTITY_NODE_TYPES = new Set(["character", "location", "mise_en_scene"]);
 
 // All entity node types with a preset (`DatabaseSelect`) dropdown — the
 // shared source of truth for both the "selectedItem passthrough" fallback
@@ -42,6 +42,7 @@ export const ENTITY_NODE_TYPES = new Set([
     "script",
     "storyboard",
     "transport",
+    "mise_en_scene",
 ]);
 
 export interface NodeTemplate {
@@ -275,7 +276,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             stylist: "Без стилиста",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
             lifetimeFrom: "",
             lifetimeTo: "",
             birthPlace: { lat: null, lon: null },
@@ -308,13 +308,33 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             name: "Старый Конд",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
             weather: "туман",
             timeOfDay: "рассвет",
             interiorExterior: "Экстерьер",
             damageLevel: 0,
             coordinates: { lat: null, lon: null },
             radiusKm: 5,
+            additionalDescription: "",
+        },
+    },
+
+    mise_en_scene: {
+        type: "mise_en_scene",
+        label: "Мизансцена",
+        icon: "ti-users",
+        color: "var(--color-node-clothing)",
+        inputs: [],
+        outputs: [
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
+        params: {
+            selectedItem: "1 человек в кадре",
+            name: "1 человек в кадре",
+            photos: [] as string[],
+            photoIdx: 0,
+            peopleCount: 1,
+            cameraCount: 1,
             additionalDescription: "",
         },
     },
@@ -331,7 +351,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             name: "Дом с эркером",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
             inFrame: true,
             floor: 2,
         },
@@ -349,7 +368,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             name: "Tigran Avetisyan",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
             season: "FW26",
             wear: 12,
         },
@@ -367,7 +385,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             name: "Минас Аветисян",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
             inFrame: true,
             scale: 120,
         },
@@ -385,7 +402,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             name: "Тахта + ковёр",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
             inFrame: true,
             density: 5,
         },
@@ -403,7 +419,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             name: "Армянский дудук",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
             mood: "элегия",
         },
     },
@@ -420,7 +435,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             name: "Сцена 04: Утро в Конде",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
             tone: "драма",
         },
     },
@@ -451,7 +465,6 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             name: "Советский Москвич",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
             inFrame: false,
         },
     },
@@ -463,7 +476,7 @@ export const NODE_BROWSER_GROUPS: { label: string; types: string[] }[] = [
         label: "Сущности",
         types: ["character", "location", "building", "clothing", "artwork", "furniture"],
     },
-    { label: "Нарратив", types: ["music", "script", "storyboard", "transport"] },
+    { label: "Нарратив", types: ["music", "script", "storyboard", "transport", "mise_en_scene"] },
     { label: "Pinterest", types: ["pinterest_board"] },
     { label: "Higgsfield AI", types: ["higgsfield_soul", "higgsfield_camera", "higgsfield_speak"] },
     {

@@ -13,6 +13,7 @@ import {
 import {
     CharacterParams,
     LocationParams,
+    MiseEnSceneParams,
     BuildingParams,
     ClothingParams,
     ArtworkParams,
@@ -26,6 +27,7 @@ import { OutputParams, TextParams } from "./UtilParams.tsx";
 import type {
     CharacterNodeParams,
     LocationNodeParams,
+    MiseEnSceneNodeParams,
     BuildingNodeParams,
     ClothingNodeParams,
     ArtworkNodeParams,
@@ -196,6 +198,15 @@ export function NodeParamsPanel({
                 <LocationParams
                     node={node}
                     params={params as LocationNodeParams}
+                    updateNodeParam={updateNodeParam}
+                    updateNodeParams={updateNodeParams}
+                    setNodePhotos={setNodePhotos}
+                />
+            )}
+            {nodeType === "mise_en_scene" && (
+                <MiseEnSceneParams
+                    node={node}
+                    params={params as MiseEnSceneNodeParams}
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
                     setNodePhotos={setNodePhotos}

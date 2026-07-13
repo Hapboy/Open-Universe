@@ -110,7 +110,6 @@ export interface CharacterNodeParams extends Record<string, unknown> {
     stylist: string;
     photos: string[];
     photoIdx: number;
-    pinterestUrl: string;
     lifetimeFrom: string;
     lifetimeTo: string;
     birthPlace: WGS84Coordinates;
@@ -134,7 +133,6 @@ export interface LocationNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    pinterestUrl: string;
     weather: string;
     timeOfDay: string;
     interiorExterior: "Интерьер" | "Экстерьер";
@@ -144,12 +142,21 @@ export interface LocationNodeParams extends Record<string, unknown> {
     additionalDescription: string;
 }
 
+export interface MiseEnSceneNodeParams extends Record<string, unknown> {
+    selectedItem: string;
+    name: string;
+    photos: string[];
+    photoIdx: number;
+    peopleCount: number;
+    cameraCount: number;
+    additionalDescription: string;
+}
+
 export interface BuildingNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
     photos: string[];
     photoIdx: number;
-    pinterestUrl: string;
     inFrame: boolean;
     floor: number;
 }
@@ -159,7 +166,6 @@ export interface ClothingNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    pinterestUrl: string;
     season: string;
     wear: number;
 }
@@ -169,7 +175,6 @@ export interface ArtworkNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    pinterestUrl: string;
     inFrame: boolean;
     scale: number;
 }
@@ -179,7 +184,6 @@ export interface FurnitureNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    pinterestUrl: string;
     inFrame: boolean;
     density: number;
 }
@@ -189,7 +193,6 @@ export interface MusicNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    pinterestUrl: string;
     mood: string;
 }
 
@@ -198,7 +201,6 @@ export interface ScriptNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    pinterestUrl: string;
     tone: string;
 }
 
@@ -213,6 +215,5 @@ export interface TransportNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    pinterestUrl: string;
     inFrame: boolean;
 }

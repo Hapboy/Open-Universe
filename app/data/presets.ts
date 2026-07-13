@@ -16,7 +16,6 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
             stylist: "Без стилиста",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
         },
         "Анаит Багратуни": {
             name: "Анаит Багратуни",
@@ -26,7 +25,6 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
             stylist: "Без стилиста",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
         },
         "Вардан Майриг": {
             name: "Вардан Майриг",
@@ -36,7 +34,6 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
             stylist: "Без стилиста",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
         },
         Цовинар: {
             name: "Цовинар",
@@ -46,7 +43,6 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
             stylist: "Без стилиста",
             photos: [] as string[],
             photoIdx: 0,
-            pinterestUrl: "",
         },
     },
     location: {
@@ -125,6 +121,36 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
         "Арба конная": { name: "Арба конная", inFrame: false },
         "Велосипед ретро": { name: "Велосипед ретро", inFrame: false },
         Маршрутка: { name: "Маршрутка", inFrame: false },
+    },
+    mise_en_scene: {
+        "1 человек в кадре": {
+            name: "1 человек в кадре",
+            photos: [] as string[],
+            photoIdx: 0,
+            peopleCount: 1,
+            cameraCount: 1,
+        },
+        "2 человека в кадре": {
+            name: "2 человека в кадре",
+            photos: ["/assets/mise-en-scene/2p_1cam_ots-render.jpg"] as string[],
+            photoIdx: 0,
+            peopleCount: 2,
+            cameraCount: 1,
+        },
+        "3 человека в кадре": {
+            name: "3 человека в кадре",
+            photos: ["/assets/mise-en-scene/3p_3cam_overhead-triangle.jpg"] as string[],
+            photoIdx: 0,
+            peopleCount: 3,
+            cameraCount: 3,
+        },
+        "3+ человек в кадре": {
+            name: "3+ человек в кадре",
+            photos: ["/assets/mise-en-scene/6p_1cam_render-medium.jpg"] as string[],
+            photoIdx: 0,
+            peopleCount: 6,
+            cameraCount: 1,
+        },
     },
 };
 
