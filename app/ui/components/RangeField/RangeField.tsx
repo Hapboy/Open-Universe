@@ -15,7 +15,7 @@ export function RangeField({
     color,
 }: {
     label: ReactNode;
-    value?: number | null;
+    value: number;
     min: number;
     max: number;
     step?: number;
@@ -26,9 +26,7 @@ export function RangeField({
     // overlay divs, so the thumb and the fill can never drift out of sync.
     color?: string;
 }) {
-    // legacy graphs may miss the param entirely — never crash on undefined
-    const safe = value ?? min;
-    const percent = ((safe - min) / (max - min)) * 100;
+    const percent = ((value - min) / (max - min)) * 100;
 
     return (
         <div className={styles.fld}>
@@ -43,7 +41,7 @@ export function RangeField({
                     min={min}
                     max={max}
                     step={step}
-                    value={safe}
+                    value={value}
                     onChange={(e) => onChange(Number(e.target.value))}
                     className={cn(color && styles.coloredInput)}
                     style={

@@ -26,6 +26,11 @@ export function Select({
     title?: string;
 }) {
     const safe = value ?? "";
+    const normalized = options.map(normalizeOption);
+    // Nothing selected yet (e.g. a freshly created node with no preset
+    // chosen) — inject a blank option so the control visually shows empty
+    // instead of the browser silently defaulting to the first real option.
+    const hasMatch = normalized.some((o) => o.value === safe);
     return (
         <select
             className={cn(styles.select, className)}
@@ -33,7 +38,8 @@ export function Select({
             value={safe}
             title={title}
             onChange={(e) => onChange(e.target.value)}>
-            {options.map(normalizeOption).map((o) => (
+            {!hasMatch && <option value="">—</option>}
+            {normalized.map((o) => (
                 <option key={o.value} value={o.value}>
                     {o.label}
                 </option>
