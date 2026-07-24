@@ -5,10 +5,16 @@ export interface MiseEnSceneDiagram {
 
 const BASE = "/assets/mise-en-scene";
 
+type PeopleCount = 1 | 2 | 3 | 4;
+type CameraCount = 1 | 2 | 3;
+type DiagramKey = `${PeopleCount}_${CameraCount}`;
+
 // Ключ — "<peopleCount>_<cameraCount>", с потолком peopleCount на 4 и
 // cameraCount на 3 (см. getMiseEnSceneDiagrams), чтобы группы на 5+ актёров
-// и любые дополнительные камеры переиспользовали уже готовые "4_*" схемы.
-export const MISE_EN_SCENE_DIAGRAMS: Record<string, MiseEnSceneDiagram[]> = {
+// и любые дополнительные камеры переиспользовали уже готовые "4_*" схемы. Not
+// every combination has art yet — `Partial` since the lookup below already
+// falls back to `[]` for a missing key.
+export const MISE_EN_SCENE_DIAGRAMS: Partial<Record<DiagramKey, MiseEnSceneDiagram[]>> = {
     "2_1": [
         { label: "Оверхед, крупный план", src: `${BASE}/2p_1cam_overhead-close.jpg` },
         { label: "Оверхед, широкий план", src: `${BASE}/2p_1cam_overhead-wide.jpg` },
@@ -45,7 +51,7 @@ export function getMiseEnSceneDiagrams(
     peopleCount: number,
     cameraCount: number,
 ): MiseEnSceneDiagram[] {
-    const p = Math.min(peopleCount, 4);
-    const c = Math.min(cameraCount, 3);
+    const p = Math.min(peopleCount, 4) as PeopleCount;
+    const c = Math.min(cameraCount, 3) as CameraCount;
     return MISE_EN_SCENE_DIAGRAMS[`${p}_${c}`] ?? [];
 }

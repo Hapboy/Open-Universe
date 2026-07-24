@@ -1,18 +1,25 @@
 import { createContext, useCallback, useContext, useState } from "react";
 import { useToastContext } from "./ToastContext.tsx";
 import { readJSON, writeJSON } from "../../core/browserStorage.ts";
+import type {
+    ConflictType,
+    ConflictTarget,
+    StoryPhase,
+    Pacing,
+    CurveType,
+} from "../../types/enums.ts";
 
 const NARRATIVE_SETTINGS_KEY = "hv_narrative_settings";
 
 export interface SceneNarrativeSettings {
     emotionalTrend: number; // slope percentage (-100 to 100)
-    conflictType: "physical" | "psychological";
-    conflictTarget: "man_vs_man" | "man_vs_nature" | "man_vs_society";
-    storyPhase: "exposition" | "inciting" | "rising" | "climax" | "resolution";
+    conflictType: ConflictType;
+    conflictTarget: ConflictTarget;
+    storyPhase: StoryPhase;
     tensionLevel: number; // 0 to 100
-    pacing: "slow" | "moderate" | "fast" | "action";
+    pacing: Pacing;
     loreRevelations: string[]; // array of tags
-    curveType: "linear" | "ease_in" | "ease_out" | "ease_in_out";
+    curveType: CurveType;
 }
 
 export const DEFAULT_NARRATIVE_SETTINGS: SceneNarrativeSettings = {

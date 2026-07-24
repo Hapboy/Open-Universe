@@ -1,6 +1,7 @@
 import cn from "classnames";
 import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
 import { useNarrativeContext } from "../../../store/contexts/NarrativeContext.tsx";
+import { CONFLICT_TARGETS } from "../../../types/enums.ts";
 import styles from "../Timeline.module.css";
 
 const loreOptions = [
@@ -82,9 +83,7 @@ export function SceneArcSettings() {
                                 </div>
 
                                 <div className={styles.conflictRightCol}>
-                                    {(
-                                        ["man_vs_man", "man_vs_nature", "man_vs_society"] as const
-                                    ).map((target) => {
+                                    {CONFLICT_TARGETS.map((target) => {
                                         const isActive = activeSettings.conflictTarget === target;
                                         return (
                                             <button

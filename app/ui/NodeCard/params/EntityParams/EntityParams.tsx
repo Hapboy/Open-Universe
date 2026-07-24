@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import cn from "classnames";
 import { DatabaseSelect, InFrameToggle, usePresetDatabase } from "../shared.tsx";
+import { usePresetLibraryContext } from "../../../../store/contexts/PresetLibraryContext.tsx";
 import type { EP } from "../shared.tsx";
 import {
     PhotoGallerySection,
@@ -8,7 +9,7 @@ import {
 } from "../../../components/PhotoGallerySection/PhotoGallerySection.tsx";
 import { useImageGeneration } from "../../../hooks/useImageGeneration.ts";
 import { resolveMediaRef } from "../../../../core/blobStore.ts";
-import { GeminiService } from "../../../../core/services/gemini.ts";
+import { geminiApiClient } from "../../../../core/api/index.ts";
 import { SelectField } from "../../../components/SelectField/SelectField.tsx";
 import { RangeField } from "../../../components/RangeField/RangeField.tsx";
 import { NumberField } from "../../../components/NumberField/NumberField.tsx";
@@ -40,6 +41,16 @@ import type {
     MiseEnSceneNodeParams,
 } from "../../../../types.ts";
 import { getMiseEnSceneDiagrams } from "../../../../data/miseEnSceneDiagrams.ts";
+import {
+    CHARACTER_EMOTIONS,
+    CHARACTER_STYLISTS,
+    LOCATION_WEATHERS,
+    LOCATION_TIMES_OF_DAY,
+    INTERIOR_EXTERIOR,
+    CLOTHING_SEASONS,
+    MUSIC_MOODS,
+    SCRIPT_TONES,
+} from "../../../../types/enums.ts";
 import styles from "./EntityParams.module.css";
 
 const CHARACTER_CATEGORIES = [
@@ -88,16 +99,34 @@ export function CharacterParams({
         updateNodeParams,
     );
     const { generate, isGenerating } = useImageGeneration();
+    const { library } = usePresetLibraryContext();
+
+    // Every character node instance needs a stable identity so the same
+    // character can be matched across scenes (Timeline synapses view) by
+    // more than just its free-text name. A brand-new node's `selectedItem`
+    // already defaults to a cataloged preset's name (e.g. "Ара Гехецик")
+    // without the user ever going through `onSelect` — so prefer that
+    // preset's own id over minting a fresh one, or two nodes that both
+    // "look like" the same character end up as two different identities.
+    // Only mint a new id when there's truly no matching preset yet (a
+    // custom, unsaved character) — see PresetLibraryContext's migration for
+    // how an id then propagates once such a character is saved as a preset.
+    useEffect(() => {
+        const presetId = library.character?.[params.selectedItem]?.id as string | undefined;
+        if (presetId && presetId !== params.id) {
+            updateNodeParam(node.id, "id", presetId);
+        } else if (!presetId && !params.id) {
+            updateNodeParam(node.id, "id", crypto.randomUUID());
+        }
+    }, [node.id, params.id, params.selectedItem, library.character, updateNodeParam]);
 
     const handleGeneratePhoto = async () => {
         const prompt = buildCharacterPrompt(params);
         const photos = params.photos || [];
         const referenceUrls = await Promise.all(photos.map(resolveMediaRef));
         const ref = await generate((showToast) =>
-            GeminiService.runNanoBanana(
-                prompt,
-                referenceUrls,
-                { model: CHARACTER_PHOTO_MODEL },
+            geminiApiClient.generateImageFromRefs(
+                { prompt, imageUrls: referenceUrls, model: CHARACTER_PHOTO_MODEL },
                 showToast,
             ),
         );
@@ -282,7 +311,7 @@ export function CharacterParams({
                     label="Эмоция"
                     value={params.emotion}
                     onChange={(v) => updateNodeParam(node.id, "emotion", v)}
-                    options={["спокойствие", "грусть", "радость", "тревога", "задумчивость"]}
+                    options={CHARACTER_EMOTIONS}
                 />
             )}
 
@@ -291,7 +320,7 @@ export function CharacterParams({
                     label="Стилист"
                     value={params.stylist}
                     onChange={(v) => updateNodeParam(node.id, "stylist", v)}
-                    options={["Без стилиста", "Tigran Avetisyan", "Anna K", "Народный"]}
+                    options={CHARACTER_STYLISTS}
                 />
             )}
 
@@ -469,7 +498,7 @@ export function LocationParams({
                     label="Погода"
                     value={params.weather}
                     onChange={(v) => updateNodeParam(node.id, "weather", v)}
-                    options={["туман", "солнце", "дождь", "снег", "пасмурно"]}
+                    options={LOCATION_WEATHERS}
                 />
             )}
 
@@ -478,7 +507,7 @@ export function LocationParams({
                     label="Время суток"
                     value={params.timeOfDay}
                     onChange={(v) => updateNodeParam(node.id, "timeOfDay", v)}
-                    options={["рассвет", "утро", "день", "закат", "ночь"]}
+                    options={LOCATION_TIMES_OF_DAY}
                 />
             )}
 
@@ -486,17 +515,11 @@ export function LocationParams({
                 <div className={styles.fld}>
                     <span>Интерьер / Экстерьер</span>
                     <div className={styles.segBtn}>
-                        {["Интерьер", "Экстерьер"].map((v) => (
+                        {INTERIOR_EXTERIOR.map((v) => (
                             <button
                                 key={v}
                                 className={cn(params.interiorExterior === v && styles.isOn)}
-                                onClick={() =>
-                                    updateNodeParam(
-                                        node.id,
-                                        "interiorExterior",
-                                        v as "Интерьер" | "Экстерьер",
-                                    )
-                                }>
+                                onClick={() => updateNodeParam(node.id, "interiorExterior", v)}>
                                 {v}
                             </button>
                         ))}
@@ -723,7 +746,7 @@ export function ClothingParams({
                 label="Сезон"
                 value={params.season}
                 onChange={(v) => updateNodeParam(node.id, "season", v)}
-                options={["FW26", "SS26", "FW25", "SS25"]}
+                options={CLOTHING_SEASONS}
             />
             <RangeField
                 label={`Износ (${params.wear}%)`}
@@ -905,7 +928,7 @@ export function MusicParams({
                 label="Настроение"
                 value={params.mood}
                 onChange={(v) => updateNodeParam(node.id, "mood", v)}
-                options={["элегия", "торжество", "тоска", "медитация", "танец"]}
+                options={MUSIC_MOODS}
             />
         </>
     );
@@ -959,7 +982,7 @@ export function ScriptParams({
                 label="Тон"
                 value={params.tone}
                 onChange={(v) => updateNodeParam(node.id, "tone", v)}
-                options={["драма", "комедия", "лирика", "хоррор", "документ"]}
+                options={SCRIPT_TONES}
             />
         </>
     );

@@ -15,6 +15,7 @@ import { useToastContext } from "../../store/contexts/ToastContext.tsx";
 import { NodeCard } from "../NodeCard/NodeCard.tsx";
 import { NodeBrowser } from "../NodeBrowser/NodeBrowser.tsx";
 import type { NodeParams } from "../../types.ts";
+import type { NodeType } from "../../types/enums.ts";
 import styles from "./NodeEditor.module.css";
 
 const nodeTypes: NodeTypes = { custom: NodeCard as unknown as NodeTypes["custom"] };
@@ -86,7 +87,7 @@ function NodeEditorCanvas() {
     );
 
     const onBrowserSelect = useCallback(
-        (type: string) => {
+        (type: NodeType) => {
             if (!browserAt) return;
             const node = createNode(type, browserAt.flow.x, browserAt.flow.y);
             if (node) {

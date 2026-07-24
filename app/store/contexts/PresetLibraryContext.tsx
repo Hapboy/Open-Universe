@@ -1,12 +1,34 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import { ENTITY_PRESET_SEEDS } from "../../data/presets.ts";
 import type { EntityPresets } from "../../types.ts";
 import { useToastContext } from "./ToastContext.tsx";
-import { readJSON, writeJSON } from "../../core/browserStorage.ts";
+import { readJSON } from "../../core/browserStorage.ts";
+import { useDebouncedPersist } from "../hooks/usePersistedState.ts";
 
 const LIBRARY_STORAGE_KEY = "hv_preset_library";
 
 type PresetLibrary = Record<string, EntityPresets>;
+
+// One-time backfill: character presets predating the `id` param (seeded
+// defaults and anything a user already saved) need a stable id so the
+// Timeline synapses view can match the same character across scenes by more
+// than just their free-text name. Scoped to `character` only — other entity
+// types don't need cross-scene identity yet.
+function migrateCharacterIds(library: PresetLibrary): PresetLibrary {
+    const characters = library.character;
+    if (!characters) return library;
+    let changed = false;
+    const migrated: EntityPresets = {};
+    for (const [name, snapshot] of Object.entries(characters)) {
+        if (snapshot.id) {
+            migrated[name] = snapshot;
+        } else {
+            changed = true;
+            migrated[name] = { ...snapshot, id: crypto.randomUUID() };
+        }
+    }
+    return changed ? { ...library, character: migrated } : library;
+}
 
 function loadStoredLibrary(): PresetLibrary {
     const stored = readJSON<PresetLibrary>(LIBRARY_STORAGE_KEY, {});
@@ -18,7 +40,7 @@ function loadStoredLibrary(): PresetLibrary {
             ...(stored[entityType] ?? {}),
         };
     }
-    return merged;
+    return migrateCharacterIds(merged);
 }
 
 interface PresetLibraryCtx {
@@ -33,18 +55,10 @@ export function PresetLibraryProvider({ children }: { children: React.ReactNode 
     const { showToast } = useToastContext();
     const [library, setLibrary] = useState<PresetLibrary>(() => loadStoredLibrary());
 
-    const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    useEffect(() => {
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => {
-            writeJSON(LIBRARY_STORAGE_KEY, library, () =>
-                showToast("Не удалось сохранить пресеты локально (превышен лимит хранилища)"),
-            );
-        }, 400);
-        return () => {
-            if (saveTimer.current) clearTimeout(saveTimer.current);
-        };
-    }, [library, showToast]);
+    useDebouncedPersist(LIBRARY_STORAGE_KEY, () => library, [library], {
+        onError: () =>
+            showToast("Не удалось сохранить пресеты локально (превышен лимит хранилища)"),
+    });
 
     const addPreset = useCallback(
         (entityType: string, name: string, snapshot: Record<string, unknown>) => {

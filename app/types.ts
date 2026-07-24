@@ -1,4 +1,24 @@
-export type PortType = "Image" | "Video" | "Audio" | "Text";
+import type {
+    NodeType,
+    PortType,
+    TeamSide,
+    TeamRole,
+    TimelineTrack,
+    InteriorExterior,
+    CharacterEmotion,
+    CharacterStylist,
+    Haircut,
+    Tattoo,
+    Accessory,
+    CharacterClothingItem,
+    LocationWeather,
+    LocationTimeOfDay,
+    ClothingSeason,
+    MusicMood,
+    ScriptTone,
+} from "./types/enums.ts";
+
+export type { PortType };
 
 export interface Port {
     id: string;
@@ -8,7 +28,7 @@ export interface Port {
 
 // Shape stored in React Flow node `data` field
 export interface NodeParams {
-    nodeType: string;
+    nodeType: NodeType;
     label: string;
     color: string;
     icon: string;
@@ -21,6 +41,9 @@ export interface NodeParams {
     showJsonPreview?: boolean;
     pinLabelsWide?: boolean;
     promptPanelOpen?: boolean;
+    // Deliberately loose (defeats excess-property checking): `params` is a
+    // polymorphic bag shaped per `nodeType`, with no per-type schema yet —
+    // revisit once real backend param schemas exist.
     [key: string]: unknown;
 }
 
@@ -32,15 +55,6 @@ export interface NodeRef {
     data: NodeParams;
 }
 
-export interface Scene {
-    id: string;
-    num: string;
-    title: string;
-    sub: string;
-    sky: string;
-    ground: string;
-}
-
 // A scene as shown in the Timeline — derived from each scene's `output_scene`
 // node params, not stored separately (see GraphContext's `deriveScenes`).
 export interface TimelineScene {
@@ -49,7 +63,7 @@ export interface TimelineScene {
     title: string;
     start: number; // in seconds
     duration: number; // in seconds
-    track: number; // 1 or 2 (for parallel scenes)
+    track: TimelineTrack; // for parallel scenes
     coverUrl: string;
     cameraActive: boolean;
 }
@@ -68,16 +82,16 @@ export interface BoardItem {
 export interface TeamMember {
     name: string;
     charName: string;
-    side: string;
-    role: string;
+    side: TeamSide;
+    role: TeamRole;
     isMe: boolean;
 }
 
 export interface CurrentUser {
     name: string;
     charName: string;
-    side: string;
-    role: string;
+    side: TeamSide;
+    role: TeamRole;
 }
 
 export interface Palette {
@@ -103,11 +117,12 @@ export interface WGS84Coordinates {
 }
 
 export interface CharacterNodeParams extends Record<string, unknown> {
+    id: string;
     selectedItem: string;
     inFrame: boolean;
     age: number;
-    emotion: string;
-    stylist: string;
+    emotion: CharacterEmotion;
+    stylist: CharacterStylist;
     photos: string[];
     photoIdx: number;
     lifetimeFrom: string;
@@ -120,10 +135,10 @@ export interface CharacterNodeParams extends Record<string, unknown> {
     arcWants: string;
     arcHow: string;
     arcStake: string;
-    haircut: string;
-    tattoos: string;
-    accessories: string;
-    clothing: string;
+    haircut: Haircut;
+    tattoos: Tattoo;
+    accessories: Accessory;
+    clothing: CharacterClothingItem;
     color: string;
     additionalDescription: string;
 }
@@ -133,9 +148,9 @@ export interface LocationNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    weather: string;
-    timeOfDay: string;
-    interiorExterior: "Интерьер" | "Экстерьер";
+    weather: LocationWeather;
+    timeOfDay: LocationTimeOfDay;
+    interiorExterior: InteriorExterior;
     damageLevel: number;
     coordinates: WGS84Coordinates;
     radiusKm: number;
@@ -166,7 +181,7 @@ export interface ClothingNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    season: string;
+    season: ClothingSeason;
     wear: number;
 }
 
@@ -193,7 +208,7 @@ export interface MusicNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    mood: string;
+    mood: MusicMood;
 }
 
 export interface ScriptNodeParams extends Record<string, unknown> {
@@ -201,7 +216,7 @@ export interface ScriptNodeParams extends Record<string, unknown> {
     name: string;
     photos: string[];
     photoIdx: number;
-    tone: string;
+    tone: ScriptTone;
 }
 
 export interface StoryboardNodeParams extends Record<string, unknown> {

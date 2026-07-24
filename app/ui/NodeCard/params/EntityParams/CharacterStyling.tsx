@@ -1,10 +1,11 @@
 import type { DropdownOption } from "../../../components/DropdownWithPreviews/DropdownWithPreviews.tsx";
+import type { Haircut, Tattoo, Accessory, CharacterClothingItem } from "../../../../types/enums.ts";
 
 // Character-only option data for DropdownWithPreviews — no Tabler icon
 // captures haircut/tattoo/clothing silhouettes precisely, so these use
 // hand-drawn SVG previews instead.
 
-export const haircutOptions: DropdownOption[] = [
+export const haircutOptions: (DropdownOption & { value: Haircut })[] = [
     {
         value: "Короткая",
         label: "Короткая",
@@ -95,7 +96,7 @@ export const haircutOptions: DropdownOption[] = [
     },
 ];
 
-export const tattooOptions: DropdownOption[] = [
+export const tattooOptions: (DropdownOption & { value: Tattoo })[] = [
     {
         value: "Нет",
         label: "Нет",
@@ -163,7 +164,7 @@ export const tattooOptions: DropdownOption[] = [
     },
 ];
 
-export const accessoryOptions: DropdownOption[] = [
+export const accessoryOptions: (DropdownOption & { value: Accessory })[] = [
     {
         value: "Нет",
         label: "Нет",
@@ -232,7 +233,7 @@ export const accessoryOptions: DropdownOption[] = [
     },
 ];
 
-export const clothingOptions: DropdownOption[] = [
+export const clothingOptions: (DropdownOption & { value: CharacterClothingItem })[] = [
     {
         value: "Пальто",
         label: "Пальто",

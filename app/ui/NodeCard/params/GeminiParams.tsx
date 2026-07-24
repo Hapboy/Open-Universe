@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { edgeInput } from "../../../core/graph.ts";
-import { GeminiService, type GeminiModelInfo } from "../../../core/services/gemini.ts";
+import { geminiApiClient } from "../../../core/api/index.ts";
+import type { GeminiModel } from "../../../core/api/gemini/dto.ts";
 import { WirableTextField, type EEP } from "./shared.tsx";
 import { SelectField } from "../../components/SelectField/SelectField.tsx";
 import { Select } from "../../components/Select/Select.tsx";
@@ -8,18 +9,18 @@ import { TextField } from "../../components/TextField/TextField.tsx";
 import { Switch } from "../../components/Switch/Switch.tsx";
 import sharedStyles from "../../../styles/shared.module.css";
 
-const FALLBACK_MODELS: GeminiModelInfo[] = [
+const FALLBACK_MODELS: GeminiModel[] = [
     { id: "gemini-flash-latest", displayName: "Gemini Flash (latest)" },
     { id: "gemini-2.5-flash", displayName: "Gemini 2.5 Flash" },
     { id: "gemini-2.5-pro", displayName: "Gemini 2.5 Pro" },
 ];
 
-function useGeminiModels(currentModel: string): GeminiModelInfo[] {
-    const [models, setModels] = useState<GeminiModelInfo[]>(FALLBACK_MODELS);
+function useGeminiModels(currentModel: string): GeminiModel[] {
+    const [models, setModels] = useState<GeminiModel[]>(FALLBACK_MODELS);
 
     useEffect(() => {
         let cancelled = false;
-        void GeminiService.listModels().then((list) => {
+        void geminiApiClient.listModels().then((list) => {
             if (!cancelled) setModels(list);
         });
         return () => {
@@ -33,7 +34,7 @@ function useGeminiModels(currentModel: string): GeminiModelInfo[] {
     return models;
 }
 
-function modelOptions(models: GeminiModelInfo[]) {
+function modelOptions(models: GeminiModel[]) {
     return models.map((m) => ({ value: m.id, label: m.displayName ?? m.id }));
 }
 
@@ -85,7 +86,7 @@ export function GeminiVisionParams({ node, params, edges, resolved, updateNodePa
     );
 }
 
-const IMAGEN_MODELS: GeminiModelInfo[] = [
+const IMAGEN_MODELS: GeminiModel[] = [
     { id: "imagen-4.0-generate-001", displayName: "Imagen 4" },
     { id: "imagen-4.0-ultra-generate-001", displayName: "Imagen 4 Ultra" },
     { id: "imagen-4.0-fast-generate-001", displayName: "Imagen 4 Fast" },
@@ -236,7 +237,7 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
     );
 }
 
-const VEO_MODELS: GeminiModelInfo[] = [
+const VEO_MODELS: GeminiModel[] = [
     { id: "veo-3.1-generate-preview", displayName: "Veo 3.1" },
     { id: "veo-3.1-fast-generate-preview", displayName: "Veo 3.1 Fast" },
     { id: "veo-3.1-lite-generate-preview", displayName: "Veo 3.1 Lite" },
@@ -328,7 +329,7 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
     );
 }
 
-const NANO_BANANA_MODELS: GeminiModelInfo[] = [
+const NANO_BANANA_MODELS: GeminiModel[] = [
     { id: "gemini-3.1-flash-image", displayName: "Nano Banana 2" },
     { id: "gemini-3-pro-image", displayName: "Nano Banana Pro" },
     { id: "gemini-2.5-flash-image", displayName: "Gemini 2.5 Flash Image" },
@@ -424,7 +425,7 @@ export function GeminiNanoBananaParams({
     );
 }
 
-const LYRIA_MODELS: GeminiModelInfo[] = [
+const LYRIA_MODELS: GeminiModel[] = [
     { id: "lyria-3-clip-preview", displayName: "Lyria 3 Clip" },
     { id: "lyria-3-pro-preview", displayName: "Lyria 3 Pro" },
 ];

@@ -1,15 +1,8 @@
 import cn from "classnames";
+import { STORY_PHASES, type StoryPhase } from "../../../types/enums.ts";
 import styles from "./StoryPhaseBeats.module.css";
 
-const storyPhases = [
-    { key: "exposition", label: "Экспозиция" },
-    { key: "inciting", label: "Завязка" },
-    { key: "rising", label: "Развитие" },
-    { key: "climax", label: "Кульминация" },
-    { key: "resolution", label: "Развязка" },
-] as const;
-
-export type StoryPhase = (typeof storyPhases)[number]["key"];
+export type { StoryPhase };
 
 export function StoryPhaseBeats({
     value,
@@ -22,7 +15,7 @@ export function StoryPhaseBeats({
         <div className={styles.storyBeatWrapper}>
             <div className={styles.beatProgressLine} />
             <div className={styles.beatSteps}>
-                {storyPhases.map((phase) => {
+                {STORY_PHASES.map((phase) => {
                     const isActive = value === phase.key;
                     return (
                         <div

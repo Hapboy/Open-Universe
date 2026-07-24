@@ -4,7 +4,9 @@ import { useUserContext } from "../../store/contexts/UserContext.tsx";
 import { useToastContext } from "../../store/contexts/ToastContext.tsx";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
 import { usePresetLibraryContext } from "../../store/contexts/PresetLibraryContext.tsx";
+import { useModalContext } from "../../store/contexts/ModalContext.tsx";
 import type { CurrentUser } from "../../types.ts";
+import { TEAM_SIDES, TEAM_ROLES, type TeamSide, type TeamRole } from "../../types/enums.ts";
 import { SelectField } from "../components/SelectField/SelectField.tsx";
 import { TextField } from "../components/TextField/TextField.tsx";
 import { collectLiveMediaRefs, listBlobIds, sweepUnusedBlobs } from "../../core/blobStore.ts";
@@ -16,34 +18,27 @@ function sideColor(side: string): string {
     return "var(--color-node-scene)";
 }
 
-// Open a modal by dispatching a custom event from Topbar buttons
-// (buttons use data-open-modal attribute handled here)
+const SIDE_LABELS: Record<TeamSide, string> = {
+    urvakan: "Urvakan (Авангард, музыкальные архивы)",
+    rambalkoshe: "Rambalkoshe (Визуальное искусство, модерн)",
+    moct: "Moct (Современная архитектура, мосты культур)",
+};
+
+const ROLE_LABELS: Record<TeamRole, string> = {
+    Режиссер: "Режиссер (Director)",
+    Разработчик: "Разработчик (Developer)",
+    Художник: "Художник (Artist)",
+    Стилист: "Стилист (Stylist)",
+};
+
 export function Modals() {
-    const { currentUser } = useUserContext();
-    // Show onboarding on first load
-    const [openModal, setOpenModal] = useState<"team" | "onboard" | "storage" | null>(() =>
-        currentUser ? null : "onboard",
-    );
-
-    useEffect(() => {
-        // Listen for topbar buttons that use data-open-modal
-        const handler = (e: MouseEvent) => {
-            const btn = (e.target as Element).closest("[data-open-modal]") as HTMLElement | null;
-            if (btn?.dataset.openModal) {
-                setOpenModal(btn.dataset.openModal as "team");
-            }
-        };
-        document.addEventListener("click", handler);
-        return () => document.removeEventListener("click", handler);
-    }, []);
-
-    const close = () => setOpenModal(null);
+    const { modalType, closeModal } = useModalContext();
 
     return (
         <>
-            {openModal === "onboard" && <OnboardModal onClose={close} />}
-            {openModal === "team" && <TeamModal onClose={close} />}
-            {openModal === "storage" && <StorageModal onClose={close} />}
+            {modalType === "onboard" && <OnboardModal onClose={closeModal} />}
+            {modalType === "team" && <TeamModal onClose={closeModal} />}
+            {modalType === "storage" && <StorageModal onClose={closeModal} />}
         </>
     );
 }
@@ -55,8 +50,8 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
     const { showToast } = useToastContext();
     const [name, setName] = useState("");
     const [charName, setCharName] = useState("");
-    const [side, setSide] = useState("urvakan");
-    const [role, setRole] = useState("Режиссер");
+    const [side, setSide] = useState<TeamSide>("urvakan");
+    const [role, setRole] = useState<TeamRole>("Режиссер");
 
     const handleRegister = () => {
         if (!name.trim() || !charName.trim()) {
@@ -96,29 +91,14 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
                     <SelectField
                         label="Фракция / сторона"
                         value={side}
-                        onChange={setSide}
-                        options={[
-                            { value: "urvakan", label: "Urvakan (Авангард, музыкальные архивы)" },
-                            {
-                                value: "rambalkoshe",
-                                label: "Rambalkoshe (Визуальное искусство, модерн)",
-                            },
-                            {
-                                value: "moct",
-                                label: "Moct (Современная архитектура, мосты культур)",
-                            },
-                        ]}
+                        onChange={(v) => setSide(v as TeamSide)}
+                        options={TEAM_SIDES.map((value) => ({ value, label: SIDE_LABELS[value] }))}
                     />
                     <SelectField
                         label="Роль во вселенной"
                         value={role}
-                        onChange={setRole}
-                        options={[
-                            { value: "Режиссер", label: "Режиссер (Director)" },
-                            { value: "Разработчик", label: "Разработчик (Developer)" },
-                            { value: "Художник", label: "Художник (Artist)" },
-                            { value: "Стилист", label: "Стилист (Stylist)" },
-                        ]}
+                        onChange={(v) => setRole(v as TeamRole)}
+                        options={TEAM_ROLES.map((value) => ({ value, label: ROLE_LABELS[value] }))}
                     />
                     <br />
                     <button className={cn(styles.btn, styles.pri)} onClick={handleRegister}>

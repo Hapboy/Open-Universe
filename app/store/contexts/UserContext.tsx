@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useState } from "react";
 import type { CurrentUser, TeamMember } from "../../types.ts";
-import { readJSON, writeJSON } from "../../core/browserStorage.ts";
+import { readJSON, removeKey, writeJSON } from "../../core/browserStorage.ts";
 
 const CURRENT_USER_KEY = "hv_current_user";
 
@@ -13,6 +13,7 @@ const INITIAL_TEAM: TeamMember[] = [
 interface UserCtx {
     currentUser: CurrentUser | null;
     setCurrentUser: (u: CurrentUser) => void;
+    clearCurrentUser: () => void;
     team: TeamMember[];
 }
 
@@ -29,7 +30,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setCurrentUserBase(u);
     }, []);
 
-    const ctx: UserCtx = { currentUser, setCurrentUser, team: INITIAL_TEAM };
+    // Added for AuthContext's signOut — nothing in the app called this
+    // before, since there was no concept of "logged out" once onboarded.
+    const clearCurrentUser = useCallback(() => {
+        removeKey(CURRENT_USER_KEY);
+        setCurrentUserBase(null);
+    }, []);
+
+    const ctx: UserCtx = { currentUser, setCurrentUser, clearCurrentUser, team: INITIAL_TEAM };
 
     return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>;
 }

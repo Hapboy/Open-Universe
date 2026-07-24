@@ -2,12 +2,14 @@ import cn from "classnames";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
 import { usePwaContext } from "../../store/contexts/PwaContext.tsx";
 import { useUserContext } from "../../store/contexts/UserContext.tsx";
+import { useModalContext } from "../../store/contexts/ModalContext.tsx";
 import { useFullscreenToggle } from "../hooks/useFullscreenToggle.ts";
 import styles from "./Topbar.module.css";
 
 export function Topbar() {
     const { executeGraph } = useGraphContext();
     const { deferredInstallPrompt, setDeferredInstallPrompt } = usePwaContext();
+    const { openModal } = useModalContext();
     const toggleFullscreen = useFullscreenToggle(() => document.getElementById("app"));
 
     const handleInstall = async () => {
@@ -30,7 +32,7 @@ export function Topbar() {
             <div className={styles.iconGroup}>
                 <button
                     className={styles.iconBtn}
-                    data-open-modal="storage"
+                    onClick={() => openModal("storage")}
                     title="Локальное хранилище">
                     <i className="ti ti-database" />
                 </button>
@@ -62,8 +64,9 @@ export function Topbar() {
 
 function TeamButton() {
     const { team } = useUserContext();
+    const { openModal } = useModalContext();
     return (
-        <button className={styles.tb} id="btnTeam" data-open-modal="team">
+        <button className={styles.tb} id="btnTeam" onClick={() => openModal("team")}>
             <i className="ti ti-users-group" />
             <span>Команда</span>
             <b>{team.length + 1}</b>

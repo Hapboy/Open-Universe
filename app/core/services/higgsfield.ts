@@ -1,4 +1,6 @@
 import { DEFAULT_PINS } from "../../data/presets.ts";
+import type { HiggsfieldJobStatus } from "../../types/enums.ts";
+import { getClientSideKey } from "../api/env.ts";
 
 type ShowToast = (msg: string) => void;
 
@@ -8,7 +10,7 @@ interface HFJob {
     request_id: string;
 }
 interface HFStatus {
-    status: "queued" | "in_progress" | "completed" | "failed" | "nsfw";
+    status: HiggsfieldJobStatus;
     images?: { url: string }[];
     video?: { url: string };
 }
@@ -39,7 +41,7 @@ export const HiggsfieldService = {
         faceRefUrl: string | null,
         showToast: ShowToast,
     ): Promise<string> {
-        const key = (import.meta.env.VITE_HIGGSFIELD_KEY as string) ?? "";
+        const key = getClientSideKey("VITE_HIGGSFIELD_KEY");
         if (!key) {
             showToast("Higgsfield Soul: Кадр сгенерирован (симуляция)");
             return faceRefUrl || DEFAULT_PINS[1].image;
@@ -76,7 +78,7 @@ export const HiggsfieldService = {
         preset: string,
         showToast: ShowToast,
     ): Promise<string | null> {
-        const key = (import.meta.env.VITE_HIGGSFIELD_KEY as string) ?? "";
+        const key = getClientSideKey("VITE_HIGGSFIELD_KEY");
         if (!key || !frameUrl) {
             showToast(`Higgsfield Motion: Пресет «${preset}» применен (симуляция)`);
             return frameUrl;

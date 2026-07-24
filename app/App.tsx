@@ -1,6 +1,7 @@
 import cn from "classnames";
 import { AppProviders } from "./store/AppProviders.tsx";
 import { useGraphContext } from "./store/contexts/GraphContext.tsx";
+import { hasClientSideKey } from "./core/api/env.ts";
 import { Topbar } from "./ui/Topbar/Topbar.tsx";
 import { NodeEditor } from "./ui/NodeEditor/NodeEditor.tsx";
 import { Timeline } from "./ui/Timeline/Timeline.tsx";
@@ -44,9 +45,9 @@ function AppShell() {
 function StatusBar() {
     const { nodes, selectedNodeId } = useGraphContext();
     const sel = nodes.find((n) => n.id === selectedNodeId);
-    const hfLive = !!(import.meta.env.VITE_HIGGSFIELD_KEY as string);
-    const pinLive = !!(import.meta.env.VITE_PINTEREST_TOKEN as string);
-    const geminiLive = !!(import.meta.env.VITE_GEMINI_KEY as string);
+    const hfLive = hasClientSideKey("VITE_HIGGSFIELD_KEY");
+    const pinLive = hasClientSideKey("VITE_PINTEREST_TOKEN");
+    const geminiLive = hasClientSideKey("VITE_GEMINI_KEY");
     return (
         <>
             <span id="statJobs">очередь: 0</span>

@@ -1,17 +1,11 @@
 import { DEFAULT_PINS } from "./presets.ts";
-import type { Port, PortType } from "../types.ts";
-
-const PORT_TYPES = {
-    IMAGE: "Image" as PortType,
-    VIDEO: "Video" as PortType,
-    AUDIO: "Audio" as PortType,
-    TEXT: "Text" as PortType,
-};
+import type { Port } from "../types.ts";
+import { PORT_TYPES, type NodeType } from "../types/enums.ts";
 
 // Node types that call a paid AI generation service (GeminiService /
 // HiggsfieldService) — these get a per-node Run button instead of
 // auto-executing on every param change.
-export const AI_MODEL_NODE_TYPES = [
+export const AI_MODEL_NODE_TYPES: readonly NodeType[] = [
     "gemini_text",
     "gemini_vision",
     "gemini_imagen",
@@ -26,12 +20,16 @@ export const AI_MODEL_NODE_TYPES = [
 // Entity node types with the "rich" editing UI: a toggleable prompt column
 // for additionalDescription, and Description/JSON output pins (instead of a
 // plain selectedItem passthrough).
-export const RICH_ENTITY_NODE_TYPES = new Set(["character", "location", "mise_en_scene"]);
+export const RICH_ENTITY_NODE_TYPES: Set<NodeType> = new Set([
+    "character",
+    "location",
+    "mise_en_scene",
+]);
 
 // All entity node types with a preset (`DatabaseSelect`) dropdown — the
 // shared source of truth for both the "selectedItem passthrough" fallback
 // and the photo-gallery gating in core/graph.ts and GraphContext.tsx.
-export const ENTITY_NODE_TYPES = new Set([
+export const ENTITY_NODE_TYPES: Set<NodeType> = new Set([
     "character",
     "location",
     "building",
@@ -46,7 +44,7 @@ export const ENTITY_NODE_TYPES = new Set([
 ]);
 
 export interface NodeTemplate {
-    type: string;
+    type: NodeType;
     label: string;
     icon: string;
     color: string;
@@ -55,7 +53,7 @@ export interface NodeTemplate {
     params: Record<string, unknown>;
 }
 
-export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
+export const NODE_TEMPLATES = {
     pinterest_board: {
         type: "pinterest_board",
         label: "Pinterest Доска",
@@ -268,6 +266,7 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             { name: "JSON", type: PORT_TYPES.TEXT },
         ],
         params: {
+            id: "",
             selectedItem: "Ара Гехецик",
             name: "Ара Гехецик",
             inFrame: true,
@@ -468,10 +467,10 @@ export const NODE_TEMPLATES: Record<string, NodeTemplate> = {
             inFrame: false,
         },
     },
-};
+} satisfies Record<NodeType, NodeTemplate>;
 
 // Ordered list for NodeBrowser display
-export const NODE_BROWSER_GROUPS: { label: string; types: string[] }[] = [
+export const NODE_BROWSER_GROUPS: { label: string; types: NodeType[] }[] = [
     {
         label: "Сущности",
         types: ["character", "location", "building", "clothing", "artwork", "furniture"],

@@ -1,7 +1,8 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeParams } from "../types.ts";
+import type { SceneOutputType } from "../types/enums.ts";
 import type { SceneNarrativeSettings } from "../store/contexts/NarrativeContext.tsx";
-import { GeminiService, HiggsfieldService } from "./services/index.ts";
+import { geminiApiClient, higgsfieldApiClient } from "./api/index.ts";
 import { AI_MODEL_NODE_TYPES, ENTITY_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "../data/nodes.ts";
 import { resolveMediaRef } from "./blobStore.ts";
 import { photoPortId } from "./characterPorts.ts";
@@ -29,6 +30,13 @@ export function edgeInput(
 // Computes a single node's output value. Returns undefined when the node
 // type produces nothing yet (unmet dependency, or the underlying service call
 // yielded no result) — callers should leave `resolved` untouched in that case.
+//
+// Deliberately not a switch/exhaustive over NodeType: most entity types
+// (building, clothing, artwork, furniture, storyboard, transport, ...) have
+// no AI computation and are meant to fall through to `return undefined` —
+// that's correct behavior, not a missing case. The `ENTITY_NODE_TYPES &&
+// !RICH_ENTITY_NODE_TYPES` guard is also interleaved between literal
+// branches by priority, which a switch can't express as cleanly.
 async function computeNodeOutput(
     node: Node<NodeParams>,
     edges: Edge[],
@@ -58,36 +66,47 @@ async function computeNodeOutput(
         const prompt = edgeInput(d, edges, resolved, 1);
         const faceVal = (face.wired ? face.value : null) as string | null;
         const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string;
-        return await HiggsfieldService.runSoul(promptVal, faceVal, showToast);
+        return await higgsfieldApiClient.runSoul(
+            { prompt: promptVal, faceRefUrl: faceVal },
+            showToast,
+        );
     } else if (d.nodeType === "higgsfield_camera") {
         const input = edgeInput(d, edges, resolved, 0);
         const val = (input.wired ? input.value : null) as string | null;
-        return await HiggsfieldService.runMotion(val, d.params.motionPreset as string, showToast);
+        return await higgsfieldApiClient.runMotion(
+            { frameUrl: val, preset: d.params.motionPreset as string },
+            showToast,
+        );
     } else if (ENTITY_NODE_TYPES.has(d.nodeType) && !RICH_ENTITY_NODE_TYPES.has(d.nodeType)) {
         return d.params.selectedItem;
     } else if (d.nodeType === "gemini_text") {
         const prompt = edgeInput(d, edges, resolved, 0);
         const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string;
-        return await GeminiService.runText(promptVal || "", showToast, d.params.model as string);
+        return await geminiApiClient.generateText(
+            { prompt: promptVal || "", model: d.params.model as string },
+            showToast,
+        );
     } else if (d.nodeType === "gemini_vision") {
         const img = edgeInput(d, edges, resolved, 0);
         const query = edgeInput(d, edges, resolved, 1);
         const imgVal = (img.wired ? img.value : null) as string | null;
         const queryVal = (query.wired ? query.value : d.params.query) as string;
         if (!imgVal) return undefined;
-        return await GeminiService.runVision(
-            imgVal,
-            queryVal || "Describe this scene",
+        return await geminiApiClient.generateVision(
+            {
+                imageUrl: imgVal,
+                query: queryVal || "Describe this scene",
+                model: d.params.model as string,
+            },
             showToast,
-            d.params.model as string,
         );
     } else if (d.nodeType === "gemini_imagen") {
         const prompt = edgeInput(d, edges, resolved, 0);
         const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string;
         const toNum = (v: unknown) => (v === "" || v == null ? undefined : Number(v));
-        return await GeminiService.runImagen(
-            promptVal || "",
+        return await geminiApiClient.generateImage(
             {
+                prompt: promptVal || "",
                 aspectRatio: (d.params.aspectRatio as string) ?? "16:9",
                 model: d.params.model as string,
                 resolution: d.params.resolution as string,
@@ -105,10 +124,10 @@ async function computeNodeOutput(
         const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string;
         const img = edgeInput(d, edges, resolved, 1);
         const imgVal = (img.wired ? img.value : null) as string | null;
-        return await GeminiService.runVeo(
-            promptVal || "",
-            imgVal,
+        return await geminiApiClient.generateVideo(
             {
+                prompt: promptVal || "",
+                imageUrl: imgVal,
                 model: d.params.model as string,
                 aspectRatio: (d.params.aspectRatio as string) ?? "16:9",
                 resolution: (d.params.resolution as string) ?? "720p",
@@ -128,10 +147,10 @@ async function computeNodeOutput(
             .filter((img) => img.wired && img.value != null)
             .map((img) => img.value as string);
         const toNum = (v: unknown) => (v === "" || v == null ? undefined : Number(v));
-        return await GeminiService.runNanoBanana(
-            promptVal || "",
-            imageUrls,
+        return await geminiApiClient.generateImageFromRefs(
             {
+                prompt: promptVal || "",
+                imageUrls,
                 model: d.params.model as string,
                 aspectRatio: d.params.aspectRatio as string,
                 imageSize: d.params.imageSize as string,
@@ -143,15 +162,21 @@ async function computeNodeOutput(
         const prompt = edgeInput(d, edges, resolved, 0);
         const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string;
         const toNum = (v: unknown) => (v === "" || v == null ? undefined : Number(v));
-        return await GeminiService.runLyria(
-            promptVal || "",
-            { model: d.params.model as string, seed: toNum(d.params.seed) },
+        return await geminiApiClient.generateAudio(
+            {
+                prompt: promptVal || "",
+                model: d.params.model as string,
+                seed: toNum(d.params.seed),
+            },
             showToast,
         );
     } else if (d.nodeType === "higgsfield_speak") {
         const input = edgeInput(d, edges, resolved, 0);
         const val = (input.wired ? input.value : null) as string | null;
-        return await HiggsfieldService.runSpeak(val, d.params.expression as string, showToast);
+        return await higgsfieldApiClient.runSpeak(
+            { avatarUrl: val, speechText: d.params.expression as string },
+            showToast,
+        );
     }
 
     return undefined;
@@ -207,7 +232,7 @@ function computeOutputSceneExtraOutputs(
 
 export interface SceneOutput {
     url: string;
-    type: "video" | "image";
+    type: SceneOutputType;
 }
 
 // The scene's actual output: whatever is wired into the `output_scene`

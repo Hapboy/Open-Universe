@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import cn from "classnames";
 import { NODE_TEMPLATES, NODE_BROWSER_GROUPS } from "../../data/nodes.ts";
+import type { NodeType } from "../../types/enums.ts";
 import { CategoryTagGroup } from "../components/CategoryTagGroup/CategoryTagGroup.tsx";
 import { SearchField } from "../components/SearchField/SearchField.tsx";
 import styles from "./NodeBrowser.module.css";
@@ -14,7 +15,7 @@ export function NodeBrowser({
     onClose,
 }: {
     screenPos: { x: number; y: number };
-    onSelect: (type: string) => void;
+    onSelect: (type: NodeType) => void;
     onClose: () => void;
 }) {
     const [query, setQuery] = useState("");
