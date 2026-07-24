@@ -353,13 +353,40 @@
     display: block;
 }
 
-.canvasLegend {
+.synapseChips {
     position: absolute;
     bottom: 6px;
     left: 12px;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    max-width: calc(100% - 24px);
+}
+
+.synapseChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--color-border);
+    background: rgba(20, 19, 16, 0.7);
+    color: var(--color-text-secondary);
     font-size: 9px;
-    color: var(--color-text-tertiary);
-    pointer-events: none;
+    line-height: 1;
+    padding: 3px 7px;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.synapseChipActive {
+    border-color: var(--color-bg-accent);
+    color: var(--color-text-primary);
+}
+
+.synapseChipDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 
 /* Tab 3: Narrative settings UI wrapper styling (Scene Arc) — only the

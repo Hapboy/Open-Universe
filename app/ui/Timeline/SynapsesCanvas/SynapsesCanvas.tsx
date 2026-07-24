@@ -1,18 +1,24 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import cn from "classnames";
 import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
 import type { TimelineScene } from "../../../types.ts";
+import { deriveCharacterPresence, groupScenesByStart } from "./synapseData.ts";
 import styles from "../Timeline.module.css";
 
-// Illustrative character-lane data for this "Synapses of Fates" view — not
-// yet derived from the actual Character/Location nodes in the graph. Wiring
-// it to real per-scene node data is a follow-up, not part of this pass.
-const CHAR_LANES = [
-    { name: "Ара Гехецик", color: "#EF9F27", slots: [2, 1, 1, 2, 3, 2, 1, 2] },
-    { name: "Анаит", color: "#D4537E", slots: [0, 1, 2, 2, 1, 2, 0, 2] },
-    { name: "Вардан", color: "#5DCAA5", slots: [4, 3, 1, 2, 3, 2, 4, 2] },
-    { name: "Цовинар", color: "#85B7EB", slots: [3, 4, 4, 2, 0, 2, 3, 2] },
-    { name: "Вреж · dev", color: "#AFA9EC", slots: [1, 0, 3, 4, 4, 2, 1, 2] },
-];
+const PADDING_LEFT = 60;
+const PADDING_RIGHT = 60;
+const PADDING_TOP = 20;
+const PADDING_BOTTOM = 20;
+// Distance of the track-1/track-2 rows from the padded top/bottom edges —
+// fixed regardless of how many characters exist, since position is now
+// purely a function of (column, track), not of character identity.
+const ROW_INSET = 18;
+
+// A pure function of H only, so it can live outside the component.
+const rowY = (H: number) => ({
+    1: PADDING_TOP + ROW_INSET,
+    2: H - PADDING_BOTTOM - ROW_INSET,
+});
 
 interface SynapsesCanvasProps {
     scenes: TimelineScene[];
@@ -35,8 +41,24 @@ export function SynapsesCanvas({
     totalPackedDuration,
     packedStarts,
 }: SynapsesCanvasProps) {
-    const { setActiveSceneId } = useGraphContext();
+    const { setActiveSceneId, allSceneGraphs } = useGraphContext();
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [followKey, setFollowKey] = useState<string | null>(null);
+
+    const columns = useMemo(() => groupScenesByStart(scenes), [scenes]);
+    const { characters, presenceByScene } = useMemo(
+        () => deriveCharacterPresence(scenes, allSceneGraphs),
+        [scenes, allSceneGraphs],
+    );
+
+    const colX = useCallback(
+        (W: number) => {
+            const width =
+                columns.length > 1 ? (W - PADDING_LEFT - PADDING_RIGHT) / (columns.length - 1) : 0;
+            return columns.map((_, i) => PADDING_LEFT + i * width);
+        },
+        [columns],
+    );
 
     useEffect(() => {
         if (!canvasRef.current) return;
@@ -57,97 +79,108 @@ export function SynapsesCanvas({
         handleResize();
         window.addEventListener("resize", handleResize);
 
+        const byKey = new Map(characters.map((c) => [c.key, c]));
+
         const draw = () => {
             const W = canvas.clientWidth;
             const H = canvas.clientHeight;
             ctx.clearRect(0, 0, W, H);
 
-            // Grid/Columns geometry
-            const colCount = scenes.length;
-            const paddingLeft = 60;
-            const paddingRight = 60;
-            const colWidth = (W - paddingLeft - paddingRight) / (colCount - 1);
-            const colX = scenes.map((_, i) => paddingLeft + i * colWidth);
+            const xs = colX(W);
+            const ys = rowY(H);
+            // sceneId -> merge point on the canvas — every character present
+            // in that scene shares this exact coordinate, which is what
+            // makes their threads visually converge there.
+            const points: Record<string, { x: number; y: number }> = {};
+            columns.forEach((col, i) => {
+                if (col.byTrack[1]) points[col.byTrack[1].id] = { x: xs[i], y: ys[1] };
+                if (col.byTrack[2]) points[col.byTrack[2].id] = { x: xs[i], y: ys[2] };
+            });
 
-            const lanesCount = 5;
-            const paddingTop = 20;
-            const paddingBottom = 20;
-            const laneHeight = (H - paddingTop - paddingBottom) / (lanesCount - 1);
-            const laneY = Array.from({ length: lanesCount }, (_, i) => paddingTop + i * laneHeight);
-
-            // Draw columns and location texts
+            // Draw columns and scene-number labels — a column holds up to 2
+            // scenes (track 1 + track 2, sharing a start time); label joins
+            // both when it's a parallel pair.
             ctx.save();
             ctx.font = "9px system-ui, sans-serif";
-            ctx.fillStyle = "rgba(241, 239, 232, 0.4)";
             ctx.textAlign = "center";
-            scenes.forEach((s, i) => {
-                ctx.strokeStyle =
-                    s.id === activeSceneId
-                        ? "rgba(239, 159, 39, 0.25)"
-                        : "rgba(241, 239, 232, 0.08)";
-                ctx.lineWidth = s.id === activeSceneId ? 2 : 1;
+            columns.forEach((col, i) => {
+                const isActiveCol =
+                    !!activeSceneId &&
+                    (col.byTrack[1]?.id === activeSceneId || col.byTrack[2]?.id === activeSceneId);
+                ctx.strokeStyle = isActiveCol
+                    ? "rgba(239, 159, 39, 0.25)"
+                    : "rgba(241, 239, 232, 0.08)";
+                ctx.lineWidth = isActiveCol ? 2 : 1;
                 ctx.beginPath();
-                ctx.moveTo(colX[i], paddingTop - 5);
-                ctx.lineTo(colX[i], H - paddingBottom + 5);
+                ctx.moveTo(xs[i], PADDING_TOP - 5);
+                ctx.lineTo(xs[i], H - PADDING_BOTTOM + 5);
                 ctx.stroke();
 
-                ctx.fillStyle =
-                    s.id === activeSceneId
-                        ? "var(--color-bg-accent)"
-                        : "var(--color-text-secondary)";
-                ctx.fillText(s.num, colX[i], paddingTop - 8);
+                ctx.fillStyle = isActiveCol
+                    ? "var(--color-bg-accent)"
+                    : "var(--color-text-secondary)";
+                const label = [col.byTrack[1]?.num, col.byTrack[2]?.num].filter(Boolean).join("·");
+                ctx.fillText(label, xs[i], PADDING_TOP - 8);
             });
             ctx.restore();
 
-            // Character lifepaths (Threads)
-            CHAR_LANES.forEach((c) => {
+            // Character lifepaths (Threads) — only through scenes they
+            // actually appear in, via each scene's shared merge point; the
+            // bezier naturally skips over absences and converges wherever
+            // characters share a scene.
+            characters.forEach((c) => {
+                const cxs: number[] = [];
+                const cys: number[] = [];
+                scenes.forEach((s) => {
+                    if (!presenceByScene[s.id]?.includes(c.key)) return;
+                    const p = points[s.id];
+                    if (!p) return;
+                    cxs.push(p.x);
+                    cys.push(p.y);
+                });
+                if (cxs.length < 2) return;
+
+                const followed = !followKey || followKey === c.key;
                 ctx.save();
-                ctx.lineWidth = 2.0;
+                ctx.lineWidth = followed ? 2.4 : 1.2;
                 ctx.strokeStyle = c.color;
-                ctx.globalAlpha = 0.8;
+                ctx.globalAlpha = followed ? 0.85 : 0.15;
                 ctx.shadowColor = c.color;
-                ctx.shadowBlur = 6;
+                ctx.shadowBlur = followed ? 8 : 0;
 
                 ctx.beginPath();
-                let isFirst = true;
-                scenes.forEach((_, idx) => {
-                    const slot = c.slots[idx % c.slots.length];
-                    const x = colX[idx];
-                    const y = laneY[slot];
-                    if (isFirst) {
-                        ctx.moveTo(x, y);
-                        isFirst = false;
-                    } else {
-                        const prevX = colX[idx - 1];
-                        const prevSlot = c.slots[(idx - 1) % c.slots.length];
-                        const prevY = laneY[prevSlot];
-                        const mx = (prevX + x) / 2;
-                        ctx.bezierCurveTo(mx, prevY, mx, y, x, y);
-                    }
-                });
+                ctx.moveTo(cxs[0], cys[0]);
+                for (let i = 1; i < cxs.length; i++) {
+                    const mx = (cxs[i - 1] + cxs[i]) / 2;
+                    ctx.bezierCurveTo(mx, cys[i - 1], mx, cys[i], cxs[i], cys[i]);
+                }
                 ctx.stroke();
                 ctx.restore();
             });
 
-            // Synapse intersections (⬤ Nodes)
+            // Synapse merge points (⬤) — one ring per character actually
+            // present in that scene, concentric around the scene's shared
+            // point, plus a center dot sized by how many characters meet
+            // there.
             scenes.forEach((s, idx) => {
-                const x = colX[idx];
-                const charAtScene = CHAR_LANES.filter(
-                    (c) => c.slots[idx % c.slots.length] !== undefined,
-                );
+                const p = points[s.id];
+                if (!p) return;
+                const { x, y } = p;
+                const keysHere = presenceByScene[s.id] ?? [];
                 const isCurrentScene = s.id === activeSceneId;
                 const pulse = Math.sin(Date.now() / 250 + idx) * 1.2;
 
-                charAtScene.forEach((c, j) => {
-                    const slot = c.slots[idx % c.slots.length];
-                    const y = laneY[slot];
+                keysHere.forEach((key, j) => {
+                    const c = byKey.get(key);
+                    if (!c) return;
+                    const followed = !followKey || followKey === key;
                     ctx.save();
                     ctx.beginPath();
                     ctx.arc(x, y, 5 + pulse + j * 1.5, 0, Math.PI * 2);
                     ctx.strokeStyle = c.color;
                     ctx.lineWidth = 1.6;
-                    ctx.globalAlpha = isCurrentScene ? 1.0 : 0.35;
-                    if (isCurrentScene) {
+                    ctx.globalAlpha = followed ? (isCurrentScene ? 1.0 : 0.35) : 0.1;
+                    if (isCurrentScene && followed) {
                         ctx.shadowColor = c.color;
                         ctx.shadowBlur = 8;
                     }
@@ -155,13 +188,13 @@ export function SynapsesCanvas({
                     ctx.restore();
                 });
 
-                // Central glowing core
-                const firstSlot = CHAR_LANES[0].slots[idx % CHAR_LANES[0].slots.length];
-                const centerY = laneY[firstSlot];
+                if (keysHere.length === 0) return;
+                const anyFollowed = !followKey || keysHere.includes(followKey);
                 ctx.save();
                 ctx.beginPath();
-                ctx.arc(x, centerY, 3.5, 0, Math.PI * 2);
+                ctx.arc(x, y, 2.5 + keysHere.length * 0.8, 0, Math.PI * 2);
                 ctx.fillStyle = isCurrentScene ? "#ef9f27" : "#e8e4d8";
+                ctx.globalAlpha = anyFollowed ? 1 : 0.15;
                 ctx.shadowColor = "#fff";
                 ctx.shadowBlur = isCurrentScene ? 12 : 3;
                 ctx.fill();
@@ -171,13 +204,13 @@ export function SynapsesCanvas({
             // Render vertical playback playhead line
             const maxTime = collapseEmptySpace ? totalPackedDuration : totalDuration;
             const scrubberX =
-                paddingLeft + (currentTime / maxTime) * (W - paddingLeft - paddingRight);
+                PADDING_LEFT + (currentTime / maxTime) * (W - PADDING_LEFT - PADDING_RIGHT);
             ctx.save();
             ctx.strokeStyle = "#ef9f27";
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.moveTo(scrubberX, paddingTop - 8);
-            ctx.lineTo(scrubberX, H - paddingBottom + 8);
+            ctx.moveTo(scrubberX, PADDING_TOP - 8);
+            ctx.lineTo(scrubberX, H - PADDING_BOTTOM + 8);
             ctx.stroke();
             ctx.restore();
 
@@ -197,45 +230,77 @@ export function SynapsesCanvas({
         totalPackedDuration,
         activeSceneId,
         scenes,
+        columns,
+        characters,
+        presenceByScene,
+        followKey,
+        colX,
     ]);
 
     const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!canvasRef.current) return;
         const rect = canvasRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
-        const W = rect.width;
-        const paddingLeft = 60;
-        const paddingRight = 60;
-        const colWidth = (W - paddingLeft - paddingRight) / (scenes.length - 1);
+        const y = e.clientY - rect.top;
+        const xs = colX(rect.width);
+        const ys = rowY(rect.height);
 
         let closestIdx = 0;
         let minDiff = Infinity;
-        scenes.forEach((_, idx) => {
-            const colX = paddingLeft + idx * colWidth;
-            const diff = Math.abs(x - colX);
+        xs.forEach((cx, idx) => {
+            const diff = Math.abs(x - cx);
             if (diff < minDiff) {
                 minDiff = diff;
                 closestIdx = idx;
             }
         });
+        if (minDiff >= 40) return;
 
-        if (minDiff < 40) {
-            const targetScene = scenes[closestIdx];
-            setActiveSceneId(targetScene.id);
-            setCurrentTime(
-                collapseEmptySpace ? packedStarts[targetScene.start] : targetScene.start,
-            );
-        }
+        const col = columns[closestIdx];
+        const candidates = [col.byTrack[1], col.byTrack[2]].filter((s): s is TimelineScene => !!s);
+        if (candidates.length === 0) return;
+
+        const target =
+            candidates.length === 1
+                ? candidates[0]
+                : Math.abs(y - ys[1]) <= Math.abs(y - ys[2])
+                  ? col.byTrack[1]!
+                  : col.byTrack[2]!;
+
+        setActiveSceneId(target.id);
+        setCurrentTime(collapseEmptySpace ? packedStarts[target.start] : target.start);
     };
 
     return (
         <div className={styles.canvasWrapper}>
             <canvas ref={canvasRef} onClick={handleCanvasClick} className={styles.synapsesCanvas} />
-            <div className={styles.canvasLegend}>
-                <span>
-                    ⬤ синапс (пересечение линий судеб персонажей) · кликни на синапс для перехода
-                </span>
-            </div>
+
+            {characters.length > 0 && (
+                <div className={styles.synapseChips}>
+                    <button
+                        type="button"
+                        className={cn(styles.synapseChip, !followKey && styles.synapseChipActive)}
+                        onClick={() => setFollowKey(null)}>
+                        Все линии
+                    </button>
+                    {characters.map((c) => (
+                        <button
+                            key={c.key}
+                            type="button"
+                            className={cn(
+                                styles.synapseChip,
+                                followKey === c.key && styles.synapseChipActive,
+                            )}
+                            onClick={() => setFollowKey(followKey === c.key ? null : c.key)}>
+                            <span
+                                className={styles.synapseChipDot}
+                                style={{ background: c.color }}
+                            />
+                            {c.name}
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
