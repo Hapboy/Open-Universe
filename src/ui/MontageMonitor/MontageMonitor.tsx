@@ -8,7 +8,10 @@ export function MontageMonitor() {
     const { scenes, sceneOutputs, showMontageMonitor, setShowMontageMonitor } = useGraphContext();
     const { playingSceneId, playingSceneRelativeTime, isPlaying } = usePlayerContext();
 
-    const [position, setPosition] = useState({ x: window.innerWidth - 460, y: 80 });
+    const [position, setPosition] = useState(() => ({
+        x: typeof window !== "undefined" ? window.innerWidth - 460 : 0,
+        y: 80,
+    }));
     const [size] = useState({ width: 420, height: 280 });
     const dragRef = useRef({ isDragging: false, startX: 0, startY: 0, startPos: { x: 0, y: 0 } });
     const dragAbortRef = useRef<AbortController | null>(null);

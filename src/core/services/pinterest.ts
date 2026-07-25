@@ -11,7 +11,7 @@ export const PinterestService = {
             { id: "board_kond", name: "Конд Архитектура" },
             { id: "board_taraz", name: "Тараз & Одежда" },
         ];
-        const token = getClientSideKey("VITE_PINTEREST_TOKEN");
+        const token = getClientSideKey("NEXT_PUBLIC_PINTEREST_TOKEN");
         if (!token) return MOCK;
         try {
             showToast("Загрузка досок Pinterest...");
@@ -28,7 +28,7 @@ export const PinterestService = {
     },
 
     async fetchPins(boardId: string): Promise<PinItem[]> {
-        const token = getClientSideKey("VITE_PINTEREST_TOKEN");
+        const token = getClientSideKey("NEXT_PUBLIC_PINTEREST_TOKEN");
         if (!token || !boardId || boardId.startsWith("mock_")) {
             if (boardId === "board_kond")
                 return [

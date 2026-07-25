@@ -73,11 +73,11 @@ let modelsCache: GeminiModelInfo[] | null = null;
 
 export const GeminiService = {
     _ai() {
-        return new GoogleGenAI({ apiKey: getClientSideKey("VITE_GEMINI_KEY") });
+        return new GoogleGenAI({ apiKey: getClientSideKey("NEXT_PUBLIC_GEMINI_KEY") });
     },
 
     async listModels(): Promise<GeminiModelInfo[]> {
-        if (!hasClientSideKey("VITE_GEMINI_KEY")) return FALLBACK_MODELS;
+        if (!hasClientSideKey("NEXT_PUBLIC_GEMINI_KEY")) return FALLBACK_MODELS;
         if (modelsCache) return modelsCache;
         try {
             const pager = await GeminiService._ai().models.list({ config: { pageSize: 100 } });
@@ -99,7 +99,7 @@ export const GeminiService = {
         showToast: ShowToast,
         model: string = DEFAULT_MODEL,
     ): Promise<string | null> {
-        if (!hasClientSideKey("VITE_GEMINI_KEY")) {
+        if (!hasClientSideKey("NEXT_PUBLIC_GEMINI_KEY")) {
             showToast("Gemini Text: mock режим");
             return `[Gemini mock] ${prompt}`;
         }
@@ -124,7 +124,7 @@ export const GeminiService = {
         showToast: ShowToast,
         model: string = DEFAULT_MODEL,
     ): Promise<string | null> {
-        if (!hasClientSideKey("VITE_GEMINI_KEY")) {
+        if (!hasClientSideKey("NEXT_PUBLIC_GEMINI_KEY")) {
             showToast("Gemini Vision: mock режим");
             return "[Gemini mock] Scene with Armenian aesthetic, warm light, cinematic composition.";
         }
@@ -157,7 +157,7 @@ export const GeminiService = {
         options: ImagenOptions,
         showToast: ShowToast,
     ): Promise<string | null> {
-        if (!hasClientSideKey("VITE_GEMINI_KEY")) {
+        if (!hasClientSideKey("NEXT_PUBLIC_GEMINI_KEY")) {
             showToast("Imagen 4: mock режим");
             return null;
         }
@@ -215,7 +215,7 @@ export const GeminiService = {
         options: VeoOptions,
         showToast: ShowToast,
     ): Promise<string | null> {
-        if (!hasClientSideKey("VITE_GEMINI_KEY")) {
+        if (!hasClientSideKey("NEXT_PUBLIC_GEMINI_KEY")) {
             showToast("Veo: mock режим");
             return null;
         }
@@ -259,7 +259,7 @@ export const GeminiService = {
                 // ai.files.download() is Node-only; in the browser the file URI must be
                 // fetched directly with the API key appended, per the SDK's own doc comment.
                 const sep = video.uri.includes("?") ? "&" : "?";
-                const apiKey = getClientSideKey("VITE_GEMINI_KEY");
+                const apiKey = getClientSideKey("NEXT_PUBLIC_GEMINI_KEY");
                 const res = await fetch(`${video.uri}${sep}key=${apiKey}`);
                 if (!res.ok) throw new Error(`video download HTTP ${res.status}`);
                 const blob = await res.blob();
@@ -285,7 +285,7 @@ export const GeminiService = {
         options: NanoBananaOptions,
         showToast: ShowToast,
     ): Promise<string | null> {
-        if (!hasClientSideKey("VITE_GEMINI_KEY")) {
+        if (!hasClientSideKey("NEXT_PUBLIC_GEMINI_KEY")) {
             showToast("Nano Banana: mock режим");
             return null;
         }
@@ -337,7 +337,7 @@ export const GeminiService = {
         options: LyriaOptions,
         showToast: ShowToast,
     ): Promise<string | null> {
-        if (!hasClientSideKey("VITE_GEMINI_KEY")) {
+        if (!hasClientSideKey("NEXT_PUBLIC_GEMINI_KEY")) {
             showToast("Lyria: mock режим");
             return null;
         }

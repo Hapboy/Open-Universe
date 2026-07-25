@@ -7,7 +7,7 @@ import type { CharacterNodeParams, LocationNodeParams, WGS84Coordinates } from "
 import styles from "./WorldMap.module.css";
 
 const EARTH_RADIUS_KM = 6371;
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 interface LocationRingDatum {
     label: string;

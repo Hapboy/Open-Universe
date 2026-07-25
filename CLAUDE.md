@@ -13,10 +13,14 @@ git-подобным процессом (форк → PR → модерация 
 
 ## Стек приложения
 
-**React 19 + Vite + TypeScript**, `app/` — корень исходников.
+**React 19 + Next.js (App Router) + TypeScript**. `src/` — корень исходников;
+`app/` (Next-конвенция) содержит только роут-файлы (`layout.tsx`, `page.tsx`,
+позже `api/*/route.ts`) — миграция с Vite ещё не закончена, план — 4 фазы,
+сейчас завершена только фаза 1 (шаблон/тулчейн-swap, без реального SSR-safe
+хайдрейшна контекстов — см. ниже).
 
 ```
-app/
+src/
 ├── core/        graph.ts, renderer.ts, services/ (index.ts, pinterest.ts,
 │                higgsfield.ts, gemini.ts)
 ├── data/        nodes.ts (NODE_TEMPLATES), presets.ts, scenes.ts
@@ -26,20 +30,30 @@ app/
 │                NodeBrowser/, PlayerPanel/ (MiniPlayer only), Topbar/,
 │                Modals/, Toast/, inspector/, game.ts — каждый компонент =
 │                папка с колокейтед `Name.module.css`
-├── styles/      global.css (CSS-переменные, reset), shared.module.css
-│                (общие атомы через `composes`)
-├── types.ts     TS-интерфейсы (NodeParams, PinItem, BoardItem, ...)
-└── main.tsx     точка входа React DOM
+├── styles/      global.css (CSS-переменные, reset; импортируется из
+│                app/layout.tsx), shared.module.css (общие атомы через
+│                `composes`)
+└── types.ts     TS-интерфейсы (NodeParams, PinItem, BoardItem, ...)
+
+app/
+├── layout.tsx   root layout: metadata/viewport, глобальный CSS, StrictMode
+└── page.tsx     'use client', рендерит <App /> из src/App.tsx
+
+public/          статика (Next-конвенция): assets/, icon.svg,
+                 manifest.webmanifest, sw.js, prototypes/, terms.html
 ```
 
-- `app/public/prototypes/` — **устаревшие** HTML-прототипы; игнорировать.
+- `public/prototypes/` — **устаревшие** HTML-прототипы; игнорировать.
 - `docs/DESIGN.md` — концепция, план интеграции AI-провайдеров, каталог нод.
 - `.claude/launch.json` — конфиг превью (сервер `openuniverse`).
+- Env-переменные — `NEXT_PUBLIC_*` (не `VITE_*`); `src/core/api/env.ts` держит
+  их в статичной map, т.к. Next инлайнит только буквальные
+  `process.env.NEXT_PUBLIC_X` — динамический `process.env[name]` не работает.
 
 ## Запуск / превью
 
-`npm run dev` → `http://localhost:4174/` (Vite dev server).
-`npm run build` → `dist/`.
+`npm run dev` → `http://localhost:4174/` (Next.js dev server, Turbopack).
+`npm run build` → `.next/`; `npm run start` — прод-сервер локально.
 
 ## Ключевые паттерны кода
 

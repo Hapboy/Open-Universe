@@ -41,7 +41,7 @@ export const HiggsfieldService = {
         faceRefUrl: string | null,
         showToast: ShowToast,
     ): Promise<string> {
-        const key = getClientSideKey("VITE_HIGGSFIELD_KEY");
+        const key = getClientSideKey("NEXT_PUBLIC_HIGGSFIELD_KEY");
         if (!key) {
             showToast("Higgsfield Soul: Кадр сгенерирован (симуляция)");
             return faceRefUrl || DEFAULT_PINS[1].image;
@@ -78,7 +78,7 @@ export const HiggsfieldService = {
         preset: string,
         showToast: ShowToast,
     ): Promise<string | null> {
-        const key = getClientSideKey("VITE_HIGGSFIELD_KEY");
+        const key = getClientSideKey("NEXT_PUBLIC_HIGGSFIELD_KEY");
         if (!key || !frameUrl) {
             showToast(`Higgsfield Motion: Пресет «${preset}» применен (симуляция)`);
             return frameUrl;

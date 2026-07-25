@@ -1,24 +1,53 @@
 {
-    "compilerOptions": {
-        "target": "ES2022",
-        "module": "ESNext",
-        "moduleResolution": "bundler",
-        "jsx": "react-jsx",
-        "strict": true,
-        "skipLibCheck": true,
-        "esModuleInterop": true,
-        "isolatedModules": true,
-        "forceConsistentCasingInFileNames": true,
-        "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true,
-        "allowUnreachableCode": false,
-        "allowUnusedLabels": false,
-        "noUnusedLocals": false,
-        "noUnusedParameters": true,
-        "allowImportingTsExtensions": true,
-        "noEmit": true,
-        "incremental": true
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "incremental": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
     },
-    "include": ["app/**/*", "vite.config.ts"],
-    "exclude": ["app/sw.js", "dist", "prototypes", "node_modules"]
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/**/*",
+    "app/**/*",
+    "next.config.ts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    ".next",
+    "prototypes",
+    "node_modules"
+  ]
 }
