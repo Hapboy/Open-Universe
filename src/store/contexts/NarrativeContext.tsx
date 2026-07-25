@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useToastContext } from "./ToastContext.tsx";
 import { readJSON, writeJSON } from "../../core/browserStorage.ts";
 import type {
@@ -45,9 +45,20 @@ export const useNarrativeContext = () => useContext(Ctx);
 export function NarrativeProvider({ children }: { children: React.ReactNode }) {
     const { showToast } = useToastContext();
 
+    // SSR-safe default (no localStorage access during render); the real
+    // stored settings load in the mount effect below.
     const [narrativeSettings, setNarrativeSettings] = useState<
         Record<string, SceneNarrativeSettings>
-    >(() => readJSON(NARRATIVE_SETTINGS_KEY, {} as Record<string, SceneNarrativeSettings>));
+    >({});
+
+    useEffect(() => {
+        // Syncing from localStorage, an external system unreadable at render
+        // time on the server; this is the documented valid case for the rule.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setNarrativeSettings(
+            readJSON(NARRATIVE_SETTINGS_KEY, {} as Record<string, SceneNarrativeSettings>),
+        );
+    }, []);
 
     const getSceneNarrativeSettings = useCallback(
         (sceneId: string) => ({ ...DEFAULT_NARRATIVE_SETTINGS, ...narrativeSettings[sceneId] }),

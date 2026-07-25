@@ -64,10 +64,10 @@ export function Topbar() {
 }
 
 function ProfileButton() {
-    const { currentUser } = useUserContext();
+    const { currentUser, hydrated } = useUserContext();
     const { openModal } = useModalContext();
 
-    if (!currentUser) return null;
+    if (!hydrated || !currentUser) return null;
 
     return (
         <button className={styles.tb} id="btnProfile" onClick={() => openModal("profile")}>
@@ -81,8 +81,10 @@ function ProfileButton() {
 // a backend and collaborate with the rest of the team, once that exists.
 // This button is the opt-in entry point instead of a forced onboarding modal.
 function AuthButton() {
-    const { currentUser, logOut } = useUserContext();
+    const { currentUser, hydrated, logOut } = useUserContext();
     const { openModal } = useModalContext();
+
+    if (!hydrated) return null;
 
     if (currentUser) {
         return (

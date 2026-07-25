@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { ENTITY_PRESET_SEEDS } from "../../data/presets.ts";
 import type { EntityPresets } from "../../types.ts";
 import { useToastContext } from "./ToastContext.tsx";
@@ -82,7 +82,22 @@ export const usePresetLibraryContext = () => useContext(Ctx);
 
 export function PresetLibraryProvider({ children }: { children: React.ReactNode }) {
     const { showToast } = useToastContext();
-    const [library, setLibrary] = useState<PresetLibrary>(() => loadStoredLibrary());
+    // SSR-safe default: seeds only, no localStorage access — identical on the
+    // server and the client's first paint. The real (migrated, stored) library
+    // loads in the mount effect below. AppProviders.tsx deliberately nests this
+    // provider inside GraphProvider so this effect fires before GraphContext's
+    // own hydration populates `nodes` — see the comment there for why that
+    // ordering matters.
+    const [library, setLibrary] = useState<PresetLibrary>(
+        () => JSON.parse(JSON.stringify(ENTITY_PRESET_SEEDS)) as PresetLibrary,
+    );
+
+    useEffect(() => {
+        // Syncing from localStorage, an external system unreadable at render
+        // time on the server; this is the documented valid case for the rule.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setLibrary(loadStoredLibrary());
+    }, []);
 
     useDebouncedPersist(LIBRARY_STORAGE_KEY, () => library, [library], {
         onError: () =>

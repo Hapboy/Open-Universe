@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { CurrentUser, StoredAccount, TeamMember } from "../../types.ts";
 import { readJSON, removeKey, writeJSON } from "../../core/browserStorage.ts";
 
@@ -39,6 +39,11 @@ interface UserCtx {
     currentUser: CurrentUser | null;
     hasAccount: boolean;
     team: TeamMember[];
+    // False until the mount effect below has read the real stored account —
+    // lets consumers whose rendering meaningfully differs by auth state (e.g.
+    // Topbar's login/profile buttons) wait instead of flashing "logged out"
+    // for a frame before flipping to the real state.
+    hydrated: boolean;
     signUp: (name: string, password: string) => AuthResult;
     logIn: (name: string, password: string) => AuthResult;
     logOut: () => void;
@@ -66,10 +71,21 @@ function loadAccount(): StoredAccount | null {
 }
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-    const [account, setAccount] = useState<StoredAccount | null>(() => loadAccount());
-    const [sessionActive, setSessionActive] = useState<boolean>(() =>
-        readJSON<boolean>(SESSION_KEY, false),
-    );
+    // SSR-safe default (logged out, no localStorage access) — identical on the
+    // server and the client's first paint. The real account/session load in
+    // the mount effect below.
+    const [account, setAccount] = useState<StoredAccount | null>(null);
+    const [sessionActive, setSessionActive] = useState<boolean>(false);
+    const [hydrated, setHydrated] = useState(false);
+
+    useEffect(() => {
+        // Syncing from localStorage, an external system unreadable at render
+        // time on the server; this is the documented valid case for the rule.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setAccount(loadAccount());
+        setSessionActive(readJSON<boolean>(SESSION_KEY, false));
+        setHydrated(true);
+    }, []);
 
     const signUp = useCallback(
         (name: string, password: string): AuthResult => {
@@ -122,6 +138,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         currentUser,
         hasAccount: !!account,
         team: INITIAL_TEAM,
+        hydrated,
         signUp,
         logIn,
         logOut,

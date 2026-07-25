@@ -261,21 +261,20 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     const { showToast } = useToastContext();
     const { narrativeSettings, getSceneNarrativeSettings } = useNarrativeContext();
 
-    const [initialGraphState] = useState(loadInitialGraphState);
-    const [activeSceneId, setActiveSceneIdState] = useState<string | null>(
-        initialGraphState.activeSceneId,
-    );
-    const [sceneGraphs, setSceneGraphs] = useState<SceneGraphs>(initialGraphState.sceneGraphs);
-
-    const [nodes, setNodes] = useState<Node<NodeParams>[]>(initialGraphState.nodes);
-    const [edges, setEdges] = useState<Edge[]>(initialGraphState.edges);
+    // SSR-safe default: identical on the server and the client's first paint
+    // (no localStorage/URL access), matching the "no scenes yet" state the app
+    // already renders correctly. The real data loads in the mount effect below.
+    const [activeSceneId, setActiveSceneIdState] = useState<string | null>(null);
+    const [sceneGraphs, setSceneGraphs] = useState<SceneGraphs>({});
+    const [nodes, setNodes] = useState<Node<NodeParams>[]>([]);
+    const [edges, setEdges] = useState<Edge[]>([]);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [showMiniMap, setShowMiniMap] = useState<boolean>(true);
     const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false);
     const [showWorldMap, setShowWorldMap] = useState<boolean>(false);
     const [worldMapFullscreen, setWorldMapFullscreen] = useState<boolean>(false);
 
-    const [totalDuration, setTotalDurationState] = useState<number>(loadStoredTotalDuration);
+    const [totalDuration, setTotalDurationState] = useState<number>(DEFAULT_TOTAL_DURATION);
     const setTotalDuration = useCallback(
         (seconds: number) => {
             const clamped = Math.max(1, Math.round(seconds));
@@ -287,8 +286,26 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         [showToast],
     );
 
-    // Clean query parameter from URL bar on mount
+    // Loads the real (localStorage/URL-derived) graph state once on mount —
+    // deferred out of a lazy useState initializer so the server and the
+    // client's first paint render the same SSR-safe default above, avoiding a
+    // hydration mismatch. The URL-cleanup step is folded in here rather than
+    // kept as its own mount effect: both would be `[]`-dep effects in this
+    // same component, so they'd run in source-declaration order — if cleanup
+    // ran first it would strip `?scene=` before loadInitialGraphState's own
+    // read of it, silently breaking `?scene=`-based deep links.
     useEffect(() => {
+        const initial = loadInitialGraphState();
+        // Syncing from localStorage/the URL, an external system unreadable at
+        // render time on the server; this is the documented valid case for
+        // the rule.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setActiveSceneIdState(initial.activeSceneId);
+        setSceneGraphs(initial.sceneGraphs);
+        setNodes(initial.nodes);
+        setEdges(initial.edges);
+        setTotalDurationState(loadStoredTotalDuration());
+
         const params = new URLSearchParams(window.location.search);
         if (params.get("scene")) {
             const newUrl =
@@ -403,10 +420,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     // switch to whichever remaining scene starts earliest (or clear the
     // canvas if none remain). Only the active scene's graph is ever editable
     // from the canvas, so watching `nodes` here is sufficient.
-    const prevSceneIdRef = useRef<string | null>(initialGraphState.activeSceneId);
-    const prevHadOutputRef = useRef<boolean>(
-        initialGraphState.nodes.some((n) => n.data.nodeType === "output_scene"),
-    );
+    const prevSceneIdRef = useRef<string | null>(null);
+    const prevHadOutputRef = useRef<boolean>(false);
     useEffect(() => {
         if (prevSceneIdRef.current !== activeSceneId) {
             prevSceneIdRef.current = activeSceneId;
