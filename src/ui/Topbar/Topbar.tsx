@@ -1,6 +1,5 @@
 import cn from "classnames";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import { usePwaContext } from "../../store/contexts/PwaContext.tsx";
 import { useUserContext } from "../../store/contexts/UserContext.tsx";
 import { useModalContext } from "../../store/contexts/ModalContext.tsx";
 import { useFullscreenToggle } from "../hooks/useFullscreenToggle.ts";
@@ -8,17 +7,8 @@ import styles from "./Topbar.module.css";
 
 export function Topbar() {
     const { executeGraph } = useGraphContext();
-    const { deferredInstallPrompt, setDeferredInstallPrompt } = usePwaContext();
     const { openModal } = useModalContext();
     const toggleFullscreen = useFullscreenToggle(() => document.getElementById("app"));
-
-    const handleInstall = async () => {
-        if (!deferredInstallPrompt) return;
-        await deferredInstallPrompt.prompt();
-        const { outcome } = await deferredInstallPrompt.userChoice;
-        console.log("PWA install:", outcome);
-        setDeferredInstallPrompt(null);
-    };
 
     return (
         <header className={styles.topbar}>
@@ -53,12 +43,6 @@ export function Topbar() {
             </button>
             <ProfileButton />
             <AuthButton />
-            {deferredInstallPrompt && (
-                <button className={styles.tb} onClick={handleInstall}>
-                    <i className="ti ti-download" />
-                    <span>Установить</span>
-                </button>
-            )}
         </header>
     );
 }

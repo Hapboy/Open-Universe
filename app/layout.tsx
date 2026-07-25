@@ -4,7 +4,6 @@ import "../src/styles/global.css";
 
 export const metadata: Metadata = {
     title: "Open Universe — нодовая студия",
-    manifest: "/manifest.webmanifest",
     icons: {
         icon: "/icon.svg",
         apple: "/icon.svg",
