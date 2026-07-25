@@ -62,7 +62,9 @@ function StatusBar() {
                 Gemini: {geminiLive ? "live" : "mock"}
             </span>
             <span className={styles.spacer} />
-            <span className={styles.muted}>{sel ? `${sel.data.label} (${sel.id})` : "—"}</span>
+            <span className={styles.muted}>
+                {sel ? `${sel.data.label} (${sel.id.slice(0, 8)})` : "—"}
+            </span>
             <span className={styles.muted}>
                 {process.env.NODE_ENV !== "production" ? "local" : process.env.NEXT_PUBLIC_GIT_HASH}
             </span>

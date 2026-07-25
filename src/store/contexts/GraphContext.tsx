@@ -443,16 +443,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     }, [nodes, activeSceneId, sceneGraphs, persistSceneGraphs, loadSceneIntoState]);
 
     const createScene = useCallback(() => {
-        const idPool = new Set([
-            ...Object.keys(sceneGraphs),
-            ...(activeSceneId ? [activeSceneId] : []),
-        ]);
-        let maxN = 0;
-        idPool.forEach((id) => {
-            const m = /^sc(\d+)$/.exec(id);
-            if (m) maxN = Math.max(maxN, Number(m[1]));
-        });
-        const newId = `sc${maxN + 1}`;
+        const newId = crypto.randomUUID();
 
         // New scenes always default to track 1 — chain after track 1's last scene
         // specifically, not the global end across both tracks, so consecutive
@@ -461,7 +452,10 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         const start = track1Scenes.length
             ? Math.max(...track1Scenes.map((s) => s.start + s.duration))
             : 0;
-        const newGraph = createEmptySceneGraph(newId, { title: `Сцена ${maxN + 1}`, start });
+        const newGraph = createEmptySceneGraph(newId, {
+            title: `Сцена ${scenes.length + 1}`,
+            start,
+        });
 
         const updated = {
             ...sceneGraphs,
@@ -478,13 +472,12 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         setSelectedNodeId(id);
     }, []);
 
-    const nodeCounter = useRef(0);
     const createNode = useCallback(
         (type: NodeType, x: number, y: number): Node<NodeParams> | null => {
             const template = NODE_TEMPLATES[type as keyof typeof NODE_TEMPLATES];
             if (!template) return null;
 
-            const id = `node_${Date.now()}_${++nodeCounter.current}`;
+            const id = crypto.randomUUID();
             const newNode: Node<NodeParams> = {
                 id,
                 type: "custom",
@@ -511,7 +504,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
             const source = ns.find((n) => n.id === id);
             if (!source) return ns;
 
-            const newId = `node_${Date.now()}_${++nodeCounter.current}`;
+            const newId = crypto.randomUUID();
             const clonedData = structuredClone(source.data);
             const outputs = ENTITY_NODE_TYPES.has(source.data.nodeType)
                 ? withPhotoOutputs(
