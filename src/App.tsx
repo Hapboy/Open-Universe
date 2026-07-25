@@ -2,7 +2,7 @@ import cn from "classnames";
 import dynamic from "next/dynamic";
 import { AppProviders } from "./store/AppProviders.tsx";
 import { useGraphContext } from "./store/contexts/GraphContext.tsx";
-import { hasClientSideKey } from "./core/api/env.ts";
+import { isProviderConfigured } from "./core/api/env.ts";
 import { Topbar } from "./ui/Topbar/Topbar.tsx";
 import { NodeEditor } from "./ui/NodeEditor/NodeEditor.tsx";
 import { Timeline } from "./ui/Timeline/Timeline.tsx";
@@ -51,9 +51,9 @@ function AppShell() {
 function StatusBar() {
     const { nodes, selectedNodeId } = useGraphContext();
     const sel = nodes.find((n) => n.id === selectedNodeId);
-    const hfLive = hasClientSideKey("NEXT_PUBLIC_HIGGSFIELD_KEY");
-    const pinLive = hasClientSideKey("NEXT_PUBLIC_PINTEREST_TOKEN");
-    const geminiLive = hasClientSideKey("NEXT_PUBLIC_GEMINI_KEY");
+    const hfLive = isProviderConfigured("higgsfield");
+    const pinLive = isProviderConfigured("pinterest");
+    const geminiLive = isProviderConfigured("gemini");
     return (
         <>
             <span id="statJobs">очередь: 0</span>
