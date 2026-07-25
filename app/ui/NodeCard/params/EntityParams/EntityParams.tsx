@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import cn from "classnames";
 import { DatabaseSelect, InFrameToggle, usePresetDatabase } from "../shared.tsx";
-import { usePresetLibraryContext } from "../../../../store/contexts/PresetLibraryContext.tsx";
 import type { EP } from "../shared.tsx";
 import {
     PhotoGallerySection,
@@ -99,26 +98,6 @@ export function CharacterParams({
         updateNodeParams,
     );
     const { generate, isGenerating } = useImageGeneration();
-    const { library } = usePresetLibraryContext();
-
-    // Every character node instance needs a stable identity so the same
-    // character can be matched across scenes (Timeline synapses view) by
-    // more than just its free-text name. A brand-new node's `selectedItem`
-    // already defaults to a cataloged preset's name (e.g. "Ара Гехецик")
-    // without the user ever going through `onSelect` — so prefer that
-    // preset's own id over minting a fresh one, or two nodes that both
-    // "look like" the same character end up as two different identities.
-    // Only mint a new id when there's truly no matching preset yet (a
-    // custom, unsaved character) — see PresetLibraryContext's migration for
-    // how an id then propagates once such a character is saved as a preset.
-    useEffect(() => {
-        const presetId = library.character?.[params.selectedItem]?.id as string | undefined;
-        if (presetId && presetId !== params.id) {
-            updateNodeParam(node.id, "id", presetId);
-        } else if (!presetId && !params.id) {
-            updateNodeParam(node.id, "id", crypto.randomUUID());
-        }
-    }, [node.id, params.id, params.selectedItem, library.character, updateNodeParam]);
 
     const handleGeneratePhoto = async () => {
         const prompt = buildCharacterPrompt(params);
@@ -197,7 +176,7 @@ export function CharacterParams({
                 <DatabaseSelect
                     label="Персонаж"
                     items={db}
-                    selected={params.selectedItem}
+                    selected={params.presetId}
                     onSelect={onSelect}
                     onAdd={onAdd}
                     onUpdate={onUpdate}
@@ -447,7 +426,7 @@ export function LocationParams({
                 <DatabaseSelect
                     label="Локация"
                     items={db}
-                    selected={params.selectedItem}
+                    selected={params.presetId}
                     onSelect={onSelect}
                     onAdd={onAdd}
                     onUpdate={onUpdate}
@@ -581,7 +560,7 @@ export function MiseEnSceneParams({
             <DatabaseSelect
                 label="Мизансцена"
                 items={db}
-                selected={params.selectedItem}
+                selected={params.presetId}
                 onSelect={onSelect}
                 onAdd={onAdd}
                 onUpdate={onUpdate}
@@ -664,7 +643,7 @@ export function BuildingParams({
             <DatabaseSelect
                 label="Здание"
                 items={db}
-                selected={params.selectedItem}
+                selected={params.presetId}
                 onSelect={onSelect}
                 onAdd={onAdd}
                 onUpdate={onUpdate}
@@ -724,7 +703,7 @@ export function ClothingParams({
             <DatabaseSelect
                 label="Дизайнер"
                 items={db}
-                selected={params.selectedItem}
+                selected={params.presetId}
                 onSelect={onSelect}
                 onAdd={onAdd}
                 onUpdate={onUpdate}
@@ -786,7 +765,7 @@ export function ArtworkParams({
             <DatabaseSelect
                 label="Произведение"
                 items={db}
-                selected={params.selectedItem}
+                selected={params.presetId}
                 onSelect={onSelect}
                 onAdd={onAdd}
                 onUpdate={onUpdate}
@@ -846,7 +825,7 @@ export function FurnitureParams({
             <DatabaseSelect
                 label="Мебель"
                 items={db}
-                selected={params.selectedItem}
+                selected={params.presetId}
                 onSelect={onSelect}
                 onAdd={onAdd}
                 onUpdate={onUpdate}
@@ -906,7 +885,7 @@ export function MusicParams({
             <DatabaseSelect
                 label="Трек"
                 items={db}
-                selected={params.selectedItem}
+                selected={params.presetId}
                 onSelect={onSelect}
                 onAdd={onAdd}
                 onUpdate={onUpdate}
@@ -960,7 +939,7 @@ export function ScriptParams({
             <DatabaseSelect
                 label="Сцена"
                 items={db}
-                selected={params.selectedItem}
+                selected={params.presetId}
                 onSelect={onSelect}
                 onAdd={onAdd}
                 onUpdate={onUpdate}
@@ -1004,7 +983,7 @@ export function StoryboardParams({
             <DatabaseSelect
                 label="Версия"
                 items={db}
-                selected={params.selectedItem}
+                selected={params.presetId}
                 onSelect={onSelect}
                 onAdd={onAdd}
                 onUpdate={onUpdate}
@@ -1054,7 +1033,7 @@ export function TransportParams({
             <DatabaseSelect
                 label="Транспорт"
                 items={db}
-                selected={params.selectedItem}
+                selected={params.presetId}
                 onSelect={onSelect}
                 onAdd={onAdd}
                 onUpdate={onUpdate}

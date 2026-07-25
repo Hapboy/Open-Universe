@@ -5,9 +5,7 @@ import { useToastContext } from "../../store/contexts/ToastContext.tsx";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
 import { usePresetLibraryContext } from "../../store/contexts/PresetLibraryContext.tsx";
 import { useModalContext } from "../../store/contexts/ModalContext.tsx";
-import type { CurrentUser } from "../../types.ts";
-import { TEAM_SIDES, TEAM_ROLES, type TeamSide, type TeamRole } from "../../types/enums.ts";
-import { SelectField } from "../components/SelectField/SelectField.tsx";
+import type { TeamSide, TeamRole } from "../../types/enums.ts";
 import { TextField } from "../components/TextField/TextField.tsx";
 import { collectLiveMediaRefs, listBlobIds, sweepUnusedBlobs } from "../../core/blobStore.ts";
 import styles from "./Modals.module.css";
@@ -32,35 +30,43 @@ const ROLE_LABELS: Record<TeamRole, string> = {
 };
 
 export function Modals() {
-    const { modalType, closeModal } = useModalContext();
+    const { modalType, closeModal, openModal } = useModalContext();
 
     return (
         <>
-            {modalType === "onboard" && <OnboardModal onClose={closeModal} />}
-            {modalType === "team" && <TeamModal onClose={closeModal} />}
+            {modalType === "signup" && (
+                <SignupModal onClose={closeModal} onSwitchToLogin={() => openModal("login")} />
+            )}
+            {modalType === "login" && (
+                <LoginModal onClose={closeModal} onSwitchToSignup={() => openModal("signup")} />
+            )}
+            {modalType === "profile" && <ProfileModal onClose={closeModal} />}
             {modalType === "storage" && <StorageModal onClose={closeModal} />}
         </>
     );
 }
 
-// ── Onboarding ────────────────────────────────────────────────────────────────
+// ── Signup / Login ──────────────────────────────────────────────────────────────
 
-function OnboardModal({ onClose }: { onClose: () => void }) {
-    const { setCurrentUser } = useUserContext();
+function SignupModal({
+    onClose,
+    onSwitchToLogin,
+}: {
+    onClose: () => void;
+    onSwitchToLogin: () => void;
+}) {
+    const { signUp } = useUserContext();
     const { showToast } = useToastContext();
     const [name, setName] = useState("");
-    const [charName, setCharName] = useState("");
-    const [side, setSide] = useState<TeamSide>("urvakan");
-    const [role, setRole] = useState<TeamRole>("Режиссер");
+    const [password, setPassword] = useState("");
 
-    const handleRegister = () => {
-        if (!name.trim() || !charName.trim()) {
-            showToast("Заполните все текстовые поля!");
+    const handleSignUp = () => {
+        const result = signUp(name, password);
+        if (!result.ok) {
+            showToast(result.error);
             return;
         }
-        const user: CurrentUser = { name: name.trim(), charName: charName.trim(), side, role };
-        setCurrentUser(user);
-        showToast(`Вы вошли под персонажем ${charName} во фракцию ${side.toUpperCase()}!`);
+        showToast(`Добро пожаловать, ${name.trim()}!`);
         onClose();
     };
 
@@ -68,41 +74,29 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
         <div className={styles.modal}>
             <div className={styles.sheet}>
                 <div className={styles.sheetH}>
-                    <h2>Войти в разработку</h2>
+                    <h2>Регистрация</h2>
                 </div>
                 <div className={styles.sheetBody}>
-                    <p className={styles.sub}>
-                        Каждый разработчик создаёт своего персонажа, выбирает сторону и роль по
-                        текущему сценарию. Твой персонаж попадёт в финальный фильм вместе с
-                        вымышленными.
-                    </p>
                     <TextField
-                        label="Имя разработчика"
+                        label="Имя"
                         value={name}
                         onChange={setName}
                         placeholder="Введите имя..."
+                        autoFocus
                     />
                     <TextField
-                        label="Имя персонажа во вселенной"
-                        value={charName}
-                        onChange={setCharName}
-                        placeholder="Введите имя персонажа..."
-                    />
-                    <SelectField
-                        label="Фракция / сторона"
-                        value={side}
-                        onChange={(v) => setSide(v as TeamSide)}
-                        options={TEAM_SIDES.map((value) => ({ value, label: SIDE_LABELS[value] }))}
-                    />
-                    <SelectField
-                        label="Роль во вселенной"
-                        value={role}
-                        onChange={(v) => setRole(v as TeamRole)}
-                        options={TEAM_ROLES.map((value) => ({ value, label: ROLE_LABELS[value] }))}
+                        label="Пароль"
+                        type="password"
+                        value={password}
+                        onChange={setPassword}
+                        placeholder="Придумайте пароль..."
                     />
                     <br />
-                    <button className={cn(styles.btn, styles.pri)} onClick={handleRegister}>
-                        Войти в команду
+                    <button className={cn(styles.btn, styles.pri)} onClick={handleSignUp}>
+                        Зарегистрироваться
+                    </button>
+                    <button className={styles.switchLink} onClick={onSwitchToLogin}>
+                        Уже есть аккаунт? Войти
                     </button>
                 </div>
             </div>
@@ -110,47 +104,154 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
     );
 }
 
-// ── Team ──────────────────────────────────────────────────────────────────────
+function LoginModal({
+    onClose,
+    onSwitchToSignup,
+}: {
+    onClose: () => void;
+    onSwitchToSignup: () => void;
+}) {
+    const { logIn } = useUserContext();
+    const { showToast } = useToastContext();
+    const [name, setName] = useState("");
+    const [password, setPassword] = useState("");
 
-function TeamModal({ onClose }: { onClose: () => void }) {
-    const { team, currentUser } = useUserContext();
-    const all = [...team, ...(currentUser ? [{ ...currentUser, isMe: true }] : [])];
+    const handleLogIn = () => {
+        const result = logIn(name, password);
+        if (!result.ok) {
+            showToast(result.error);
+            return;
+        }
+        onClose();
+    };
 
     return (
         <div className={styles.modal}>
             <div className={styles.sheet}>
                 <div className={styles.sheetH}>
-                    <h2>Команда разработки</h2>
+                    <h2>Вход</h2>
+                </div>
+                <div className={styles.sheetBody}>
+                    <TextField
+                        label="Имя"
+                        value={name}
+                        onChange={setName}
+                        placeholder="Введите имя..."
+                        autoFocus
+                    />
+                    <TextField
+                        label="Пароль"
+                        type="password"
+                        value={password}
+                        onChange={setPassword}
+                        placeholder="Введите пароль..."
+                    />
+                    <br />
+                    <button className={cn(styles.btn, styles.pri)} onClick={handleLogIn}>
+                        Войти
+                    </button>
+                    <button className={styles.switchLink} onClick={onSwitchToSignup}>
+                        Нет аккаунта? Зарегистрироваться
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+
+const PROFILE_TABS = [
+    { key: "personal", label: "Личные данные" },
+    { key: "team", label: "Команда" },
+] as const;
+type ProfileTab = (typeof PROFILE_TABS)[number]["key"];
+
+function ProfileModal({ onClose }: { onClose: () => void }) {
+    const [tab, setTab] = useState<ProfileTab>("personal");
+
+    return (
+        <div className={styles.modal}>
+            <div className={styles.sheet}>
+                <div className={styles.sheetH}>
+                    <h2>Профиль</h2>
                     <button className={styles.x} onClick={onClose}>
                         <i className="ti ti-x" />
                     </button>
                 </div>
+                <div className={styles.tabRow}>
+                    {PROFILE_TABS.map((t) => (
+                        <button
+                            key={t.key}
+                            className={cn(styles.tabBtn, tab === t.key && styles.tabBtnActive)}
+                            onClick={() => setTab(t.key)}>
+                            {t.label}
+                        </button>
+                    ))}
+                </div>
                 <div className={styles.sheetBody}>
-                    <div className={styles.devList}>
-                        {all.map((dev, i) => (
-                            <div key={i} className={styles.devItem}>
-                                <div
-                                    className={styles.devAvatar}
-                                    style={{ background: sideColor(dev.side) }}>
-                                    {dev.name.slice(0, 2).toUpperCase()}
-                                </div>
-                                <div className={styles.devInfo}>
-                                    <div className={styles.devName}>
-                                        {dev.name}
-                                        {dev.isMe && <strong> (Вы)</strong>}
-                                    </div>
-                                    <div className={styles.devChar}>
-                                        Персонаж: {dev.charName} · Роль: {dev.role}
-                                    </div>
-                                </div>
-                                <div className={cn(styles.devBadge, styles[dev.side])}>
-                                    {dev.side.toUpperCase()}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    {tab === "personal" && <PersonalDetailsTab />}
+                    {tab === "team" && <TeamTab />}
                 </div>
             </div>
+        </div>
+    );
+}
+
+function PersonalDetailsTab() {
+    const { currentUser } = useUserContext();
+
+    if (!currentUser) {
+        return <p className={styles.sub}>Вы не авторизованы.</p>;
+    }
+
+    return (
+        <div className={styles.devList}>
+            <div className={styles.statRow}>
+                <span>Имя</span>
+                <strong>{currentUser.name}</strong>
+            </div>
+            <div className={styles.statRow}>
+                <span>Персонаж</span>
+                <strong>{currentUser.charName}</strong>
+            </div>
+            <div className={styles.statRow}>
+                <span>Фракция</span>
+                <strong>{currentUser.side.toUpperCase()}</strong>
+            </div>
+            <div className={styles.statRow}>
+                <span>Роль</span>
+                <strong>{currentUser.role}</strong>
+            </div>
+        </div>
+    );
+}
+
+function TeamTab() {
+    const { team, currentUser } = useUserContext();
+    const all = [...team, ...(currentUser ? [{ ...currentUser, isMe: true }] : [])];
+
+    return (
+        <div className={styles.devList}>
+            {all.map((dev, i) => (
+                <div key={i} className={styles.devItem}>
+                    <div className={styles.devAvatar} style={{ background: sideColor(dev.side) }}>
+                        {dev.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className={styles.devInfo}>
+                        <div className={styles.devName}>
+                            {dev.name}
+                            {dev.isMe && <strong> (Вы)</strong>}
+                        </div>
+                        <div className={styles.devChar}>
+                            Персонаж: {dev.charName} · Роль: {dev.role}
+                        </div>
+                    </div>
+                    <div className={cn(styles.devBadge, styles[dev.side])}>
+                        {dev.side.toUpperCase()}
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }

@@ -80,6 +80,7 @@ export interface BoardItem {
 }
 
 export interface TeamMember {
+    id: string;
     name: string;
     charName: string;
     side: TeamSide;
@@ -88,10 +89,19 @@ export interface TeamMember {
 }
 
 export interface CurrentUser {
+    id: string;
     name: string;
     charName: string;
     side: TeamSide;
     role: TeamRole;
+}
+
+// The persisted local "account" record (signup/login stub — see
+// UserContext.tsx): same shape as CurrentUser plus a password, kept separate
+// from CurrentUser so the password never leaks into values passed around the
+// rest of the app (ProfileModal, etc. only ever see CurrentUser).
+export interface StoredAccount extends CurrentUser {
+    password: string;
 }
 
 export interface Palette {
@@ -106,9 +116,10 @@ export interface Palette {
     sofa: string;
 }
 
-// An entity node's saved names: key -> a snapshot of that entity's own params
-// (everything except selectedItem/_presets), loaded onto the node when it's
-// selected again. The dropdown's option list is just `Object.keys(_presets)`.
+// An entity node's saved presets: key -> a snapshot of that entity's own
+// params (everything except selectedItem/_presets), loaded onto the node
+// when it's selected again. Keyed by the preset's stable `presetId`, not its
+// (possibly non-unique, renameable) display `name`.
 export type EntityPresets = Record<string, Record<string, unknown>>;
 
 export interface WGS84Coordinates {
@@ -117,7 +128,7 @@ export interface WGS84Coordinates {
 }
 
 export interface CharacterNodeParams extends Record<string, unknown> {
-    id: string;
+    presetId: string;
     selectedItem: string;
     inFrame: boolean;
     age: number;
@@ -144,6 +155,7 @@ export interface CharacterNodeParams extends Record<string, unknown> {
 }
 
 export interface LocationNodeParams extends Record<string, unknown> {
+    presetId: string;
     selectedItem: string;
     name: string;
     photos: string[];
@@ -158,6 +170,7 @@ export interface LocationNodeParams extends Record<string, unknown> {
 }
 
 export interface MiseEnSceneNodeParams extends Record<string, unknown> {
+    presetId: string;
     selectedItem: string;
     name: string;
     photos: string[];
@@ -168,6 +181,7 @@ export interface MiseEnSceneNodeParams extends Record<string, unknown> {
 }
 
 export interface BuildingNodeParams extends Record<string, unknown> {
+    presetId: string;
     selectedItem: string;
     name: string;
     photos: string[];
@@ -177,6 +191,7 @@ export interface BuildingNodeParams extends Record<string, unknown> {
 }
 
 export interface ClothingNodeParams extends Record<string, unknown> {
+    presetId: string;
     selectedItem: string;
     name: string;
     photos: string[];
@@ -186,6 +201,7 @@ export interface ClothingNodeParams extends Record<string, unknown> {
 }
 
 export interface ArtworkNodeParams extends Record<string, unknown> {
+    presetId: string;
     selectedItem: string;
     name: string;
     photos: string[];
@@ -195,6 +211,7 @@ export interface ArtworkNodeParams extends Record<string, unknown> {
 }
 
 export interface FurnitureNodeParams extends Record<string, unknown> {
+    presetId: string;
     selectedItem: string;
     name: string;
     photos: string[];
@@ -204,6 +221,7 @@ export interface FurnitureNodeParams extends Record<string, unknown> {
 }
 
 export interface MusicNodeParams extends Record<string, unknown> {
+    presetId: string;
     selectedItem: string;
     name: string;
     photos: string[];
@@ -212,6 +230,7 @@ export interface MusicNodeParams extends Record<string, unknown> {
 }
 
 export interface ScriptNodeParams extends Record<string, unknown> {
+    presetId: string;
     selectedItem: string;
     name: string;
     photos: string[];
@@ -220,12 +239,14 @@ export interface ScriptNodeParams extends Record<string, unknown> {
 }
 
 export interface StoryboardNodeParams extends Record<string, unknown> {
+    presetId: string;
     selectedItem: string;
     name: string;
     shots: number;
 }
 
 export interface TransportNodeParams extends Record<string, unknown> {
+    presetId: string;
     selectedItem: string;
     name: string;
     photos: string[];

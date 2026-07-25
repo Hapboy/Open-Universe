@@ -9,43 +9,72 @@ const LIBRARY_STORAGE_KEY = "hv_preset_library";
 
 type PresetLibrary = Record<string, EntityPresets>;
 
-// One-time backfill: character presets predating the `id` param (seeded
-// defaults and anything a user already saved) need a stable id so the
-// Timeline synapses view can match the same character across scenes by more
-// than just their free-text name. Scoped to `character` only — other entity
-// types don't need cross-scene identity yet.
-function migrateCharacterIds(library: PresetLibrary): PresetLibrary {
-    const characters = library.character;
-    if (!characters) return library;
-    let changed = false;
-    const migrated: EntityPresets = {};
-    for (const [name, snapshot] of Object.entries(characters)) {
-        if (snapshot.id) {
-            migrated[name] = snapshot;
-        } else {
-            changed = true;
-            migrated[name] = { ...snapshot, id: crypto.randomUUID() };
+// TODO(remove-legacy-preset-migration): one-time upgrade from the old
+// name-keyed preset library (every entity type keyed by display name, with
+// only `character` snapshots carrying a legacy `id` field) to the current
+// presetId-keyed shape. Safe to delete this whole function — and its call in
+// loadStoredLibrary — once active users' localStorage is assumed to have
+// already gone through it at least once.
+function migrateLibraryToPresetIds(stored: PresetLibrary): PresetLibrary {
+    let changedAnywhere = false;
+    const migrated: PresetLibrary = {};
+
+    for (const [entityType, entries] of Object.entries(stored)) {
+        let changed = false;
+        const migratedEntries: EntityPresets = {};
+        const seedEntries = ENTITY_PRESET_SEEDS[entityType] ?? {};
+
+        for (const [key, snapshot] of Object.entries(entries)) {
+            let id: string;
+            let cleaned: Record<string, unknown>;
+
+            if (typeof snapshot.presetId === "string" && snapshot.presetId) {
+                id = snapshot.presetId;
+                cleaned = snapshot;
+                if (key !== id) changed = true;
+            } else if (typeof snapshot.id === "string" && snapshot.id) {
+                // legacy character-only identity field, predating presetId
+                id = snapshot.id;
+                cleaned = { ...snapshot, presetId: id };
+                delete cleaned.id;
+                changed = true;
+            } else {
+                const name = (snapshot.name as string | undefined) ?? key;
+                const seedMatch = Object.entries(seedEntries).find(
+                    ([, seedSnap]) => seedSnap.name === name,
+                );
+                id = seedMatch ? seedMatch[0] : crypto.randomUUID();
+                cleaned = { ...snapshot, presetId: id, name };
+                changed = true;
+            }
+
+            migratedEntries[id] = cleaned;
         }
+
+        migrated[entityType] = changed ? migratedEntries : entries;
+        if (changed) changedAnywhere = true;
     }
-    return changed ? { ...library, character: migrated } : library;
+
+    return changedAnywhere ? migrated : stored;
 }
 
 function loadStoredLibrary(): PresetLibrary {
     const stored = readJSON<PresetLibrary>(LIBRARY_STORAGE_KEY, {});
+    const migratedStored = migrateLibraryToPresetIds(stored);
     const seeds = JSON.parse(JSON.stringify(ENTITY_PRESET_SEEDS)) as PresetLibrary;
     const merged: PresetLibrary = {};
-    for (const entityType of new Set([...Object.keys(seeds), ...Object.keys(stored)])) {
+    for (const entityType of new Set([...Object.keys(seeds), ...Object.keys(migratedStored)])) {
         merged[entityType] = {
             ...(seeds[entityType] ?? {}),
-            ...(stored[entityType] ?? {}),
+            ...(migratedStored[entityType] ?? {}),
         };
     }
-    return migrateCharacterIds(merged);
+    return merged;
 }
 
 interface PresetLibraryCtx {
     library: PresetLibrary;
-    addPreset: (entityType: string, name: string, snapshot: Record<string, unknown>) => void;
+    addPreset: (entityType: string, presetId: string, snapshot: Record<string, unknown>) => void;
 }
 
 const Ctx = createContext<PresetLibraryCtx>(null!);
@@ -61,10 +90,10 @@ export function PresetLibraryProvider({ children }: { children: React.ReactNode 
     });
 
     const addPreset = useCallback(
-        (entityType: string, name: string, snapshot: Record<string, unknown>) => {
+        (entityType: string, presetId: string, snapshot: Record<string, unknown>) => {
             setLibrary((lib) => ({
                 ...lib,
-                [entityType]: { ...(lib[entityType] ?? {}), [name]: snapshot },
+                [entityType]: { ...(lib[entityType] ?? {}), [presetId]: snapshot },
             }));
         },
         [],

@@ -1,14 +1,15 @@
 import type { EntityPresets, PinItem } from "../types.ts";
 
 // Seed data for the global entity preset library (PresetLibraryContext),
-// keyed by entity node type. Extracted from the entity node templates in
-// data/nodes.ts, which now only keep each type's default selectedItem/fields.
-// Each preset's `name` mirrors its dropdown key by default — it's a separate
-// editable field on the node (see EntityParams.tsx), not the same value as
-// `selectedItem`, so it can drift from the preset name if the user renames it.
+// keyed by entity node type, then by each preset's stable `presetId` (a
+// hardcoded fixture string here — real presets mint a crypto.randomUUID()).
+// `name` is a separate, independently editable display field on the node
+// (see EntityParams.tsx) — it mirrors the fixture's usual name by default,
+// but is not the storage key, so two presets may legitimately share a name.
 export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
     character: {
-        "Ара Гехецик": {
+        "char-ara-geghetsik": {
+            presetId: "char-ara-geghetsik",
             name: "Ара Гехецик",
             inFrame: true,
             age: 34,
@@ -17,7 +18,8 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
             photos: [] as string[],
             photoIdx: 0,
         },
-        "Анаит Багратуни": {
+        "char-anahit-bagratuni": {
+            presetId: "char-anahit-bagratuni",
             name: "Анаит Багратуни",
             inFrame: true,
             age: 34,
@@ -26,7 +28,8 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
             photos: [] as string[],
             photoIdx: 0,
         },
-        "Вардан Майриг": {
+        "char-vardan-mayrig": {
+            presetId: "char-vardan-mayrig",
             name: "Вардан Майриг",
             inFrame: true,
             age: 34,
@@ -35,7 +38,8 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
             photos: [] as string[],
             photoIdx: 0,
         },
-        Цовинар: {
+        "char-tsovinar": {
+            presetId: "char-tsovinar",
             name: "Цовинар",
             inFrame: true,
             age: 34,
@@ -46,28 +50,32 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
         },
     },
     location: {
-        "Старый Конд": {
+        "loc-old-kond": {
+            presetId: "loc-old-kond",
             name: "Старый Конд",
             weather: "туман",
             timeOfDay: "рассвет",
             interiorExterior: "Экстерьер",
             damageLevel: 0,
         },
-        Каскад: {
+        "loc-cascade": {
+            presetId: "loc-cascade",
             name: "Каскад",
             weather: "туман",
             timeOfDay: "рассвет",
             interiorExterior: "Экстерьер",
             damageLevel: 0,
         },
-        Гарни: {
+        "loc-garni": {
+            presetId: "loc-garni",
             name: "Гарни",
             weather: "туман",
             timeOfDay: "рассвет",
             interiorExterior: "Экстерьер",
             damageLevel: 0,
         },
-        Севан: {
+        "loc-sevan": {
+            presetId: "loc-sevan",
             name: "Севан",
             weather: "туман",
             timeOfDay: "рассвет",
@@ -76,75 +84,156 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
         },
     },
     building: {
-        "Дом с эркером": { name: "Дом с эркером", inFrame: true, floor: 2 },
-        Чайхана: { name: "Чайхана", inFrame: true, floor: 2 },
-        Мастерская: { name: "Мастерская", inFrame: true, floor: 2 },
-        "Двор-колодец": { name: "Двор-колодец", inFrame: true, floor: 2 },
+        "bld-bay-window-house": {
+            presetId: "bld-bay-window-house",
+            name: "Дом с эркером",
+            inFrame: true,
+            floor: 2,
+        },
+        "bld-chaykhana": { presetId: "bld-chaykhana", name: "Чайхана", inFrame: true, floor: 2 },
+        "bld-workshop": { presetId: "bld-workshop", name: "Мастерская", inFrame: true, floor: 2 },
+        "bld-courtyard-well": {
+            presetId: "bld-courtyard-well",
+            name: "Двор-колодец",
+            inFrame: true,
+            floor: 2,
+        },
     },
     clothing: {
-        "Tigran Avetisyan": { name: "Tigran Avetisyan", season: "FW26", wear: 12 },
-        "Anna K": { name: "Anna K", season: "FW26", wear: 12 },
-        "Loom Weaving": { name: "Loom Weaving", season: "FW26", wear: 12 },
-        "Taraz (нац.)": { name: "Taraz (нац.)", season: "FW26", wear: 12 },
+        "cloth-tigran-avetisyan": {
+            presetId: "cloth-tigran-avetisyan",
+            name: "Tigran Avetisyan",
+            season: "FW26",
+            wear: 12,
+        },
+        "cloth-anna-k": { presetId: "cloth-anna-k", name: "Anna K", season: "FW26", wear: 12 },
+        "cloth-loom-weaving": {
+            presetId: "cloth-loom-weaving",
+            name: "Loom Weaving",
+            season: "FW26",
+            wear: 12,
+        },
+        "cloth-taraz": {
+            presetId: "cloth-taraz",
+            name: "Taraz (нац.)",
+            season: "FW26",
+            wear: 12,
+        },
     },
     artwork: {
-        "Минас Аветисян": { name: "Минас Аветисян", inFrame: true, scale: 120 },
-        Сарьян: { name: "Сарьян", inFrame: true, scale: 120 },
-        "Параджанов коллаж": { name: "Параджанов коллаж", inFrame: true, scale: 120 },
-        Хачкар: { name: "Хачкар", inFrame: true, scale: 120 },
+        "art-minas-avetisyan": {
+            presetId: "art-minas-avetisyan",
+            name: "Минас Аветисян",
+            inFrame: true,
+            scale: 120,
+        },
+        "art-saryan": { presetId: "art-saryan", name: "Сарьян", inFrame: true, scale: 120 },
+        "art-parajanov-collage": {
+            presetId: "art-parajanov-collage",
+            name: "Параджанов коллаж",
+            inFrame: true,
+            scale: 120,
+        },
+        "art-khachkar": { presetId: "art-khachkar", name: "Хачкар", inFrame: true, scale: 120 },
     },
     furniture: {
-        "Тахта + ковёр": { name: "Тахта + ковёр", inFrame: true, density: 5 },
-        "Резной буфет": { name: "Резной буфет", inFrame: true, density: 5 },
-        Тонет: { name: "Тонет", inFrame: true, density: 5 },
-        Минимал: { name: "Минимал", inFrame: true, density: 5 },
+        "furn-sofa-carpet": {
+            presetId: "furn-sofa-carpet",
+            name: "Тахта + ковёр",
+            inFrame: true,
+            density: 5,
+        },
+        "furn-carved-buffet": {
+            presetId: "furn-carved-buffet",
+            name: "Резной буфет",
+            inFrame: true,
+            density: 5,
+        },
+        "furn-thonet": { presetId: "furn-thonet", name: "Тонет", inFrame: true, density: 5 },
+        "furn-minimal": { presetId: "furn-minimal", name: "Минимал", inFrame: true, density: 5 },
     },
     music: {
-        "Армянский дудук": { name: "Армянский дудук", mood: "элегия" },
-        "Джаз-квартет": { name: "Джаз-квартет", mood: "элегия" },
-        "Электронный минимал": { name: "Электронный минимал", mood: "элегия" },
-        Тишина: { name: "Тишина", mood: "элегия" },
+        "music-duduk": { presetId: "music-duduk", name: "Армянский дудук", mood: "элегия" },
+        "music-jazz-quartet": {
+            presetId: "music-jazz-quartet",
+            name: "Джаз-квартет",
+            mood: "элегия",
+        },
+        "music-electronic-minimal": {
+            presetId: "music-electronic-minimal",
+            name: "Электронный минимал",
+            mood: "элегия",
+        },
+        "music-silence": { presetId: "music-silence", name: "Тишина", mood: "элегия" },
     },
     script: {
-        "Сцена 04: Утро в Конде": { name: "Сцена 04: Утро в Конде", tone: "драма" },
-        "Пролог · Севан": { name: "Пролог · Севан", tone: "драма" },
-        Вернисаж: { name: "Вернисаж", tone: "драма" },
-        Финал: { name: "Финал", tone: "драма" },
+        "scr-scene04-morning-kond": {
+            presetId: "scr-scene04-morning-kond",
+            name: "Сцена 04: Утро в Конде",
+            tone: "драма",
+        },
+        "scr-prologue-sevan": {
+            presetId: "scr-prologue-sevan",
+            name: "Пролог · Севан",
+            tone: "драма",
+        },
+        "scr-vernissage": { presetId: "scr-vernissage", name: "Вернисаж", tone: "драма" },
+        "scr-finale": { presetId: "scr-finale", name: "Финал", tone: "драма" },
     },
     storyboard: {
-        "Утро в Конде v4": { name: "Утро в Конде v4", shots: 6 },
-        "Вернисаж v2": { name: "Вернисаж v2", shots: 6 },
-        "Финал · одна сцена": { name: "Финал · одна сцена", shots: 6 },
+        "sb-morning-kond-v4": {
+            presetId: "sb-morning-kond-v4",
+            name: "Утро в Конде v4",
+            shots: 6,
+        },
+        "sb-vernissage-v2": { presetId: "sb-vernissage-v2", name: "Вернисаж v2", shots: 6 },
+        "sb-finale-one-scene": {
+            presetId: "sb-finale-one-scene",
+            name: "Финал · одна сцена",
+            shots: 6,
+        },
     },
     transport: {
-        "Советский Москвич": { name: "Советский Москвич", inFrame: false },
-        "Арба конная": { name: "Арба конная", inFrame: false },
-        "Велосипед ретро": { name: "Велосипед ретро", inFrame: false },
-        Маршрутка: { name: "Маршрутка", inFrame: false },
+        "tr-soviet-moskvich": {
+            presetId: "tr-soviet-moskvich",
+            name: "Советский Москвич",
+            inFrame: false,
+        },
+        "tr-horse-cart": { presetId: "tr-horse-cart", name: "Арба конная", inFrame: false },
+        "tr-retro-bicycle": {
+            presetId: "tr-retro-bicycle",
+            name: "Велосипед ретро",
+            inFrame: false,
+        },
+        "tr-marshrutka": { presetId: "tr-marshrutka", name: "Маршрутка", inFrame: false },
     },
     mise_en_scene: {
-        "1 человек в кадре": {
+        "mes-1-person": {
+            presetId: "mes-1-person",
             name: "1 человек в кадре",
             photos: [] as string[],
             photoIdx: 0,
             peopleCount: 1,
             cameraCount: 1,
         },
-        "2 человека в кадре": {
+        "mes-2-person": {
+            presetId: "mes-2-person",
             name: "2 человека в кадре",
             photos: ["/assets/mise-en-scene/2p_1cam_ots-render.jpg"] as string[],
             photoIdx: 0,
             peopleCount: 2,
             cameraCount: 1,
         },
-        "3 человека в кадре": {
+        "mes-3-person": {
+            presetId: "mes-3-person",
             name: "3 человека в кадре",
             photos: ["/assets/mise-en-scene/3p_3cam_overhead-triangle.jpg"] as string[],
             photoIdx: 0,
             peopleCount: 3,
             cameraCount: 3,
         },
-        "3+ человек в кадре": {
+        "mes-3plus-person": {
+            presetId: "mes-3plus-person",
             name: "3+ человек в кадре",
             photos: ["/assets/mise-en-scene/6p_1cam_render-medium.jpg"] as string[],
             photoIdx: 0,

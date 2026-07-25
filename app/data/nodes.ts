@@ -266,7 +266,7 @@ export const NODE_TEMPLATES = {
             { name: "JSON", type: PORT_TYPES.TEXT },
         ],
         params: {
-            id: "",
+            presetId: "",
             selectedItem: "",
             name: "",
             inFrame: true,
@@ -304,6 +304,7 @@ export const NODE_TEMPLATES = {
             { name: "JSON", type: PORT_TYPES.TEXT },
         ],
         params: {
+            presetId: "",
             selectedItem: "",
             name: "",
             photos: [] as string[],
@@ -329,6 +330,7 @@ export const NODE_TEMPLATES = {
             { name: "JSON", type: PORT_TYPES.TEXT },
         ],
         params: {
+            presetId: "",
             selectedItem: "",
             name: "",
             photos: [] as string[],
@@ -347,6 +349,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [],
         params: {
+            presetId: "",
             selectedItem: "",
             name: "",
             photos: [] as string[],
@@ -364,6 +367,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [],
         params: {
+            presetId: "",
             selectedItem: "",
             name: "",
             photos: [] as string[],
@@ -381,6 +385,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [],
         params: {
+            presetId: "",
             selectedItem: "",
             name: "",
             photos: [] as string[],
@@ -398,6 +403,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [],
         params: {
+            presetId: "",
             selectedItem: "",
             name: "",
             photos: [] as string[],
@@ -415,6 +421,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [{ name: "Audio Out", type: PORT_TYPES.AUDIO }],
         params: {
+            presetId: "",
             selectedItem: "",
             name: "",
             photos: [] as string[],
@@ -431,6 +438,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [{ name: "Text Out", type: PORT_TYPES.TEXT }],
         params: {
+            presetId: "",
             selectedItem: "",
             name: "",
             photos: [] as string[],
@@ -447,6 +455,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [{ name: "Image Out", type: PORT_TYPES.IMAGE }],
         params: {
+            presetId: "",
             selectedItem: "",
             name: "",
             shots: 0,
@@ -461,6 +470,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [],
         params: {
+            presetId: "",
             selectedItem: "",
             name: "",
             photos: [] as string[],

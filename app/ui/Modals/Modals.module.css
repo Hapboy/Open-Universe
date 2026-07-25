@@ -59,10 +59,54 @@
     max-height: 70vh;
 }
 
+.tabRow {
+    display: flex;
+    gap: 4px;
+    padding: 10px 20px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.tabBtn {
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.tabBtn:hover {
+    color: var(--color-text-primary);
+}
+
+.tabBtnActive {
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-bg-accent);
+}
+
 .sub {
     font-size: 12px;
     color: var(--color-text-secondary);
     margin-bottom: 16px;
+}
+
+.switchLink {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.switchLink:hover {
+    color: var(--color-text-primary);
 }
 
 .statRow {

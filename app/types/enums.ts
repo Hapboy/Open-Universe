@@ -155,7 +155,7 @@ export type TeamRole = (typeof TEAM_ROLES)[number];
 
 // ── Modal routing (ModalContext, Phase 8) ───────────────────────────────────
 
-export const MODAL_TYPES = ["team", "onboard", "storage"] as const;
+export const MODAL_TYPES = ["profile", "signup", "login", "storage"] as const;
 export type ModalType = (typeof MODAL_TYPES)[number];
 
 // ── Auth scaffold (AuthContext, Phase 9) ────────────────────────────────────

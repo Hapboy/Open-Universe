@@ -57,7 +57,7 @@ export interface CharacterPresence {
 // PresetLibraryContext's migration), fall back to a normalized name match
 // for character nodes placed before that id existed.
 function identityKey(params: CharacterNodeParams): string | null {
-    if (params.id) return params.id;
+    if (params.presetId) return params.presetId;
     const name = params.name?.trim().toLowerCase();
     return name ? `name:${name}` : null;
 }

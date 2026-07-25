@@ -15,6 +15,7 @@ export function TextField({
     title,
     className,
     autoFocus,
+    type = "text",
 }: {
     label?: string;
     value?: string;
@@ -26,12 +27,13 @@ export function TextField({
     title?: string;
     className?: string;
     autoFocus?: boolean;
+    type?: "text" | "password";
 }) {
     return (
         <div className={cn(styles.fld, className)} title={title}>
             {label && <span>{label}</span>}
             <input
-                type="text"
+                type={type}
                 disabled={disabled}
                 placeholder={placeholder}
                 autoFocus={autoFocus}

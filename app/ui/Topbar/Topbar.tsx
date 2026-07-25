@@ -51,7 +51,8 @@ export function Topbar() {
                 <i className="ti ti-player-play" />
                 <span>Прогнать граф</span>
             </button>
-            <TeamButton />
+            <ProfileButton />
+            <AuthButton />
             {deferredInstallPrompt && (
                 <button className={styles.tb} onClick={handleInstall}>
                     <i className="ti ti-download" />
@@ -62,14 +63,40 @@ export function Topbar() {
     );
 }
 
-function TeamButton() {
-    const { team } = useUserContext();
+function ProfileButton() {
+    const { currentUser } = useUserContext();
     const { openModal } = useModalContext();
+
+    if (!currentUser) return null;
+
     return (
-        <button className={styles.tb} id="btnTeam" onClick={() => openModal("team")}>
-            <i className="ti ti-users-group" />
-            <span>Команда</span>
-            <b>{team.length + 1}</b>
+        <button className={styles.tb} id="btnProfile" onClick={() => openModal("profile")}>
+            <i className="ti ti-user-circle" />
+            <span>Профиль</span>
+        </button>
+    );
+}
+
+// Signing up isn't required to use the app locally — only to save graphs to
+// a backend and collaborate with the rest of the team, once that exists.
+// This button is the opt-in entry point instead of a forced onboarding modal.
+function AuthButton() {
+    const { currentUser, logOut } = useUserContext();
+    const { openModal } = useModalContext();
+
+    if (currentUser) {
+        return (
+            <button className={styles.tb} id="btnLogout" onClick={logOut}>
+                <i className="ti ti-logout" />
+                <span>Выйти</span>
+            </button>
+        );
+    }
+
+    return (
+        <button className={styles.tb} id="btnSignup" onClick={() => openModal("signup")}>
+            <i className="ti ti-login" />
+            <span>Войти</span>
         </button>
     );
 }

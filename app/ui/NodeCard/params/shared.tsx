@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import cn from "classnames";
 import type { Edge } from "@xyflow/react";
 import type { NodeRef, TimelineScene } from "../../../types.ts";
 import { usePresetLibraryContext } from "../../../store/contexts/PresetLibraryContext.tsx";
 import { Switch } from "../../components/Switch/Switch.tsx";
-import { Select } from "../../components/Select/Select.tsx";
+import { Select, type SelectOption } from "../../components/Select/Select.tsx";
 import styles from "../../../styles/shared.module.css";
 
 export interface NodeParamsProps {
@@ -94,11 +94,12 @@ function buildPresetSnapshot(params: Record<string, unknown>) {
 }
 
 // Manages an entity type's shared preset library (global, one per entity
-// type — see PresetLibraryContext.tsx): its keys are the dropdown's name
-// list, its values are each entity's own saved params. Selecting a name loads
-// its preset (if any) onto the node; adding a new name snapshots the node's
-// current params (everything but the bookkeeping keys above) as that entity's
-// preset.
+// type — see PresetLibraryContext.tsx): its keys are each preset's stable
+// `presetId`, its values are each entity's own saved params. Selecting an id
+// loads its preset (if any) onto the node; adding a preset always mints a
+// fresh id and snapshots the node's current params (everything but the
+// bookkeeping keys above) under it — two presets may share a display name,
+// since the name is no longer the identity.
 //
 // Updating an existing preset is explicit (`onUpdate`, wired to a small
 // button next to the dropdown), not automatic: editing a node's params never
@@ -118,44 +119,63 @@ export function usePresetDatabase(
 ) {
     const { library, addPreset } = usePresetLibraryContext();
     const entityType = node.data.nodeType;
-    const presets = library[entityType] ?? {};
-    const db = Object.keys(presets);
-    const selectedName = params.selectedItem as string | undefined;
-    const storedSnapshot = selectedName ? presets[selectedName] : undefined;
+    const rawPresets = library[entityType];
+    const presets = rawPresets ?? {};
+    const db: SelectOption[] = Object.entries(presets).map(([id, snap]) => ({
+        value: id,
+        label: (snap.name as string) || id,
+    }));
+    const currentPresetId = params.presetId as string | undefined;
+    const storedSnapshot = currentPresetId ? presets[currentPresetId] : undefined;
     const snapshot = buildPresetSnapshot(params);
     const hasUnsavedChanges =
-        !!selectedName &&
+        !!currentPresetId &&
         !!storedSnapshot &&
         JSON.stringify(snapshot) !== JSON.stringify(storedSnapshot);
 
-    const onSelect = (name: string) => {
-        // `name` param defaults to the picked preset's key, then the stored
-        // snapshot's own `name` (if any) wins — a preset can carry a name
-        // that has since drifted from the key it's filed under.
-        updateNodeParams(node.id, { selectedItem: name, name, ...(presets[name] ?? {}) });
+    // Every entity node needs a stable `presetId`, whether it arrived via a
+    // legacy graph (name only, no id yet) or was just spawned from a
+    // NODE_TEMPLATES default (blank everything). Prefer a cataloged preset's
+    // own id when the node's current name happens to match one, so two nodes
+    // that "look like" the same preset don't end up as separate identities;
+    // otherwise mint a fresh one. Guarded on `params.presetId` already being
+    // set so this never re-fires once assigned.
+    useEffect(() => {
+        if (params.presetId) return;
+        const selectedName = params.selectedItem as string | undefined;
+        const matched = selectedName
+            ? Object.entries(rawPresets ?? {}).find(([, s]) => s.name === selectedName)
+            : undefined;
+        updateNodeParams(node.id, { presetId: matched ? matched[0] : crypto.randomUUID() });
+    }, [node.id, params.presetId, params.selectedItem, rawPresets, updateNodeParams]);
+
+    const onSelect = (id: string) => {
+        const preset = id ? presets[id] : undefined;
+        const name = (preset?.name as string) ?? "";
+        updateNodeParams(node.id, { presetId: id, selectedItem: name, name, ...(preset ?? {}) });
     };
 
     const onAdd = (name: string) => {
-        const existing = db.find((c) => c.toLowerCase() === name.toLowerCase());
-        if (existing) return onSelect(existing);
-        // Default the node's own name field to the new preset's key unless
-        // the user already typed a custom one before adding.
-        const snap = snapshot.name ? snapshot : { ...snapshot, name };
-        addPreset(entityType, name, snap);
-        updateNodeParams(node.id, { selectedItem: name, name: snap.name as string });
+        const newId = crypto.randomUUID();
+        // Default the node's own name field to what the user typed unless a
+        // custom one is already set.
+        const finalName = (snapshot.name as string) || name;
+        const snap = { ...snapshot, presetId: newId, name: finalName };
+        addPreset(entityType, newId, snap);
+        updateNodeParams(node.id, { presetId: newId, selectedItem: finalName, name: finalName });
     };
 
     const onUpdate = () => {
-        if (!selectedName) return;
-        addPreset(entityType, selectedName, snapshot);
+        if (!currentPresetId) return;
+        addPreset(entityType, currentPresetId, snapshot);
     };
 
     return { db, onSelect, onAdd, onUpdate, hasUnsavedChanges };
 }
 
-// Dropdown over a name list with an inline "add new item" flow: pick from
-// the select, or press the add button, type a name and confirm with Enter /
-// the check button (Escape cancels).
+// Dropdown over a preset id list (labeled by name) with an inline "add new
+// item" flow: pick from the select, or press the add button, type a name and
+// confirm with Enter / the check button (Escape cancels).
 export function DatabaseSelect({
     label,
     items,
@@ -167,7 +187,7 @@ export function DatabaseSelect({
     addLabel = "Добавить",
 }: {
     label: string;
-    items: string[];
+    items: readonly SelectOption[];
     selected: string;
     onSelect: (v: string) => void;
     onAdd: (name: string) => void;
