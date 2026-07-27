@@ -1,6 +1,6 @@
-import { Fragment, memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import cn from "classnames";
-import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/react";
 import type { NodeParams, PortType } from "../../types.ts";
 import { AI_MODEL_NODE_TYPES, NODE_TEMPLATES, RICH_ENTITY_NODE_TYPES } from "../../data/nodes.ts";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
@@ -53,6 +53,19 @@ export const NodeCard = memo(function NodeCard({
     const [editingLabel, setEditingLabel] = useState(false);
     const [hoveredInputId, setHoveredInputId] = useState<string | null>(null);
     const templateInputCount = NODE_TEMPLATES[data.nodeType]?.inputs.length ?? data.inputs.length;
+
+    // Pins are real flow rows now, so adding/removing one already resizes
+    // the node wrapper and React Flow's own ResizeObserver should pick up
+    // new/removed handles on its own. Kept as a cheap, redundant safety net
+    // in case that observer-driven path ever misses an update — without it,
+    // a missed update means React Flow can't route an edge to an
+    // unregistered handle (error #008).
+    const updateNodeInternals = useUpdateNodeInternals();
+    const inputPinIds = data.inputs.map((p) => p.id).join("|");
+    const outputPinIds = data.outputs.map((p) => p.id).join("|");
+    useEffect(() => {
+        updateNodeInternals(id);
+    }, [id, inputPinIds, outputPinIds, updateNodeInternals]);
 
     const isAiModel = AI_MODEL_NODE_TYPES.includes(data.nodeType);
     const isRunning = runningNodeIds.has(id);
@@ -143,56 +156,6 @@ export const NodeCard = memo(function NodeCard({
                 data.promptPanelOpen && styles.promptOpen,
             )}
             style={{ "--nc": data.color } as React.CSSProperties}>
-            {/* Input handles */}
-            {data.inputs.map((port, i) => {
-                const top = 68 + i * 28;
-                const text = `${port.name} (${portTypeLabel(port.type)})`;
-                const removable = i >= templateInputCount;
-                return (
-                    <Fragment key={port.id}>
-                        <div
-                            className={styles.pinSlot}
-                            style={{ top: top - 11 }}
-                            onMouseEnter={() => removable && setHoveredInputId(port.id)}
-                            onMouseLeave={() =>
-                                setHoveredInputId((cur) => (cur === port.id ? null : cur))
-                            }>
-                            <Handle
-                                type="target"
-                                position={Position.Left}
-                                id={port.id}
-                                className={styles.handle}
-                                style={{ left: 28, background: portColor(port.type) }}
-                                title={text}
-                            />
-                            {removable && (
-                                <button
-                                    className={cn(
-                                        styles.pinRemoveBtn,
-                                        hoveredInputId === port.id && styles.pinRemoveBtnVisible,
-                                    )}
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        removePinInput(id, port.id);
-                                    }}
-                                    title="Удалить пин">
-                                    <i className="ti ti-x" />
-                                </button>
-                            )}
-                        </div>
-                        {data.pinLabelsWide && (
-                            <span
-                                className={cn(styles.pinLabel, styles.pinLabelLeft)}
-                                style={{ top }}
-                                title={text}>
-                                {port.name}
-                            </span>
-                        )}
-                    </Fragment>
-                );
-            })}
-
             <div className={styles.header}>
                 <i className={`ti ${data.icon}`} />
                 {editingLabel ? (
@@ -285,130 +248,185 @@ export const NodeCard = memo(function NodeCard({
                 />
             </div>
 
-            <div className={styles.paramsCol}>
-                {generatedText && (
-                    <div className={styles.body}>
-                        <div
-                            className={cn(
-                                styles.titleVal,
-                                styles.titleValFull,
-                                "nodrag",
-                                "nowheel",
-                            )}>
-                            {generatedText}
+            <div className={styles.middleRow}>
+                <div className={styles.pinColLeft}>
+                    {data.inputs.map((port, i) => {
+                        const text = `${port.name} (${portTypeLabel(port.type)})`;
+                        const removable = i >= templateInputCount;
+                        return (
+                            <div
+                                key={port.id}
+                                className={styles.pinRow}
+                                onMouseEnter={() => removable && setHoveredInputId(port.id)}
+                                onMouseLeave={() =>
+                                    setHoveredInputId((cur) => (cur === port.id ? null : cur))
+                                }>
+                                <Handle
+                                    type="target"
+                                    position={Position.Left}
+                                    id={port.id}
+                                    className={cn(styles.handle, styles.handleLeft)}
+                                    style={{ background: portColor(port.type) }}
+                                    title={text}
+                                />
+                                {data.pinLabelsWide && (
+                                    <span
+                                        className={cn(styles.pinLabel, styles.pinLabelLeft)}
+                                        title={text}>
+                                        {port.name}
+                                    </span>
+                                )}
+                                {removable && (
+                                    <button
+                                        className={cn(
+                                            styles.pinRemoveBtn,
+                                            hoveredInputId === port.id &&
+                                                styles.pinRemoveBtnVisible,
+                                        )}
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            removePinInput(id, port.id);
+                                        }}
+                                        title="Удалить пин">
+                                        <i className="ti ti-x" />
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <div className={styles.paramsCol}>
+                    {generatedText && (
+                        <div className={styles.body}>
+                            <div
+                                className={cn(
+                                    styles.titleVal,
+                                    styles.titleValFull,
+                                    "nodrag",
+                                    "nowheel",
+                                )}>
+                                {generatedText}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {generatedItems.length > 0 && (
-                    <MediaSlider
-                        items={generatedItems}
-                        index={generatedIdx}
-                        onIndexChange={(i) => {
-                            const snapshot = generatedParamsHistory[generatedHistory[i]];
-                            updateNodeParams(
-                                id,
-                                snapshot ? { ...snapshot, generatedIdx: i } : { generatedIdx: i },
-                            );
-                        }}
-                        onDelete={(i) => {
-                            const ref = generatedHistory[i];
-                            const nextHistory = generatedHistory.filter((_, idx) => idx !== i);
-                            if (ref) void deleteBlobs([ref]).catch(console.error);
-                            const nextParamsHistory = { ...generatedParamsHistory };
-                            if (ref) delete nextParamsHistory[ref];
-                            updateNodeParams(id, {
-                                generatedHistory: nextHistory,
-                                generatedParamsHistory: nextParamsHistory,
-                                generatedIdx: Math.max(
-                                    0,
-                                    Math.min(generatedIdx, nextHistory.length - 1),
-                                ),
-                            });
-                        }}
-                    />
-                )}
-
-                {generatedVideo && <MediaSlider items={[{ url: generatedVideo, type: "video" }]} />}
-
-                <div className={cn(styles.paramsWrap, "nodrag", "nowheel")}>
-                    <div className={styles.paramsMain}>
-                        <NodeParamsPanel
-                            node={{ id, data }}
-                            edges={edges}
-                            resolved={resolved}
-                            scenes={scenes}
-                            updateNodeParam={updateNodeParam}
-                            updateNodeParams={updateNodeParams}
-                            setNodePhotos={setNodePhotos}
-                            addImageInput={addImageInput}
-                            addTextInput={addTextInput}
-                            loadPinterestBoards={loadPinterestBoards}
-                            loadPinterestPins={loadPinterestPins}
-                            executeGraph={executeGraph}
+                    {generatedItems.length > 0 && (
+                        <MediaSlider
+                            items={generatedItems}
+                            index={generatedIdx}
+                            onIndexChange={(i) => {
+                                const snapshot = generatedParamsHistory[generatedHistory[i]];
+                                updateNodeParams(
+                                    id,
+                                    snapshot
+                                        ? { ...snapshot, generatedIdx: i }
+                                        : { generatedIdx: i },
+                                );
+                            }}
+                            onDelete={(i) => {
+                                const ref = generatedHistory[i];
+                                const nextHistory = generatedHistory.filter((_, idx) => idx !== i);
+                                if (ref) void deleteBlobs([ref]).catch(console.error);
+                                const nextParamsHistory = { ...generatedParamsHistory };
+                                if (ref) delete nextParamsHistory[ref];
+                                updateNodeParams(id, {
+                                    generatedHistory: nextHistory,
+                                    generatedParamsHistory: nextParamsHistory,
+                                    generatedIdx: Math.max(
+                                        0,
+                                        Math.min(generatedIdx, nextHistory.length - 1),
+                                    ),
+                                });
+                            }}
                         />
-                    </div>
-                    {RICH_ENTITY_NODE_TYPES.has(data.nodeType) && data.promptPanelOpen && (
-                        <div className={styles.promptCol}>
-                            <TextAreaField
-                                label="Дополнительное описание"
-                                rows={12}
-                                value={(data.params.additionalDescription as string) ?? ""}
-                                onChange={(v) => updateNodeParam(id, "additionalDescription", v)}
+                    )}
+
+                    {generatedVideo && (
+                        <MediaSlider items={[{ url: generatedVideo, type: "video" }]} />
+                    )}
+
+                    <div className={cn(styles.paramsWrap, "nodrag", "nowheel")}>
+                        <div className={styles.paramsMain}>
+                            <NodeParamsPanel
+                                node={{ id, data }}
+                                edges={edges}
+                                resolved={resolved}
+                                scenes={scenes}
+                                updateNodeParam={updateNodeParam}
+                                updateNodeParams={updateNodeParams}
+                                setNodePhotos={setNodePhotos}
+                                addImageInput={addImageInput}
+                                addTextInput={addTextInput}
+                                loadPinterestBoards={loadPinterestBoards}
+                                loadPinterestPins={loadPinterestPins}
+                                executeGraph={executeGraph}
                             />
+                        </div>
+                        {RICH_ENTITY_NODE_TYPES.has(data.nodeType) && data.promptPanelOpen && (
+                            <div className={styles.promptCol}>
+                                <TextAreaField
+                                    label="Дополнительное описание"
+                                    rows={12}
+                                    value={(data.params.additionalDescription as string) ?? ""}
+                                    onChange={(v) =>
+                                        updateNodeParam(id, "additionalDescription", v)
+                                    }
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {generatedAudio && (
+                        <audio
+                            src={generatedAudio}
+                            controls
+                            className={cn(styles.audioPlayer, "nodrag", "nowheel")}
+                        />
+                    )}
+
+                    {jsonPreview && (
+                        <div className={styles.body}>
+                            <pre
+                                className={cn(
+                                    styles.titleVal,
+                                    styles.titleValFull,
+                                    "nodrag",
+                                    "nowheel",
+                                )}
+                                style={{ whiteSpace: "pre-wrap" }}>
+                                {jsonPreview}
+                            </pre>
                         </div>
                     )}
                 </div>
 
-                {generatedAudio && (
-                    <audio
-                        src={generatedAudio}
-                        controls
-                        className={cn(styles.audioPlayer, "nodrag", "nowheel")}
-                    />
-                )}
-
-                {jsonPreview && (
-                    <div className={styles.body}>
-                        <pre
-                            className={cn(
-                                styles.titleVal,
-                                styles.titleValFull,
-                                "nodrag",
-                                "nowheel",
-                            )}
-                            style={{ whiteSpace: "pre-wrap" }}>
-                            {jsonPreview}
-                        </pre>
-                    </div>
-                )}
+                <div className={styles.pinColRight}>
+                    {data.outputs.map((port) => {
+                        const text = `${port.name} (${portTypeLabel(port.type)})`;
+                        return (
+                            <div key={port.id} className={styles.pinRow}>
+                                {data.pinLabelsWide && (
+                                    <span
+                                        className={cn(styles.pinLabel, styles.pinLabelRight)}
+                                        title={text}>
+                                        {port.name}
+                                    </span>
+                                )}
+                                <Handle
+                                    type="source"
+                                    position={Position.Right}
+                                    id={port.id}
+                                    className={cn(styles.handle, styles.handleRight)}
+                                    style={{ background: portColor(port.type) }}
+                                    title={text}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
-
-            {/* Output handles */}
-            {data.outputs.map((port, i) => {
-                const top = 68 + i * 28;
-                const text = `${port.name} (${portTypeLabel(port.type)})`;
-                return (
-                    <Fragment key={port.id}>
-                        <Handle
-                            type="source"
-                            position={Position.Right}
-                            id={port.id}
-                            className={styles.handle}
-                            style={{ top, background: portColor(port.type) }}
-                            title={text}
-                        />
-                        {data.pinLabelsWide && (
-                            <span
-                                className={cn(styles.pinLabel, styles.pinLabelRight)}
-                                style={{ top }}
-                                title={text}>
-                                {port.name}
-                            </span>
-                        )}
-                    </Fragment>
-                );
-            })}
         </div>
     );
 });

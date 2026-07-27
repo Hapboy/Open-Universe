@@ -169,22 +169,62 @@
 }
 
 .handle {
+    position: absolute;
     width: 12px;
     height: 12px;
     border-width: 2px;
 }
 
-.pinSlot {
-    position: absolute;
-    left: -28px;
-    width: 48px;
+.handleLeft {
+    left: -4px;
+}
+
+.handleRight {
+    right: -1.5px;
+}
+
+.middleRow {
+    display: flex;
+    align-items: flex-start;
+}
+
+.pinColLeft,
+.pinColRight {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 20px;
+    width: 10px;
+    flex-shrink: 0;
+    transition: width 0.25s ease;
+}
+
+.card.cardWide .pinColLeft,
+.card.cardWide .pinColRight {
+    width: 130px;
+}
+
+.paramsCol {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.card.cardWide .paramsCol {
+    flex: 0 0 320px;
+}
+
+.pinRow {
+    position: relative;
     height: 22px;
+    display: flex;
+    align-items: center;
+}
+
+.pinColRight .pinRow {
+    justify-content: flex-end;
 }
 
 .pinRemoveBtn {
-    position: absolute;
-    left: 0;
-    top: 50%;
     width: 18px;
     height: 18px;
     border-radius: 50%;
@@ -198,10 +238,10 @@
     line-height: 1;
     cursor: pointer;
     padding: 0;
-    z-index: 3;
+    flex-shrink: 0;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-50%) scale(0.4);
+    transform: scale(0.4);
     transition:
         opacity 0.15s ease,
         transform 0.15s ease;
@@ -210,7 +250,7 @@
 .pinRemoveBtn.pinRemoveBtnVisible {
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(-50%) scale(1);
+    transform: scale(1);
 }
 
 .pinRemoveBtn:hover {
@@ -222,14 +262,7 @@
     font-size: 11px;
 }
 
-.card.cardWide .paramsCol {
-    width: 320px;
-    margin: 0 auto;
-}
-
 .pinLabel {
-    position: absolute;
-    transform: translateY(-50%);
     font-size: 12px;
     line-height: 1.2;
     color: var(--color-text-secondary);
@@ -238,16 +271,15 @@
     border-radius: 3px;
     border: 1px solid var(--color-border);
     white-space: nowrap;
-    pointer-events: none;
-    z-index: 1;
+    flex-shrink: 0;
 }
 
 .pinLabelLeft {
-    left: 14px;
+    margin-left: 10px;
 }
 
 .pinLabelRight {
-    right: 14px;
+    margin-right: 10px;
 }
 
 .paramsWrap {
