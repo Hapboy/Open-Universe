@@ -13,7 +13,7 @@
         "typecheck": "npm run typecheck -w apps/web",
         "lint": "eslint .",
         "format": "prettier --write .",
-        "prepare": "husky",
+        "prepare": "husky || true",
         "knip": "knip",
         "clean": "rm -rf node_modules dist .next"
     },
