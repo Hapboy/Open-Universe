@@ -5,7 +5,7 @@ import unusedImports from "eslint-plugin-unused-imports";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-    { ignores: ["dist", ".next", "public/prototypes"] },
+    { ignores: ["**/dist/**", "**/.next/**", "apps/web/public/prototypes/**"] },
     {
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
         files: ["**/*.{ts,tsx}"],

@@ -1,6 +1,6 @@
 dist
 node_modules
-app/public/prototypes
+apps/web/public/prototypes
 .claude
 .history
 package-lock.json

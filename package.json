@@ -1,34 +1,25 @@
 {
     "name": "open-universe",
     "type": "module",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
     "scripts": {
-        "dev": "next dev -p 4174",
-        "build": "next build",
-        "start": "next start -p 4174",
-        "typecheck": "tsc --noEmit -p tsconfig.json",
+        "dev": "npm run dev -w apps/web",
+        "build": "npm run build -w apps/web",
+        "start": "npm run start -w apps/web",
+        "typecheck": "npm run typecheck -w apps/web",
         "lint": "eslint .",
         "format": "prettier --write .",
         "prepare": "husky",
         "knip": "knip",
         "clean": "rm -rf node_modules dist .next"
     },
-    "dependencies": {
-        "@google/genai": "^2.10.0",
-        "@tabler/icons-webfont": "^3.24.0",
-        "@xyflow/react": "^12.11.2",
-        "classnames": "^2.5.1",
-        "globe.gl": "^2.46.1",
-        "next": "^16.2.11",
-        "react": "^19.2.7",
-        "react-dom": "^19.2.7",
-        "three": "^0.185.1"
-    },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@types/node": "^26.1.1",
-        "@types/react": "^19.2.17",
-        "@types/react-dom": "^19.2.3",
-        "@types/three": "^0.185.1",
         "eslint": "^10.6.0",
         "eslint-plugin-react-hooks": "^7.1.1",
         "eslint-plugin-react-refresh": "^0.5.3",
