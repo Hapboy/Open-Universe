@@ -5,7 +5,10 @@ import unusedImports from "eslint-plugin-unused-imports";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-    { ignores: ["**/dist/**", "**/.next/**", "apps/web/public/prototypes/**"] },
+    // apps/api is a standalone Bun-run project with its own eslint.config.mjs
+    // (kept out of the root npm workspaces on purpose — see package.json) so
+    // it's excluded here entirely rather than linted twice under two rule sets.
+    { ignores: ["**/dist/**", "**/.next/**", "apps/web/public/prototypes/**", "apps/api/**"] },
     {
         extends: [js.configs.recommended, ...tseslint.configs.recommended],
         files: ["**/*.{ts,tsx}"],
