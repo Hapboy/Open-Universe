@@ -24,7 +24,8 @@
     "migration:revert": "bun run typeorm migration:revert"
   },
   "dependencies": {
-    "@hayverse/shared": "^0.1.0",
+    "@aws-sdk/client-s3": "^3.1096.0",
+    "@hayverse/shared": "0.1.1",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
@@ -60,6 +61,7 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.2.0",
     "@types/node": "^24.0.0",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^7.0.0",

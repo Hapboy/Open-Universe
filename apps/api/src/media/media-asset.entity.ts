@@ -15,12 +15,14 @@ export class MediaAsset {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'owner_id' })
-  ownerId: string;
+  // Nullable for now - same reasoning as Scene.ownerId (see scene.entity.ts):
+  // no auth yet, tighten back to NOT NULL once accounts exist.
+  @Column({ name: 'owner_id', nullable: true })
+  ownerId: string | null;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'owner_id' })
-  owner: User;
+  owner: User | null;
 
   @Column({ type: 'enum', enum: MEDIA_ASSET_KINDS })
   kind: (typeof MEDIA_ASSET_KINDS)[number];

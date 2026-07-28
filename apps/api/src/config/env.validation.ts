@@ -1,14 +1,24 @@
 const NODE_ENVS = ['development', 'production', 'test'] as const;
 
-// Extend this as each module introduces its own required var (a JWT secret
-// and REDIS_URL in Phase G, R2 credentials in Phase H — see
-// docs/backend-bootstrap.md). DATABASE_URL is required as of Phase F, since
-// TypeOrmModule.forRootAsync (app.module.ts) can't bootstrap without it.
+const REQUIRED_STRING_VARS = [
+  'DATABASE_URL',
+  'R2_ACCOUNT_ID',
+  'R2_ACCESS_KEY_ID',
+  'R2_SECRET_ACCESS_KEY',
+  'R2_BUCKET_NAME',
+  'R2_PUBLIC_URL',
+] as const;
+
+// Extend this as each module introduces its own required var (REDIS_URL and
+// a JWT secret once CollaborationModule/AuthModule are built — see
+// docs/backend-bootstrap.md and the reordered plan in DECISIONS.md).
 export function validateEnv(
   config: Record<string, unknown>,
 ): Record<string, unknown> {
-  if (typeof config.DATABASE_URL !== 'string' || !config.DATABASE_URL) {
-    throw new Error('DATABASE_URL is required');
+  for (const key of REQUIRED_STRING_VARS) {
+    if (typeof config[key] !== 'string' || !config[key]) {
+      throw new Error(`${key} is required`);
+    }
   }
 
   const nodeEnv = config.NODE_ENV;

@@ -1,7 +1,6 @@
 {
     "name": "@hayverse/shared",
-    "version": "0.1.0",
-    "type": "module",
+    "version": "0.1.1",
     "main": "dist/enums.js",
     "types": "dist/enums.d.ts",
     "files": [
