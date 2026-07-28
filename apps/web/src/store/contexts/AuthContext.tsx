@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import { useUserContext } from "./UserContext.tsx";
-import { AUTH_ROLES, type AuthStatus } from "@open-universe/shared";
+import { AUTH_ROLES, type AuthStatus } from "@hayverse/shared";
 
 export interface Session {
     userId: string;

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import cn from "classnames";
 import { NODE_TEMPLATES, NODE_BROWSER_GROUPS } from "../../data/nodes.ts";
-import type { NodeType } from "@open-universe/shared";
+import type { NodeType } from "@hayverse/shared";
 import { CategoryTagGroup } from "../components/CategoryTagGroup/CategoryTagGroup.tsx";
 import { SearchField } from "../components/SearchField/SearchField.tsx";
 import styles from "./NodeBrowser.module.css";

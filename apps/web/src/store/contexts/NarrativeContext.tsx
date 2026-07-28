@@ -1,13 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useToastContext } from "./ToastContext.tsx";
 import { readJSON, writeJSON } from "../../core/browserStorage.ts";
-import type {
-    ConflictType,
-    ConflictTarget,
-    StoryPhase,
-    Pacing,
-    CurveType,
-} from "@open-universe/shared";
+import type { ConflictType, ConflictTarget, StoryPhase, Pacing, CurveType } from "@hayverse/shared";
 
 const NARRATIVE_SETTINGS_KEY = "hv_narrative_settings";
 

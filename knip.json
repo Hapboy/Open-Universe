@@ -5,6 +5,8 @@
     "workspaces": {
         ".": {},
         "apps/web": {},
-        "packages/shared": {}
+        "packages/shared": {
+            "entry": "src/enums.ts"
+        }
     }
 }

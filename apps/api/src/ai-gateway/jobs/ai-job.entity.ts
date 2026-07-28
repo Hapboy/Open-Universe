@@ -7,18 +7,11 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import {
+  HIGGSFIELD_JOB_STATUSES,
+  type HiggsfieldJobStatus,
+} from '@hayverse/shared';
 import { User } from '../../users/user.entity';
-
-// Mirrors packages/shared/src/enums.ts's HIGGSFIELD_JOB_STATUSES - the only
-// job-status vocabulary that already exists in the codebase, reused here for
-// every provider rather than inventing a second one.
-const AI_JOB_STATUSES = [
-  'queued',
-  'in_progress',
-  'completed',
-  'failed',
-  'nsfw',
-] as const;
 
 @Entity('ai_jobs')
 export class AiJob {
@@ -38,8 +31,11 @@ export class AiJob {
   @Column()
   kind: string;
 
-  @Column({ type: 'enum', enum: AI_JOB_STATUSES })
-  status: (typeof AI_JOB_STATUSES)[number];
+  // HIGGSFIELD_JOB_STATUSES is the only job-status vocabulary that already
+  // exists in the codebase, reused here for every provider rather than
+  // inventing a second one.
+  @Column({ type: 'enum', enum: HIGGSFIELD_JOB_STATUSES })
+  status: HiggsfieldJobStatus;
 
   @Column({ type: 'jsonb', nullable: true })
   result: Record<string, unknown> | null;

@@ -1,6 +1,6 @@
 import type { SceneGraphs } from "../../../store/contexts/GraphContext.tsx";
 import type { CharacterNodeParams, TimelineScene } from "../../../types.ts";
-import type { TimelineTrack } from "@open-universe/shared";
+import type { TimelineTrack } from "@hayverse/shared";
 
 // Curated fallback palette for characters without their own `color` param —
 // cycles by order of first appearance across the timeline.

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useState } from "react";
-import type { ModalType } from "@open-universe/shared";
+import type { ModalType } from "@hayverse/shared";
 
 interface ModalCtx {
     modalType: ModalType | null;

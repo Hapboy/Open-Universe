@@ -5,13 +5,12 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-
-// Mirrors packages/shared/src/enums.ts's TEAM_SIDES/TEAM_ROLES. apps/api
-// can't import that package directly - it's kept out of the npm workspace so
-// Bun can manage it independently (see docs/backend-bootstrap.md Phase D) -
-// so these value lists are duplicated here and must be kept in sync by hand.
-const TEAM_SIDES = ['urvakan', 'rambalkoshe', 'moct'] as const;
-const TEAM_ROLES = ['Режиссер', 'Разработчик', 'Художник', 'Стилист'] as const;
+import {
+  TEAM_SIDES,
+  TEAM_ROLES,
+  type TeamSide,
+  type TeamRole,
+} from '@hayverse/shared';
 
 @Entity('users')
 export class User {
@@ -28,10 +27,10 @@ export class User {
   charName: string;
 
   @Column({ type: 'enum', enum: TEAM_SIDES })
-  side: (typeof TEAM_SIDES)[number];
+  side: TeamSide;
 
   @Column({ type: 'enum', enum: TEAM_ROLES })
-  role: (typeof TEAM_ROLES)[number];
+  role: TeamRole;
 
   @Column({ name: 'timeline_duration_seconds', type: 'int', default: 60 })
   timelineDurationSeconds: number;

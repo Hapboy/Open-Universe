@@ -24,6 +24,7 @@
     "migration:revert": "bun run typeorm migration:revert"
   },
   "dependencies": {
+    "@hayverse/shared": "^0.1.0",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",

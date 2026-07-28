@@ -11,7 +11,7 @@
     },
     "dependencies": {
         "@google/genai": "^2.10.0",
-        "@open-universe/shared": "*",
+        "@hayverse/shared": "*",
         "@tabler/icons-webfont": "^3.24.0",
         "@xyflow/react": "^12.11.2",
         "classnames": "^2.5.1",

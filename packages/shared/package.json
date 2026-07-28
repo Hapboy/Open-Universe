@@ -1,8 +1,17 @@
 {
-    "name": "@open-universe/shared",
-    "version": "0.0.0",
-    "private": true,
+    "name": "@hayverse/shared",
+    "version": "0.1.0",
     "type": "module",
-    "main": "src/enums.ts",
-    "types": "src/enums.ts"
+    "main": "dist/enums.js",
+    "types": "dist/enums.d.ts",
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "prepublishOnly": "npm run build"
+    }
 }

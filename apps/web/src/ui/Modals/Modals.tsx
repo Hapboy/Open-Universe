@@ -5,7 +5,7 @@ import { useToastContext } from "../../store/contexts/ToastContext.tsx";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
 import { usePresetLibraryContext } from "../../store/contexts/PresetLibraryContext.tsx";
 import { useModalContext } from "../../store/contexts/ModalContext.tsx";
-import type { TeamSide, TeamRole } from "@open-universe/shared";
+import type { TeamSide, TeamRole } from "@hayverse/shared";
 import { TextField } from "../components/TextField/TextField.tsx";
 import { collectLiveMediaRefs, listBlobIds, sweepUnusedBlobs } from "../../core/blobStore.ts";
 import styles from "./Modals.module.css";

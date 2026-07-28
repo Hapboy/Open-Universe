@@ -23,7 +23,7 @@ import {
 } from "@xyflow/react";
 import { ENTITY_NODE_TYPES, NODE_TEMPLATES } from "../../data/nodes.ts";
 import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
-import type { NodeType } from "@open-universe/shared";
+import type { NodeType } from "@hayverse/shared";
 import type { SceneOutput } from "../../core/graph.ts";
 import { useToastContext } from "./ToastContext.tsx";
 import { useNarrativeContext } from "./NarrativeContext.tsx";

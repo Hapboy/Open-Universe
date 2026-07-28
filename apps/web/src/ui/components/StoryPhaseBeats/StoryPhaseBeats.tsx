@@ -1,5 +1,5 @@
 import cn from "classnames";
-import { STORY_PHASES, type StoryPhase } from "@open-universe/shared";
+import { STORY_PHASES, type StoryPhase } from "@hayverse/shared";
 import styles from "./StoryPhaseBeats.module.css";
 
 export type { StoryPhase };

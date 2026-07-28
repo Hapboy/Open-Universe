@@ -1,7 +1,7 @@
 import cn from "classnames";
 import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
 import { useNarrativeContext } from "../../../store/contexts/NarrativeContext.tsx";
-import { CONFLICT_TARGETS } from "@open-universe/shared";
+import { CONFLICT_TARGETS } from "@hayverse/shared";
 import styles from "../Timeline.module.css";
 
 const loreOptions = [

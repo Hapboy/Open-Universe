@@ -1,6 +1,6 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeParams } from "../types.ts";
-import type { SceneOutputType } from "@open-universe/shared";
+import type { SceneOutputType } from "@hayverse/shared";
 import type { SceneNarrativeSettings } from "../store/contexts/NarrativeContext.tsx";
 import { geminiApiClient, higgsfieldApiClient } from "./api/index.ts";
 import { AI_MODEL_NODE_TYPES, ENTITY_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "../data/nodes.ts";

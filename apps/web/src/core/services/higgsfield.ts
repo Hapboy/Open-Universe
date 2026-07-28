@@ -1,4 +1,4 @@
-import type { HiggsfieldJobStatus } from "@open-universe/shared";
+import type { HiggsfieldJobStatus } from "@hayverse/shared";
 
 // Server-only from here on — reachable only from app/api/higgsfield/*/route.ts,
 // which hold the real key. Mock/fallback data and the "no key configured" branch

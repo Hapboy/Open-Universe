@@ -16,7 +16,7 @@ import type {
     ClothingSeason,
     MusicMood,
     ScriptTone,
-} from "@open-universe/shared";
+} from "@hayverse/shared";
 
 export type { PortType };
 

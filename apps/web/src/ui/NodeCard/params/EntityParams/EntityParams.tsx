@@ -49,7 +49,7 @@ import {
     CLOTHING_SEASONS,
     MUSIC_MOODS,
     SCRIPT_TONES,
-} from "@open-universe/shared";
+} from "@hayverse/shared";
 import styles from "./EntityParams.module.css";
 
 const CHARACTER_CATEGORIES = [
