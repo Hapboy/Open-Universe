@@ -10,7 +10,7 @@ function getGitHash(): string {
 }
 
 const nextConfig: NextConfig = {
-    transpilePackages: ["@hayverse/shared"],
+    transpilePackages: ["@hayverse/shared", "@hayverse/api-client"],
     env: {
         NEXT_PUBLIC_GIT_HASH: getGitHash(),
         // Whether each provider's real (server-only) key is configured — safe to
