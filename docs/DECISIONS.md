@@ -79,13 +79,39 @@ Plain interfaces in `src/types.ts` migrate later, on demand, once the backend
 needs to share a concrete shape (e.g. a DTO) rather than speculatively moving
 everything now.
 
-## Inter-service client packages: deferred
+## `packages/shared` publishing: public npmjs.org package, `apps/api` excluded from npm workspaces
 
-The reference company's `@finbackoffice/{service}-client` pattern (a typed
-client package per backend service, imported by every consumer including
-sibling services) is a good pattern and validated at scale — but it solves a
-problem this project doesn't have yet with only one backend service. Adopt
-`@open-universe/{service}-client` once a second service actually exists.
+`apps/api` (Bun-managed) was removed from the root npm `workspaces` glob after
+`bun install` inside it walked up, found the root `workspaces` field, and
+tried to claim/reinstall the whole monorepo via Bun — corrupting the
+npm-managed `node_modules` for `apps/web`/`packages/shared` in the process
+(see the Phase D commit). Two package managers can't both own the same
+workspace root, so `apps/api` is now a fully standalone Bun project (own
+`bun.lock`, own `node_modules`), which means it can't resolve
+`@hayverse/shared` via the npm workspace symlink the way `apps/web` does.
+
+Fix: `packages/shared` is published for real as `@hayverse/shared` on
+npmjs.org (public — `npm-universe`/`open-universe` org names were both
+already taken; `hayverse` matches the actual in-app brand name and was
+available). `apps/web` still resolves it via the npm workspace symlink
+(unaffected, zero publish lag — workspace links always win over the
+registry); `apps/api` installs the real published version via `bun add`.
+
+**Revisit later:** move this to GitHub Packages (private, ties into the repo
+we already use, no separate npmjs.org login) or otherwise make it private,
+once it's worth the setup cost — public was the pragmatic choice for now
+since the package is only enum value lists, nothing sensitive.
+
+## Inter-service client packages: adopted early (reversed)
+
+Originally deferred until a second backend service existed — the
+`@finbackoffice/{service}-client` pattern (a typed client package per backend
+service, imported by every consumer) solves a multi-service problem this
+project didn't have yet. Reversed: the user wants `apps/web` to consume
+`apps/api` through a typed, published client rather than hand-written fetch
+calls even with just one service, plus it gives a natural place to hang
+generated types off the Swagger/OpenAPI spec. Published as
+`@hayverse/api-client` (same public-npmjs.org setup as `@hayverse/shared`).
 
 ## Observability: OpenTelemetry from day one
 

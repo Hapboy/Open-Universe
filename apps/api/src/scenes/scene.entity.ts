@@ -14,12 +14,15 @@ export class Scene {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'owner_id' })
-  ownerId: string;
+  // Nullable for now - there's no auth yet, so scenes created in this MVP
+  // (a single shared, unowned graph) have no owner. Tighten back to NOT NULL
+  // once AuthModule/UsersModule land and real accounts can own scenes.
+  @Column({ name: 'owner_id', nullable: true })
+  ownerId: string | null;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'owner_id' })
-  owner: User;
+  owner: User | null;
 
   @Column()
   title: string;
