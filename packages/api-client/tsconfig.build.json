@@ -5,8 +5,7 @@
         "noEmit": false,
         "declaration": true,
         "rootDir": "src",
-        "outDir": "dist",
-        "module": "commonjs"
+        "outDir": "dist"
     },
     "include": ["src/**/*"],
     "exclude": ["src/**/*.test.ts"]

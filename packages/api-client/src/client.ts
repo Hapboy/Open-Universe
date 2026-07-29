@@ -31,7 +31,12 @@ export class HayverseApiClient {
 
     constructor(options: ApiClientOptions) {
         this.baseUrl = options.baseUrl.replace(/\/$/, "");
-        this.fetchImpl = options.fetch ?? fetch;
+        // Native fetch isn't a proper method - it throws "Illegal invocation"
+        // if called with a receiver other than the global object (e.g. via
+        // `this.fetchImpl(...)` once stored on a class instance). Binding it
+        // to globalThis here means callers can pass a plain `fetch` without
+        // knowing about this quirk.
+        this.fetchImpl = options.fetch ?? fetch.bind(globalThis);
         this.getAuthToken = options.getAuthToken;
     }
 
