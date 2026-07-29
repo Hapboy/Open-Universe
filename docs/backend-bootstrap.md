@@ -250,7 +250,55 @@ Push the Dockerfile-based service, wire `DATABASE_URL`/`REDIS_URL`/JWT
 secret/R2 credentials as Railway env vars. Verify with `curl` against the
 live public URL for each module built so far.
 
-## Phase I — Frontend cutover
+## Phase I — Frontend cutover: Scenes + Media persistence
+
+Wire `apps/web`'s existing localStorage/IndexedDB-only persistence to the
+live backend via `@hayverse/api-client` (already a dependency of `apps/web`
+and already in `next.config.ts`'s `transpilePackages` — see `DECISIONS.md`'s
+"Inter-service client packages" entry), **not** hand-written fetch calls or a
+`getApiUrl()`-in-isolation approach — that predates the api-client decision
+and is what an earlier draft of this phase described. The AI-provider/Auth
+cutover this phase originally covered moved to Phase J below: those backend
+modules don't exist yet — only `ScenesModule` and `MediaModule` are built
+(Scenes deliberately built ahead of Auth/AI-gateway, see commit `53b6722`:
+"a single shared, unowned graph savable/loadable before accounts exist").
+
+The backend is the source of truth for scene graphs and uploaded media once
+this ships — no dual-write/localStorage-fallback layer. Save failures toast
+(same convention as the existing quota-exceeded toasts) with no
+retry/rollback logic; editing depends on the Railway service being up.
+
+1. Add `NEXT_PUBLIC_API_URL` (Railway backend URL) and
+   `NEXT_PUBLIC_R2_PUBLIC_URL` (same public bucket URL as `apps/api`'s
+   `R2_PUBLIC_URL` — non-sensitive) to `apps/web/.env.local`/`.env.example`
+   and Vercel env vars.
+2. Add a `hayverseApiClient` singleton (`apps/web/src/core/api/hayverse/client.ts`,
+   mirroring the existing `gemini/`, `higgsfield/`, `pinterest/` per-provider
+   `client.ts` convention) wrapping `@hayverse/api-client`'s `HayverseApiClient`,
+   pointed at `getApiUrl()`.
+3. `GraphContext.tsx`: replace the localStorage-based `SceneGraphs`
+   persistence with `hayverseApiClient.scenes.{list,create,update,remove}` —
+   one DB row per local scene entry, `title` mirrors the `output_scene`
+   node's `title` param, `graph` holds `{nodes, edges}` verbatim.
+   `scenes.owner_id` stays nullable — no per-user filtering yet. One-time
+   migration on first empty-backend load: if `localStorage['hv_scene_graphs']`
+   still has data from before this cutover, push it to the backend instead of
+   discarding it.
+4. `blobStore.ts`: `putBlob` (user uploads) switches to
+   `hayverseApiClient.media.upload`, returning the `s3:<uuid>` ref the
+   backend already designed to slot into the existing `idb:`/`gen:` prefix
+   convention; `resolveMediaRef`/`resolveMediaRefCached` gain a case for
+   `s3:` refs, resolved deterministically via
+   `${NEXT_PUBLIC_R2_PUBLIC_URL}/${ref}` (mirrors `MediaService.publicUrl()`
+   server-side) rather than an extra API round-trip.
+   `putGeneratedBlob`/`gen:` (AI-generated images) stays on IndexedDB for now
+   — see Phase J's note below.
+5. Verify end-to-end against the live Railway backend, not just localhost.
+
+## Phase J — AI provider + Auth cutover
+
+**Blocked until `AuthModule` and `AiGatewayModule` (Phase G, steps 1 and 5)
+are built** — do not start this phase before then.
 
 Cut over provider-by-provider, cheapest/lowest-risk first: **Pinterest →
 Gemini → Higgsfield** (last of the three, since it needs the BullMQ
@@ -258,18 +306,27 @@ job-polling frontend change) **→ Auth** (last overall — most user-visible).
 
 For each provider:
 
-1. Add `NEXT_PUBLIC_API_URL` to Vercel env vars (once, before the first
-   cutover).
-2. Add a `getApiUrl()` helper in `apps/web/src/core/api/env.ts`.
-3. Edit that provider's `apps/web/src/core/api/*/client.ts` to call the
+1. Add a `getApiUrl()` helper in `apps/web/src/core/api/env.ts` if Phase I
+   hasn't already added one.
+2. Edit that provider's `apps/web/src/core/api/*/client.ts` to call the
    absolute backend URL via `getApiUrl()` instead of the local
-   `app/api/*/route.ts` handler.
-4. Verify a production round-trip against the real Railway-hosted backend.
-5. Only then delete the corresponding `app/api/*/route.ts` handler.
-6. Remove that provider's API key from Vercel env vars last (after the route
+   `app/api/*/route.ts` handler — or, if `@hayverse/api-client` has grown
+   `ai`/`auth` namespaces by then (matching the Phase I precedent), prefer
+   those over hand-written fetch calls.
+3. Verify a production round-trip against the real Railway-hosted backend.
+4. Only then delete the corresponding `app/api/*/route.ts` handler.
+5. Remove that provider's API key from Vercel env vars last (after the route
    handler is gone and nothing references it).
 
-## Phase J — CLAUDE.md restructuring
+**Also in scope for this phase:** cut `putGeneratedBlob`/`gen:` (AI-generated
+media in `blobStore.ts`) over to `MediaModule` the same way Phase I did for
+uploads, and delete the IndexedDB layer (`blobStore.ts`'s `openDB`/`STORES`)
+entirely once both `uploaded` and `generated` are backend-first. This needs a
+small backend change first: `MediaService.upload()` currently hardcodes
+`kind: 'uploaded'` (`apps/api/src/media/media.service.ts`) — it needs to
+accept/derive `kind: 'generated'` too.
+
+## Phase K — CLAUDE.md restructuring
 
 - Trim the root `CLAUDE.md` to a monorepo overview: the layout diagram above,
   links to `docs/DESIGN.md` / `docs/DECISIONS.md` / this file, and any
@@ -302,23 +359,32 @@ For each provider:
 - **Phase D–H**: all new, isolated to `apps/api` — deleting the Railway
   service and `apps/api/` directory fully reverts with no impact on
   `apps/web`.
-- **Phase I**: cut over and roll back one provider at a time — reverting a
+- **Phase I**: additive — `GraphContext.tsx`/`blobStore.ts`'s backend calls
+  can be reverted back to localStorage/IndexedDB in one commit; nothing
+  server-side is destructive from the frontend's point of view (scenes/media
+  already written to Postgres/R2 just stop being read).
+- **Phase J**: cut over and roll back one provider at a time — reverting a
   single `client.ts` edit and restoring its `app/api/*/route.ts` handler is
   always independent of the others.
 
 ### Critical files this runbook references
 
+- `packages/api-client/src/{client,types}.ts` — the typed backend client
+  Phase I wires in; grows `ai`/`auth` methods in Phase J
+- `apps/web/src/core/api/hayverse/client.ts` — the `hayverseApiClient`
+  singleton Phase I adds
 - `apps/web/src/core/api/{gemini,higgsfield,pinterest}/client.ts` + sibling
-  `dto.ts` — the frontend seam Phase I rewires
-- `apps/web/src/core/api/env.ts` — where `getApiUrl()` gets added
+  `dto.ts` — the frontend seam Phase J rewires
+- `apps/web/src/core/api/env.ts` — `getApiUrl()`/`getR2PublicUrl()`
 - `apps/web/src/core/services/{gemini,higgsfield,pinterest}.ts` — provider
   logic that ports into `AiGatewayModule`
 - `packages/shared/src/enums.ts` — moved out of the frontend in Phase B
 - `apps/web/src/store/contexts/UserContext.tsx` /
   `AuthContext.tsx` — current auth flow `AuthModule` supersedes
 - `apps/web/src/store/contexts/GraphContext.tsx` — source of truth for the
-  `scenes.graph jsonb` shape
-- `apps/web/src/core/blobStore.ts` — the `idb:`/`gen:` ref-prefix convention
-  `MediaModule`'s `s3:` refs must slot into
+  `scenes.graph jsonb` shape; Phase I rewires its persistence layer
+- `apps/web/src/core/blobStore.ts` — the `idb:`/`gen:`/`s3:` ref-prefix
+  convention; Phase I cuts `idb:` uploads over, Phase J cuts `gen:` over and
+  removes IndexedDB entirely
 - `apps/web/next.config.ts`, root `package.json` — need workspace-aware
   config in Phase B/C

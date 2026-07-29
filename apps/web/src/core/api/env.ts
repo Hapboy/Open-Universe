@@ -18,3 +18,11 @@ const PROVIDER_CONFIGURED: Record<ProviderName, string | undefined> = {
 export function isProviderConfigured(name: ProviderName): boolean {
     return PROVIDER_CONFIGURED[name] === "true";
 }
+
+export function getApiUrl(): string {
+    return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4175";
+}
+
+export function getR2PublicUrl(): string {
+    return process.env.NEXT_PUBLIC_R2_PUBLIC_URL ?? "";
+}

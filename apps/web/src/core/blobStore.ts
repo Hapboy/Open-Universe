@@ -14,6 +14,8 @@
 // not every call site — same intent as browserStorage.ts.
 
 import { useEffect, useState } from "react";
+import { hayverseApiClient } from "./api/hayverse/client.ts";
+import { getR2PublicUrl } from "./api/env.ts";
 
 const DB_NAME = "hv_media_store";
 const DB_VERSION = 2;
@@ -22,15 +24,33 @@ const DB_VERSION = 2;
 // "generated" is AI output the app chooses to cache for redisplay. Kept
 // distinct since they'll likely have different ownership/retention rules
 // once a real backend exists.
+//
+// "uploaded" is backend-first now (see putBlob below) — MediaModule's
+// s3:<uuid> refs, resolved deterministically below, never touch this
+// IndexedDB table for new uploads. It's kept only so refs already saved
+// under the old idb: scheme (before this cutover) keep resolving. Generated
+// media (gen:) still goes through IndexedDB until AiGatewayModule exists
+// server-side (see docs/backend-bootstrap.md Phase J) — MediaService.upload()
+// currently hardcodes kind: 'uploaded', so there's nowhere to send it yet.
 const STORES = { uploaded: "blobs", generated: "generated" } as const;
-const PREFIXES = { uploaded: "idb:", generated: "gen:" } as const;
+const PREFIXES = { uploaded: "idb:", generated: "gen:", backend: "s3:" } as const;
 type Kind = keyof typeof STORES;
 
 function isMediaRef(value: unknown): value is string {
     return (
         typeof value === "string" &&
-        (value.startsWith(PREFIXES.uploaded) || value.startsWith(PREFIXES.generated))
+        (value.startsWith(PREFIXES.uploaded) ||
+            value.startsWith(PREFIXES.generated) ||
+            value.startsWith(PREFIXES.backend))
     );
+}
+
+// MediaModule's ref format doubles as its R2 object key (see
+// apps/api/src/media/media.service.ts's storageKey) — the public URL is
+// deterministic, computed the same way MediaService.publicUrl() does
+// server-side, so resolving one never needs an extra API round-trip.
+function backendRefToUrl(ref: string): string {
+    return `${getR2PublicUrl().replace(/\/$/, "")}/${ref}`;
 }
 
 function storeForRef(ref: string): string | undefined {
@@ -81,10 +101,12 @@ async function putBlobAs(kind: Kind, file: Blob): Promise<string> {
     return ref;
 }
 
-// Stores an uploaded file and returns its ref. Callers push this ref into
-// node params instead of the raw bytes.
+// Uploads a file to the backend (MediaModule -> R2) and returns its ref.
+// Callers push this ref into node params instead of the raw bytes. Returns
+// the same s3:<uuid> shape putBlobAs used to hand back for the old
+// IndexedDB-backed path, so callers need no changes.
 export function putBlob(file: Blob): Promise<string> {
-    return putBlobAs("uploaded", file);
+    return hayverseApiClient.media.upload(file).then((asset) => asset.storageKey);
 }
 
 // Stores a generated-media blob (currently: AI images only) and returns its
@@ -98,11 +120,13 @@ export function putGeneratedBlob(file: Blob): Promise<string> {
 // creates a duplicate URL.
 const objectUrlCache = new Map<string, string>();
 
-// Synchronous, cache-only lookup: legacy strings resolve instantly, refs
-// resolve instantly only if already loaded once this session. Lets
-// render-site hooks show a value on the very first render.
+// Synchronous, cache-only lookup: legacy strings resolve instantly, backend
+// refs resolve instantly too (deterministic URL, no IndexedDB round-trip),
+// idb:/gen: refs resolve instantly only if already loaded once this session.
+// Lets render-site hooks show a value on the very first render.
 export function resolveMediaRefCached(ref: string | undefined): string | undefined {
     if (!ref) return undefined;
+    if (ref.startsWith(PREFIXES.backend)) return backendRefToUrl(ref);
     if (!isMediaRef(ref)) return ref;
     return objectUrlCache.get(ref);
 }
@@ -112,6 +136,7 @@ export function resolveMediaRefCached(ref: string | undefined): string | undefin
 // ref string itself — an invalid src that just renders as a broken
 // image/video, not a crash.
 export async function resolveMediaRef(ref: string): Promise<string> {
+    if (ref.startsWith(PREFIXES.backend)) return backendRefToUrl(ref);
     if (!isMediaRef(ref)) return ref;
     const cached = objectUrlCache.get(ref);
     if (cached) return cached;

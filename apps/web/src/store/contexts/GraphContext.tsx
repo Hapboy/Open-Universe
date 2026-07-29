@@ -27,9 +27,9 @@ import type { NodeType } from "@hayverse/shared";
 import type { SceneOutput } from "../../core/graph.ts";
 import { useToastContext } from "./ToastContext.tsx";
 import { useNarrativeContext } from "./NarrativeContext.tsx";
-import { readJSON, readRaw, removeKey, writeJSON, writeRaw } from "../../core/browserStorage.ts";
+import { readJSON, readRaw, removeKey, writeRaw } from "../../core/browserStorage.ts";
 import { buildPhotoPorts } from "../../core/characterPorts.ts";
-import { useDebouncedPersist } from "../hooks/usePersistedState.ts";
+import { hayverseApiClient } from "../../core/api/hayverse/client.ts";
 import { useGraphExecution } from "./graphExecution.ts";
 
 const SCENE_GRAPHS_KEY = "hv_scene_graphs";
@@ -78,18 +78,6 @@ function loadStoredSceneGraphs(): SceneGraphs {
     );
 }
 
-// A pure read: the URL param is honored immediately for the initial render,
-// but persisting it is the mount effect's job (see "Clean query parameter"
-// below) — this function has no side effects, so it's safe to call from a
-// lazy initializer.
-function loadActiveSceneId(): string {
-    if (typeof window !== "undefined") {
-        const sceneParam = new URLSearchParams(window.location.search).get("scene");
-        if (sceneParam) return sceneParam;
-    }
-    return readRaw(ACTIVE_SCENE_KEY) || "sc1";
-}
-
 // Params from the node template, deep-cloned, with overrides on top.
 function templateParams(type: string, overrides: Record<string, unknown> = {}) {
     if (!type) return overrides || {};
@@ -116,11 +104,15 @@ function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
 
 // A brand-new scene's graph is just its output node — no character/location
 // starter nodes. Used both for "Add Scene" and the very-first-run bootstrap.
-function createEmptySceneGraph(
-    sceneId: string,
-    overrides: { title?: string; start?: number } = {},
-): { nodes: Node<NodeParams>[]; edges: Edge[] } {
-    const outId = `node_out_${sceneId}`;
+// Takes no scene id: the backend assigns that once the scene is created (see
+// loadInitialGraphState/createScene), so the output node gets its own
+// internal random id instead — nothing keys off that literal string beyond
+// this one graph (deriveScenes/cascade-delete match on nodeType, not id).
+function createEmptySceneGraph(overrides: { title?: string; start?: number } = {}): {
+    nodes: Node<NodeParams>[];
+    edges: Edge[];
+} {
+    const outId = `node_out_${crypto.randomUUID()}`;
 
     const nodes: Node<NodeParams>[] = [
         {
@@ -175,13 +167,56 @@ interface InitialGraphState {
     edges: Edge[];
 }
 
-// Parses localStorage exactly once for the initial render (the old code read
-// `loadActiveSceneId`/`loadStoredSceneGraphs` independently up to 3 times on
-// mount — once per lazy initializer — each re-parsing the same blob).
-function loadInitialGraphState(): InitialGraphState {
-    const activeSceneId = loadActiveSceneId();
-    const sceneGraphs = loadStoredSceneGraphs();
-    const activeGraph = sceneGraphs[activeSceneId] || createEmptySceneGraph(activeSceneId);
+function titleFromGraph(graph: { nodes: Node<NodeParams>[]; edges: Edge[] }): string {
+    const outNode = graph.nodes?.find((n) => n?.data?.nodeType === "output_scene");
+    const title = (outNode?.data.params as Record<string, unknown> | undefined)?.title;
+    return typeof title === "string" && title ? title : "Сцена";
+}
+
+// Loads every scene from the backend (source of truth — see DECISIONS.md's
+// Scenes/Media persistence entry). If the backend has none yet, one-time
+// migrates whatever's still sitting in localStorage from before this cutover
+// instead of silently discarding it, or bootstraps a single blank scene if
+// there's nothing to migrate either. Never re-runs once the backend has ≥1
+// scene, so `SCENE_GRAPHS_KEY` is cleared right after a successful migration
+// (otherwise deleting every scene later would re-migrate the stale snapshot).
+async function loadInitialGraphState(): Promise<InitialGraphState> {
+    let scenes = await hayverseApiClient.scenes.list();
+
+    if (scenes.length === 0) {
+        const legacyEntries = Object.entries(loadStoredSceneGraphs());
+        scenes =
+            legacyEntries.length > 0
+                ? await Promise.all(
+                      legacyEntries.map(([, graph]) =>
+                          hayverseApiClient.scenes.create({ title: titleFromGraph(graph), graph }),
+                      ),
+                  )
+                : [
+                      await hayverseApiClient.scenes.create({
+                          title: "Сцена 1",
+                          graph: createEmptySceneGraph({ title: "Сцена 1" }),
+                      }),
+                  ];
+        removeKey(SCENE_GRAPHS_KEY);
+    }
+
+    const sceneGraphs: SceneGraphs = {};
+    for (const scene of scenes) {
+        sceneGraphs[scene.id] = scene.graph as { nodes: Node<NodeParams>[]; edges: Edge[] };
+    }
+
+    const urlSceneId =
+        typeof window !== "undefined"
+            ? new URLSearchParams(window.location.search).get("scene")
+            : null;
+    const storedSceneId = readRaw(ACTIVE_SCENE_KEY);
+    const activeSceneId =
+        (urlSceneId && sceneGraphs[urlSceneId] ? urlSceneId : null) ??
+        (storedSceneId && sceneGraphs[storedSceneId] ? storedSceneId : null) ??
+        scenes[0].id;
+
+    const activeGraph = sceneGraphs[activeSceneId];
     return {
         activeSceneId,
         sceneGraphs,
@@ -286,49 +321,55 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         [showToast],
     );
 
-    // Loads the real (localStorage/URL-derived) graph state once on mount —
-    // deferred out of a lazy useState initializer so the server and the
-    // client's first paint render the same SSR-safe default above, avoiding a
+    // Loads the real (backend-fetched) graph state once on mount — deferred
+    // out of a lazy useState initializer so the server and the client's
+    // first paint render the same SSR-safe default above, avoiding a
     // hydration mismatch. The URL-cleanup step is folded in here rather than
     // kept as its own mount effect: both would be `[]`-dep effects in this
     // same component, so they'd run in source-declaration order — if cleanup
     // ran first it would strip `?scene=` before loadInitialGraphState's own
     // read of it, silently breaking `?scene=`-based deep links.
     useEffect(() => {
-        const initial = loadInitialGraphState();
-        // Syncing from localStorage/the URL, an external system unreadable at
-        // render time on the server; this is the documented valid case for
-        // the rule.
+        // Syncing from localStorage/the backend/URL, external systems
+        // unreadable at render time on the server; this is the documented
+        // valid case for the rule.
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setActiveSceneIdState(initial.activeSceneId);
-        setSceneGraphs(initial.sceneGraphs);
-        setNodes(initial.nodes);
-        setEdges(initial.edges);
         setTotalDurationState(loadStoredTotalDuration());
 
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("scene")) {
-            const newUrl =
-                window.location.protocol + "//" + window.location.host + window.location.pathname;
-            window.history.replaceState({ path: newUrl }, "", newUrl);
-        }
-    }, []);
+        let cancelled = false;
+        loadInitialGraphState()
+            .then((initial) => {
+                if (cancelled) return;
 
-    const persistSceneGraphs = useCallback(
-        (updated: SceneGraphs) => {
-            writeJSON(SCENE_GRAPHS_KEY, updated, () =>
-                showToast("Не удалось сохранить граф сцены (превышен лимит хранилища)"),
-            );
-            setSceneGraphs(updated);
-        },
-        [showToast],
-    );
+                setActiveSceneIdState(initial.activeSceneId);
+                setSceneGraphs(initial.sceneGraphs);
+                setNodes(initial.nodes);
+                setEdges(initial.edges);
+
+                const params = new URLSearchParams(window.location.search);
+                if (params.get("scene")) {
+                    const newUrl =
+                        window.location.protocol +
+                        "//" +
+                        window.location.host +
+                        window.location.pathname;
+                    window.history.replaceState({ path: newUrl }, "", newUrl);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) showToast("Не удалось загрузить сцены с сервера");
+            });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Loads a scene's graph into the live editor state (or clears the canvas
     // when `nextId` is null, i.e. no scenes remain).
     const loadSceneIntoState = useCallback((nextId: string | null, graphs: SceneGraphs) => {
         if (nextId) {
-            const nextGraph = graphs[nextId] || createEmptySceneGraph(nextId);
+            const nextGraph = graphs[nextId] || createEmptySceneGraph();
             setNodes(withTemplateDefaults(nextGraph.nodes));
             setEdges(nextGraph.edges);
             writeRaw(ACTIVE_SCENE_KEY, nextId);
@@ -344,17 +385,23 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     const setActiveSceneId = useCallback(
         (nextId: string) => {
             if (nextId === activeSceneId) return;
-            // Persist the current scene graph, then swap in the next one. State
-            // setters are called directly, one after another — not from inside
-            // another setState's updater function — so this stays a plain
-            // synchronous sequence with no nested-updater purity concerns.
+            // Save the outgoing scene's live graph, then swap in the next
+            // one. The local cache updates immediately (optimistic); the
+            // backend save runs in the background and only surfaces on
+            // failure — same "toast, don't block" pattern used throughout
+            // this file.
             const updated = activeSceneId
                 ? { ...sceneGraphs, [activeSceneId]: { nodes, edges } }
                 : sceneGraphs;
-            persistSceneGraphs(updated);
+            setSceneGraphs(updated);
+            if (activeSceneId) {
+                hayverseApiClient.scenes
+                    .update(activeSceneId, { graph: { nodes, edges } })
+                    .catch(() => showToast("Не удалось сохранить граф сцены на сервере"));
+            }
             loadSceneIntoState(nextId, updated);
         },
-        [activeSceneId, nodes, edges, sceneGraphs, persistSceneGraphs, loadSceneIntoState],
+        [activeSceneId, nodes, edges, sceneGraphs, showToast, loadSceneIntoState],
     );
 
     // ── React Flow handlers ─────────────────────────────────────────────────────
@@ -381,23 +428,30 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         [nodes],
     );
 
-    // ── Graph persistence (temp localStorage autosave; will move to a backend) ──
+    // ── Graph persistence (debounced autosave to the backend) ──────────────────
 
-    // `sceneGraphs` deliberately omitted from the deps array below: every
-    // code path that changes the map (switching, adding, or cascade-removing
-    // a scene) also changes activeSceneId or nodes/edges, which already
-    // re-arms this with a fresh closure — adding `sceneGraphs` itself would
-    // re-arm the timer on every save, since saving is exactly what changes it.
-    useDebouncedPersist(
-        SCENE_GRAPHS_KEY,
-        () => ({ ...sceneGraphs, [activeSceneId!]: { nodes, edges } }),
-        [nodes, edges, activeSceneId],
-        {
-            enabled: activeSceneId != null,
-            onError: () => showToast("Не удалось сохранить граф сцены (превышен лимит хранилища)"),
-            onPersist: setSceneGraphs,
-        },
-    );
+    // Same 400ms-debounce shape as the shared useDebouncedPersist hook
+    // (usePersistedState.ts), inlined here rather than reused: that hook is
+    // hardcoded to localStorage and is also used by PresetLibraryContext,
+    // out of scope for this change. Only the active scene's graph is saved —
+    // every other scene was already persisted when it stopped being active
+    // (see setActiveSceneId/createScene/the cascade-delete effect below).
+    const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (!activeSceneId) return;
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        const sceneId = activeSceneId;
+        saveTimer.current = setTimeout(() => {
+            const graph = { nodes, edges };
+            setSceneGraphs((prev) => ({ ...prev, [sceneId]: graph }));
+            hayverseApiClient.scenes
+                .update(sceneId, { graph })
+                .catch(() => showToast("Не удалось сохранить граф сцены на сервере"));
+        }, 400);
+        return () => {
+            if (saveTimer.current) clearTimeout(saveTimer.current);
+        };
+    }, [nodes, edges, activeSceneId, showToast]);
 
     // ── Scene list (derived from each scene's output_scene node) ────────────────
 
@@ -433,18 +487,20 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
         const hasOutputNow = nodes.some((n) => n.data.nodeType === "output_scene");
         if (activeSceneId && prevHadOutputRef.current && !hasOutputNow) {
+            const deletedId = activeSceneId;
             const updated = { ...sceneGraphs };
-            delete updated[activeSceneId];
-            persistSceneGraphs(updated);
+            delete updated[deletedId];
+            setSceneGraphs(updated);
+            hayverseApiClient.scenes
+                .remove(deletedId)
+                .catch(() => showToast("Не удалось удалить сцену на сервере"));
             const remaining = deriveScenes(updated); // sorted by start ascending
             loadSceneIntoState(remaining[0]?.id ?? null, updated);
         }
         prevHadOutputRef.current = hasOutputNow;
-    }, [nodes, activeSceneId, sceneGraphs, persistSceneGraphs, loadSceneIntoState]);
+    }, [nodes, activeSceneId, sceneGraphs, showToast, loadSceneIntoState]);
 
     const createScene = useCallback(() => {
-        const newId = crypto.randomUUID();
-
         // New scenes always default to track 1 — chain after track 1's last scene
         // specifically, not the global end across both tracks, so consecutive
         // adds never accidentally overlap a scene sitting on track 2.
@@ -452,19 +508,28 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         const start = track1Scenes.length
             ? Math.max(...track1Scenes.map((s) => s.start + s.duration))
             : 0;
-        const newGraph = createEmptySceneGraph(newId, {
-            title: `Сцена ${scenes.length + 1}`,
-            start,
-        });
+        const title = `Сцена ${scenes.length + 1}`;
+        const newGraph = createEmptySceneGraph({ title, start });
 
-        const updated = {
-            ...sceneGraphs,
-            ...(activeSceneId ? { [activeSceneId]: { nodes, edges } } : {}),
-            [newId]: newGraph,
-        };
-        persistSceneGraphs(updated);
-        loadSceneIntoState(newId, updated);
-    }, [activeSceneId, nodes, edges, sceneGraphs, scenes, persistSceneGraphs, loadSceneIntoState]);
+        if (activeSceneId) {
+            hayverseApiClient.scenes
+                .update(activeSceneId, { graph: { nodes, edges } })
+                .catch(() => showToast("Не удалось сохранить граф сцены на сервере"));
+        }
+
+        hayverseApiClient.scenes
+            .create({ title, graph: newGraph })
+            .then((created) => {
+                const updated = {
+                    ...sceneGraphs,
+                    ...(activeSceneId ? { [activeSceneId]: { nodes, edges } } : {}),
+                    [created.id]: newGraph,
+                };
+                setSceneGraphs(updated);
+                loadSceneIntoState(created.id, updated);
+            })
+            .catch(() => showToast("Не удалось создать сцену на сервере"));
+    }, [activeSceneId, nodes, edges, sceneGraphs, scenes, showToast, loadSceneIntoState]);
 
     // ── Graph actions ───────────────────────────────────────────────────────────
 
