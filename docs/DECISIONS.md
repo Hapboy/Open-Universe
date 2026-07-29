@@ -55,6 +55,19 @@ is a deliberate stepping stone, not the final target — **revisit this
 decision** when either (a) a second backend service is created, or (b) the
 project gets a custom domain.
 
+**Deploy gotcha (Phase H, discovered 2026-07-29):** Railway injects its own
+`PORT` env var into the container at runtime (`8080` observed) — it does
+**not** show up in `railway variable list` since it's a reserved
+platform-managed variable, not a stored service variable. The Dockerfile's
+`EXPOSE 4175` is documentation only and has no effect on routing. A
+`railway domain`/`domain update` call's `--port` must match whatever
+`process.env.PORT` actually resolves to at runtime, not the Dockerfile's
+`EXPOSE` value, or every request 502s ("Application failed to respond")
+even though the container is healthy and logs show a clean startup.
+`main.ts` binds via `app.listen(process.env.PORT ?? 4175, '0.0.0.0')` — the
+explicit `0.0.0.0` host also matters, an unqualified `.listen(port)` risks
+binding IPv6-only in some container network setups.
+
 ## Auth: JWT bearer token (not cookies)
 
 Frontend (`*.vercel.app`) and backend (`*.railway.app`) are unrelated
