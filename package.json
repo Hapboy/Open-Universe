@@ -14,6 +14,7 @@
         "lint": "eslint .",
         "format": "prettier --write .",
         "prepare": "husky || true",
+        "postinstall": "npm run build -w packages/shared -w packages/api-client",
         "knip": "knip",
         "clean": "rm -rf node_modules dist .next"
     },

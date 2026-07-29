@@ -115,6 +115,27 @@ we already use, no separate npmjs.org login) or otherwise make it private,
 once it's worth the setup cost — public was the pragmatic choice for now
 since the package is only enum value lists, nothing sensitive.
 
+**Build-artifact gotcha (discovered 2026-07-29, breaks on any registry
+change):** publishing a real package means `package.json`'s `main` points at
+`dist/enums.js`, not the TS source — but `dist/` is gitignored (never
+committed) and nothing in `apps/web`'s build chain builds it. Locally this is
+invisible (whoever ran `npm run build` in `packages/shared` once has a stale
+but present `dist/` sitting on disk forever), but a fresh clone (any CI, a
+new contributor, Vercel's build) gets a workspace symlink to a directory with
+no `dist/` and fails with `Module not found: Can't resolve '@hayverse/shared'`.
+Same issue independently hit `packages/api-client` the same day (see the Phase
+H/I commit history). Fixed with a root `package.json` `postinstall` script
+(`npm run build -w packages/shared -w packages/api-client`) — relies on
+Vercel's monorepo support running `npm install` from the repo root even when
+Root Directory is set to `apps/web`, which is what actually triggers the
+rebuild on deploy. **If `packages/shared`/`packages/api-client` ever move off
+npm (GitHub Packages, or back to source-only like `@hayverse/shared`
+originally was) or off root-level `npm install`/postinstall (e.g. a
+build-orchestration tool per the "Monorepo tooling" entry above), re-check
+that whatever replaces this still guarantees `dist/` exists before `apps/web`
+builds — don't just drop the postinstall script without replacing what it
+does.**
+
 ## Inter-service client packages: adopted early (reversed)
 
 Originally deferred until a second backend service existed — the
