@@ -121,6 +121,14 @@ settings, set **Root Directory** to `apps/web`. Trigger a redeploy and
 confirm production is unchanged before proceeding — this is a hard gate,
 don't move to Phase D until a production deploy from the new path succeeds.
 
+**CLI deploys/env commands (`vercel --prod`, `vercel env add`, etc.) must be
+run from the repo root, not from inside `apps/web`.** The Vercel CLI appends
+the project's configured Root Directory (`apps/web`) onto whatever directory
+you invoke it from — running it from inside `apps/web` produces a
+double-nested `apps/web/apps/web` path and fails with "provided path does not
+exist." `vercel link` from the repo root (not `apps/web`) so the `.vercel/`
+config lands where deploys expect to find it.
+
 ## Phase D — NestJS scaffold (Bun runtime)
 
 ```

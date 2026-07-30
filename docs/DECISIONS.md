@@ -173,6 +173,43 @@ Explicitly not building these yet — revisit when service count > 1:
   project, clean start is simpler than writing one-time migration code for
   data that doesn't need to survive.
 
+## Scene ownership/sharing: project + team membership, not per-user-private (planned, not built)
+
+Decided 2026-07-29, **not yet implemented** — record only, wait for the user
+to say go before building any of this.
+
+When `AuthModule`/`ScenesModule` ownership work starts, scene visibility
+will **not** be simple "each user only sees scenes they personally created."
+The user's stated next step after auth: each user can add teammates to their
+graph/project ("group of scenes") so others can collaborate on the same
+project — a shared-workspace model, not per-user isolation, and not a fully
+public shared pool either (today's pre-auth MVP state, where every scene is
+visible/editable by anyone).
+
+**Implications for the schema/access-control work this supersedes:**
+
+- A **Project** entity (grouping scenes) needs to exist — today's schema has
+  no such grouping; `scenes` is a flat list.
+- **Project membership** (users↔projects, many-to-many, likely with a role —
+  owner vs. collaborator) grants access, not row-level `owner_id` alone.
+- `scenes` needs a `project_id`; access control becomes "is the current user
+  a member of this scene's project," not "did this user create this scene."
+- The already-planned tightening of `scenes.owner_id`/`media_assets.owner_id`
+  back to `NOT NULL` (see `scene.entity.ts`'s comment, and the "Data model
+  choices" entry above) is still necessary but **not sufficient alone** once
+  teammates need shared access to scenes they didn't personally create.
+- Directly complementary to `CollaborationModule` (Phase G step 7 in
+  `backend-bootstrap.md` — live multi-user editing via Yjs): project
+  membership decides _who can access_ a scene, `CollaborationModule` decides
+  what happens when multiple members edit it _at the same time_. Worth
+  building/designing these together rather than sequentially in isolation.
+
+**Not yet decided, resolve when this work actually starts:** the invite
+flow (add-by-username? by link? approval required?), role granularity
+(owner/collaborator, or finer), and whether a project can have zero members
+besides its owner (i.e. is "personal, unshared" just a project with one
+member, or a distinct case).
+
 ## Media storage: Cloudflare R2
 
 S3-compatible, chosen for cost and simplicity. MVP uploads relay through the

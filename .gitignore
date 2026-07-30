@@ -22,6 +22,10 @@ desktop.ini
 # Env — never commit real keys
 .env*.local
 
+# Vercel CLI project link (repo root — CLI must run from here, not apps/web,
+# see docs/backend-bootstrap.md Phase C). Per-machine, not shared.
+.vercel/
+
 # Node
 node_modules/
 dist/
