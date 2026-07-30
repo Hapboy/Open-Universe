@@ -10,8 +10,10 @@ import { Scene } from './scenes/scene.entity';
 import { ScenesModule } from './scenes/scenes.module';
 import { MediaAsset } from './media/media-asset.entity';
 import { MediaModule } from './media/media.module';
-// NarrativeSettings, Preset, AiJob entities already exist but aren't
-// registered here yet - see the same note in src/database/data-source.ts.
+import { Preset } from './presets/preset.entity';
+import { PresetsModule } from './presets/presets.module';
+// NarrativeSettings, AiJob entities already exist but aren't registered
+// here yet - see the same note in src/database/data-source.ts.
 
 @Module({
   imports: [
@@ -25,12 +27,13 @@ import { MediaModule } from './media/media.module';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
-        entities: [User, Scene, MediaAsset],
+        entities: [User, Scene, MediaAsset, Preset],
         synchronize: false,
       }),
     }),
     ScenesModule,
     MediaModule,
+    PresetsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],
