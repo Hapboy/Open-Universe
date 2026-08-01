@@ -83,7 +83,11 @@ export function WirableTextField({
 // a graph saved before presets became a shared library (see
 // PresetLibraryContext.tsx) may still carry a stray `_presets` key in their
 // in-memory params, and it must never be snapshotted into a new preset.
-const BOOKKEEPING_KEYS = ["selectedItem", "_presets"];
+// `photoIdx` is a dead field name from a since-fixed backend migration (see
+// FixPresetPhotoIdxKey) — every entity type uses `coverPhotoIndex` instead;
+// stripping it here stops it from ever leaking back into a snapshot via
+// onSelect's param spread, even if a not-yet-migrated row still has it.
+const BOOKKEEPING_KEYS = ["selectedItem", "_presets", "photoIdx"];
 
 function buildPresetSnapshot(params: Record<string, unknown>) {
     return Object.fromEntries(
