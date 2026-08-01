@@ -64,6 +64,24 @@ test("media.upload sends a multipart form without a JSON Content-Type", async ()
     assert.equal((capturedInit?.headers as Headers).get("Content-Type"), null);
 });
 
+test("media.upload appends kind to the form when provided", async () => {
+    let capturedInit: RequestInit | undefined;
+    const client = new HayverseApiClient({
+        baseUrl: "http://localhost:4175",
+        fetch: fakeFetch((_url, init) => {
+            capturedInit = init;
+            return new Response(JSON.stringify({ id: "m1", storageKey: "s3:x", url: "x" }), {
+                status: 201,
+            });
+        }),
+    });
+
+    await client.media.upload(new Blob(["data"]), "test.png", "generated");
+
+    const form = capturedInit?.body as FormData;
+    assert.equal(form.get("kind"), "generated");
+});
+
 test("non-2xx responses throw ApiError with status and body", async () => {
     const client = new HayverseApiClient({
         baseUrl: "http://localhost:4175",
@@ -125,6 +143,74 @@ test("presets.list filters by entityType via a query param", async () => {
     await client.presets.list("character");
 
     assert.equal(capturedUrl, "http://localhost:4175/presets?entityType=character");
+});
+
+test("jobs.get polls an AI job by id", async () => {
+    let capturedUrl = "";
+    const client = new HayverseApiClient({
+        baseUrl: "http://localhost:4175",
+        fetch: fakeFetch((url) => {
+            capturedUrl = url;
+            return new Response(
+                JSON.stringify({ id: "j1", status: "completed", result: { dataUrl: "x" } }),
+                { status: 200 },
+            );
+        }),
+    });
+
+    const job = await client.jobs.get("j1");
+
+    assert.equal(capturedUrl, "http://localhost:4175/ai/jobs/j1");
+    assert.equal(job.status, "completed");
+});
+
+test("gemini.generateText posts JSON to /ai/gemini/text", async () => {
+    let capturedUrl = "";
+    let capturedInit: RequestInit | undefined;
+    const client = new HayverseApiClient({
+        baseUrl: "http://localhost:4175",
+        fetch: fakeFetch((url, init) => {
+            capturedUrl = url;
+            capturedInit = init;
+            return new Response(JSON.stringify({ text: "hi" }), { status: 201 });
+        }),
+    });
+
+    const result = await client.gemini.generateText({ prompt: "hi" });
+
+    assert.equal(capturedUrl, "http://localhost:4175/ai/gemini/text");
+    assert.equal(capturedInit?.body, JSON.stringify({ prompt: "hi" }));
+    assert.equal(result.text, "hi");
+});
+
+test("gemini.generateVeo accepts a 202 response and returns jobId", async () => {
+    const client = new HayverseApiClient({
+        baseUrl: "http://localhost:4175",
+        fetch: fakeFetch(() => new Response(JSON.stringify({ jobId: "job-1" }), { status: 202 })),
+    });
+
+    const result = await client.gemini.generateVeo({
+        prompt: "a river",
+        options: { model: "veo-3.1-generate-preview" },
+    });
+
+    assert.equal(result.jobId, "job-1");
+});
+
+test("gemini.* surfaces a 501 (not configured) as ApiError with that status", async () => {
+    const client = new HayverseApiClient({
+        baseUrl: "http://localhost:4175",
+        fetch: fakeFetch(() => new Response("Gemini not configured", { status: 501 })),
+    });
+
+    await assert.rejects(
+        () => client.gemini.generateText({ prompt: "hi" }),
+        (err: unknown) => {
+            assert.ok(err instanceof ApiError);
+            assert.equal(err.status, 501);
+            return true;
+        },
+    );
 });
 
 test("204 responses resolve to undefined without parsing a body", async () => {

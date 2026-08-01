@@ -25,13 +25,11 @@ const DB_VERSION = 2;
 // distinct since they'll likely have different ownership/retention rules
 // once a real backend exists.
 //
-// "uploaded" is backend-first now (see putBlob below) — MediaModule's
-// s3:<uuid> refs, resolved deterministically below, never touch this
-// IndexedDB table for new uploads. It's kept only so refs already saved
-// under the old idb: scheme (before this cutover) keep resolving. Generated
-// media (gen:) still goes through IndexedDB until AiGatewayModule exists
-// server-side (see docs/backend-bootstrap.md Phase J) — MediaService.upload()
-// currently hardcodes kind: 'uploaded', so there's nowhere to send it yet.
+// Both "uploaded" and "generated" are backend-first now (see putBlob/
+// putGeneratedBlob below) — MediaModule's s3:<uuid> refs, resolved
+// deterministically below, never touch these IndexedDB tables for new
+// writes. They're kept only so refs already saved under the old idb:/gen:
+// schemes (before each cutover) keep resolving.
 const STORES = { uploaded: "blobs", generated: "generated" } as const;
 const PREFIXES = { uploaded: "idb:", generated: "gen:", backend: "s3:" } as const;
 type Kind = keyof typeof STORES;
@@ -89,18 +87,6 @@ async function getBlob(ref: string): Promise<Blob | undefined> {
     });
 }
 
-async function putBlobAs(kind: Kind, file: Blob): Promise<string> {
-    const ref = `${PREFIXES[kind]}${crypto.randomUUID()}`;
-    const db = await openDB();
-    await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(STORES[kind], "readwrite");
-        tx.objectStore(STORES[kind]).put(file, ref);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
-    return ref;
-}
-
 // Uploads a file to the backend (MediaModule -> R2) and returns its ref.
 // Callers push this ref into node params instead of the raw bytes. Returns
 // the same s3:<uuid> shape putBlobAs used to hand back for the old
@@ -109,10 +95,13 @@ export function putBlob(file: Blob): Promise<string> {
     return hayverseApiClient.media.upload(file).then((asset) => asset.storageKey);
 }
 
-// Stores a generated-media blob (currently: AI images only) and returns its
-// ref, in a separate table from uploads.
+// Stores a generated-media blob (currently: AI images/audio/video from
+// AiGatewayModule) and returns its ref. Same backend, distinct `kind` from
+// putBlob's uploads (see MediaAssetKind).
 export function putGeneratedBlob(file: Blob): Promise<string> {
-    return putBlobAs("generated", file);
+    return hayverseApiClient.media
+        .upload(file, undefined, "generated")
+        .then((asset) => asset.storageKey);
 }
 
 // object URLs are cached per ref for the life of the session — re-resolving

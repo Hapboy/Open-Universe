@@ -49,3 +49,64 @@ export interface UpsertPresetInput {
     snapshot: Record<string, unknown>;
     ownerId?: string;
 }
+
+// Mirrors HIGGSFIELD_JOB_STATUSES (packages/shared) - reused across every AI
+// provider's async jobs, not just Higgsfield's.
+export type AiJobStatus = "queued" | "in_progress" | "completed" | "failed" | "nsfw";
+
+export interface AiJob {
+    id: string;
+    ownerId: string | null;
+    provider: string;
+    kind: string;
+    status: AiJobStatus;
+    result: Record<string, unknown> | null;
+    error: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// apps/api/src/ai-gateway/gemini - a thin pass-through to Gemini's Developer
+// API, so these mirror its dto/*.dto.ts shapes 1:1 rather than inventing a
+// client-side convenience shape. `options` stays an untyped Record on the
+// wire (same tradeoff as Preset.snapshot) - callers own the concrete option
+// fields for whichever model they're calling.
+export interface GeminiModelInfo {
+    id: string;
+    displayName?: string;
+}
+
+export interface GenerateTextInput {
+    prompt: string;
+    model?: string;
+}
+
+export interface GenerateVisionInput {
+    imageBase64: string;
+    query: string;
+    model?: string;
+}
+
+export interface GenerateImagenInput {
+    prompt: string;
+    options: Record<string, unknown>;
+}
+
+export type GenerateImagenResult = { ok: true; dataUrl: string } | { ok: false; reason?: string };
+
+export interface GenerateVeoInput {
+    prompt: string;
+    imageBase64?: string | null;
+    options: Record<string, unknown>;
+}
+
+export interface GenerateNanoBananaInput {
+    prompt: string;
+    imageBase64List: string[];
+    options: Record<string, unknown>;
+}
+
+export interface GenerateLyriaInput {
+    prompt: string;
+    options: Record<string, unknown>;
+}

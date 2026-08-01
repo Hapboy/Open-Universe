@@ -2,7 +2,11 @@
 // reads the actual key directly via process.env — never shipped to the browser).
 // Only a plain boolean is safe to expose client-side, via the NEXT_PUBLIC_*_CONFIGURED
 // build-time values next.config.ts derives from the real (server-only) env vars.
-export type ProviderName = "gemini" | "higgsfield" | "pinterest";
+// Gemini isn't listed here anymore — its key lives in apps/api now, not on
+// Vercel, so isProviderConfigured("gemini") would always report false. Its
+// client (core/api/gemini/client.ts) always attempts the real call and
+// branches on HTTP 501 instead.
+export type ProviderName = "higgsfield" | "pinterest";
 
 // Next.js only inlines `process.env.NEXT_PUBLIC_*` when the reference is static
 // text — `process.env[name]` with a runtime variable is never replaced and always
@@ -10,7 +14,6 @@ export type ProviderName = "gemini" | "higgsfield" | "pinterest";
 // spell each one out literally so the bundler can find and inline them;
 // `isProviderConfigured` keeps its dynamic-by-name API for every call site.
 const PROVIDER_CONFIGURED: Record<ProviderName, string | undefined> = {
-    gemini: process.env.NEXT_PUBLIC_GEMINI_CONFIGURED,
     higgsfield: process.env.NEXT_PUBLIC_HIGGSFIELD_CONFIGURED,
     pinterest: process.env.NEXT_PUBLIC_PINTEREST_CONFIGURED,
 };

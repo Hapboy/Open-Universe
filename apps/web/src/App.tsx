@@ -53,13 +53,11 @@ function StatusBar() {
     const sel = nodes.find((n) => n.id === selectedNodeId);
     const hfLive = isProviderConfigured("higgsfield");
     const pinLive = isProviderConfigured("pinterest");
-    const geminiLive = isProviderConfigured("gemini");
     return (
         <>
             <span id="statJobs">очередь: 0</span>
             <span className={styles.muted}>
-                Higgsfield: {hfLive ? "live" : "mock"} · Pinterest: {pinLive ? "live" : "mock"} ·
-                Gemini: {geminiLive ? "live" : "mock"}
+                Higgsfield: {hfLive ? "live" : "mock"} · Pinterest: {pinLive ? "live" : "mock"}
             </span>
             <span className={styles.spacer} />
             <span className={styles.muted}>

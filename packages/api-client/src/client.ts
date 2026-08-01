@@ -1,6 +1,16 @@
 import type {
+    AiJob,
     CreateSceneInput,
+    GenerateImagenInput,
+    GenerateImagenResult,
+    GenerateLyriaInput,
+    GenerateNanoBananaInput,
+    GenerateTextInput,
+    GenerateVeoInput,
+    GenerateVisionInput,
+    GeminiModelInfo,
     MediaAsset,
+    MediaAssetKind,
     Preset,
     Scene,
     UpdateSceneInput,
@@ -89,9 +99,10 @@ export class HayverseApiClient {
     };
 
     readonly media = {
-        upload: (file: Blob, filename?: string): Promise<MediaAsset> => {
+        upload: (file: Blob, filename?: string, kind?: MediaAssetKind): Promise<MediaAsset> => {
             const form = new FormData();
             form.append("file", file, filename);
+            if (kind) form.append("kind", kind);
             return this.request<MediaAsset>("POST", "/media", { body: form });
         },
         list: (): Promise<MediaAsset[]> => this.request<MediaAsset[]>("GET", "/media"),
@@ -109,5 +120,32 @@ export class HayverseApiClient {
         upsert: (input: UpsertPresetInput): Promise<Preset> =>
             this.request<Preset>("POST", "/presets", { json: input }),
         remove: (id: string): Promise<void> => this.request<void>("DELETE", `/presets/${id}`),
+    };
+
+    readonly jobs = {
+        get: (id: string): Promise<AiJob> => this.request<AiJob>("GET", `/ai/jobs/${id}`),
+    };
+
+    // Thin pass-through to apps/api's Gemini routes - no toasts, no mock
+    // fallback, no browser-only base64 conversion. That orchestration lives
+    // in apps/web's own adapter (core/api/gemini/client.ts), which catches
+    // ApiError and branches on status === 501 (not configured) vs. anything
+    // else.
+    readonly gemini = {
+        listModels: (): Promise<{ models: GeminiModelInfo[] }> =>
+            this.request<{ models: GeminiModelInfo[] }>("GET", "/ai/gemini/models"),
+        generateText: (input: GenerateTextInput): Promise<{ text: string | null }> =>
+            this.request<{ text: string | null }>("POST", "/ai/gemini/text", { json: input }),
+        generateVision: (input: GenerateVisionInput): Promise<{ text: string | null }> =>
+            this.request<{ text: string | null }>("POST", "/ai/gemini/vision", { json: input }),
+        generateImagen: (input: GenerateImagenInput): Promise<GenerateImagenResult> =>
+            this.request<GenerateImagenResult>("POST", "/ai/gemini/imagen", { json: input }),
+        // 202 - `request()` accepts any 2xx as ok, no special-casing needed.
+        generateVeo: (input: GenerateVeoInput): Promise<{ jobId: string }> =>
+            this.request<{ jobId: string }>("POST", "/ai/gemini/veo", { json: input }),
+        generateNanoBanana: (input: GenerateNanoBananaInput): Promise<{ dataUrl: string }> =>
+            this.request<{ dataUrl: string }>("POST", "/ai/gemini/nano-banana", { json: input }),
+        generateLyria: (input: GenerateLyriaInput): Promise<{ dataUrl: string }> =>
+            this.request<{ dataUrl: string }>("POST", "/ai/gemini/lyria", { json: input }),
     };
 }
