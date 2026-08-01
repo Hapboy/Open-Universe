@@ -12,8 +12,24 @@ export class PresetsService {
     private readonly presets: Repository<Preset>,
   ) {}
 
-  create(dto: CreatePresetDto): Promise<Preset> {
+  // Upsert when dto.id is set (a client-minted id from a node's own
+  // presetId - see CreatePresetDto): update that row in place if it already
+  // exists, otherwise insert it under that id rather than a backend-generated
+  // one. This keeps the frontend's local presetId and the backend row's id
+  // as the same value across the node's whole lifetime.
+  async create(dto: CreatePresetDto): Promise<Preset> {
+    if (dto.id) {
+      const existing = await this.presets.findOneBy({ id: dto.id });
+      if (existing) {
+        existing.entityType = dto.entityType;
+        existing.name = dto.name;
+        existing.snapshot = dto.snapshot;
+        return this.presets.save(existing);
+      }
+    }
+
     const preset = this.presets.create({
+      id: dto.id,
       entityType: dto.entityType,
       name: dto.name,
       snapshot: dto.snapshot,

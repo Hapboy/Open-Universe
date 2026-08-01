@@ -6,83 +6,13 @@ import type { EntityPresets, PinItem } from "../types.ts";
 // `name` is a separate, independently editable display field on the node
 // (see EntityParams.tsx) — it mirrors the fixture's usual name by default,
 // but is not the storage key, so two presets may legitimately share a name.
+//
+// `character`, `location`, and `mise_en_scene` have moved to the backend
+// (PresetsModule — see apps/api/src/database/migrations/*SeedInitialPresets.ts
+// and PresetLibraryContext.tsx's BACKEND_ENTITY_TYPES) and no longer live
+// here. Delete an entity type's block from this file the same way once its
+// own backend migration lands.
 export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
-    character: {
-        "char-ara-geghetsik": {
-            presetId: "char-ara-geghetsik",
-            name: "Ара Гехецик",
-            inFrame: true,
-            age: 34,
-            emotion: "спокойствие",
-            stylist: "Без стилиста",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-        },
-        "char-anahit-bagratuni": {
-            presetId: "char-anahit-bagratuni",
-            name: "Анаит Багратуни",
-            inFrame: true,
-            age: 34,
-            emotion: "спокойствие",
-            stylist: "Без стилиста",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-        },
-        "char-vardan-mayrig": {
-            presetId: "char-vardan-mayrig",
-            name: "Вардан Майриг",
-            inFrame: true,
-            age: 34,
-            emotion: "спокойствие",
-            stylist: "Без стилиста",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-        },
-        "char-tsovinar": {
-            presetId: "char-tsovinar",
-            name: "Цовинар",
-            inFrame: true,
-            age: 34,
-            emotion: "спокойствие",
-            stylist: "Без стилиста",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-        },
-    },
-    location: {
-        "loc-old-kond": {
-            presetId: "loc-old-kond",
-            name: "Старый Конд",
-            weather: "туман",
-            timeOfDay: "рассвет",
-            interiorExterior: "Экстерьер",
-            damageLevel: 0,
-        },
-        "loc-cascade": {
-            presetId: "loc-cascade",
-            name: "Каскад",
-            weather: "туман",
-            timeOfDay: "рассвет",
-            interiorExterior: "Экстерьер",
-            damageLevel: 0,
-        },
-        "loc-garni": {
-            presetId: "loc-garni",
-            name: "Гарни",
-            weather: "туман",
-            timeOfDay: "рассвет",
-            interiorExterior: "Экстерьер",
-            damageLevel: 0,
-        },
-        "loc-sevan": {
-            presetId: "loc-sevan",
-            name: "Севан",
-            weather: "туман",
-            timeOfDay: "рассвет",
-            interiorExterior: "Экстерьер",
-            damageLevel: 0,
-        },
-    },
     building: {
         "bld-bay-window-house": {
             presetId: "bld-bay-window-house",
@@ -206,40 +136,6 @@ export const ENTITY_PRESET_SEEDS: Record<string, EntityPresets> = {
             inFrame: false,
         },
         "tr-marshrutka": { presetId: "tr-marshrutka", name: "Маршрутка", inFrame: false },
-    },
-    mise_en_scene: {
-        "mes-1-person": {
-            presetId: "mes-1-person",
-            name: "1 человек в кадре",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            peopleCount: 1,
-            cameraCount: 1,
-        },
-        "mes-2-person": {
-            presetId: "mes-2-person",
-            name: "2 человека в кадре",
-            photos: ["/assets/mise-en-scene/2p_1cam_ots-render.jpg"] as string[],
-            coverPhotoIndex: 0,
-            peopleCount: 2,
-            cameraCount: 1,
-        },
-        "mes-3-person": {
-            presetId: "mes-3-person",
-            name: "3 человека в кадре",
-            photos: ["/assets/mise-en-scene/3p_3cam_overhead-triangle.jpg"] as string[],
-            coverPhotoIndex: 0,
-            peopleCount: 3,
-            cameraCount: 3,
-        },
-        "mes-3plus-person": {
-            presetId: "mes-3plus-person",
-            name: "3+ человек в кадре",
-            photos: ["/assets/mise-en-scene/6p_1cam_render-medium.jpg"] as string[],
-            coverPhotoIndex: 0,
-            peopleCount: 6,
-            cameraCount: 1,
-        },
     },
 };
 

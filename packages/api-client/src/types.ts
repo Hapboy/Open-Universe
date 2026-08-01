@@ -27,3 +27,25 @@ export interface MediaAsset {
     createdAt: string;
     url: string;
 }
+
+export interface Preset {
+    id: string;
+    entityType: string;
+    ownerId: string | null;
+    name: string;
+    snapshot: Record<string, unknown>;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface UpsertPresetInput {
+    // Client-minted id - pass the node's own presetId to update that row in
+    // place (or create it under that id if it doesn't exist yet) instead of
+    // getting back a backend-generated id the caller would then have to
+    // reconcile against. Omit to let the backend mint one.
+    id?: string;
+    entityType: string;
+    name: string;
+    snapshot: Record<string, unknown>;
+    ownerId?: string;
+}

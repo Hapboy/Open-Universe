@@ -2,6 +2,19 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreatePresetDto {
+  @ApiPropertyOptional({
+    description:
+      'Client-minted id, for upsert. The frontend assigns a node its presetId ' +
+      'at creation time (see usePresetDatabase in apps/web), before it is ever ' +
+      'saved to the library - passing that same id here lets the first save ' +
+      'create the row under it and every later save update it in place, ' +
+      'instead of the backend minting a new id the frontend would then have ' +
+      'to reconcile. Omit to let the backend generate one.',
+  })
+  @IsUUID()
+  @IsOptional()
+  id?: string;
+
   @ApiProperty({ example: 'character' })
   @IsString()
   entityType: string;

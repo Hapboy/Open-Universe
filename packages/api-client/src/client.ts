@@ -1,4 +1,11 @@
-import type { CreateSceneInput, MediaAsset, Scene, UpdateSceneInput } from "./types";
+import type {
+    CreateSceneInput,
+    MediaAsset,
+    Preset,
+    Scene,
+    UpdateSceneInput,
+    UpsertPresetInput,
+} from "./types";
 
 export interface ApiClientOptions {
     baseUrl: string;
@@ -90,5 +97,17 @@ export class HayverseApiClient {
         list: (): Promise<MediaAsset[]> => this.request<MediaAsset[]>("GET", "/media"),
         get: (id: string): Promise<MediaAsset> => this.request<MediaAsset>("GET", `/media/${id}`),
         remove: (id: string): Promise<void> => this.request<void>("DELETE", `/media/${id}`),
+    };
+
+    readonly presets = {
+        list: (entityType?: string): Promise<Preset[]> =>
+            this.request<Preset[]>(
+                "GET",
+                entityType ? `/presets?entityType=${encodeURIComponent(entityType)}` : "/presets",
+            ),
+        // POST /presets upserts when input.id is set - see UpsertPresetInput.
+        upsert: (input: UpsertPresetInput): Promise<Preset> =>
+            this.request<Preset>("POST", "/presets", { json: input }),
+        remove: (id: string): Promise<void> => this.request<void>("DELETE", `/presets/${id}`),
     };
 }

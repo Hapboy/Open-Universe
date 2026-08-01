@@ -81,6 +81,52 @@ test("non-2xx responses throw ApiError with status and body", async () => {
     );
 });
 
+test("presets.upsert posts a client-minted id alongside the snapshot", async () => {
+    let capturedUrl = "";
+    let capturedInit: RequestInit | undefined;
+    const client = new HayverseApiClient({
+        baseUrl: "http://localhost:4175",
+        fetch: fakeFetch((url, init) => {
+            capturedUrl = url;
+            capturedInit = init;
+            return new Response(
+                JSON.stringify({ id: "p1", entityType: "character", name: "Test", snapshot: {} }),
+                { status: 201 },
+            );
+        }),
+    });
+
+    const preset = await client.presets.upsert({
+        id: "p1",
+        entityType: "character",
+        name: "Test",
+        snapshot: { age: 34 },
+    });
+
+    assert.equal(capturedUrl, "http://localhost:4175/presets");
+    assert.equal(capturedInit?.method, "POST");
+    assert.equal(
+        capturedInit?.body,
+        JSON.stringify({ id: "p1", entityType: "character", name: "Test", snapshot: { age: 34 } }),
+    );
+    assert.equal(preset.id, "p1");
+});
+
+test("presets.list filters by entityType via a query param", async () => {
+    let capturedUrl = "";
+    const client = new HayverseApiClient({
+        baseUrl: "http://localhost:4175",
+        fetch: fakeFetch((url) => {
+            capturedUrl = url;
+            return new Response("[]", { status: 200 });
+        }),
+    });
+
+    await client.presets.list("character");
+
+    assert.equal(capturedUrl, "http://localhost:4175/presets?entityType=character");
+});
+
 test("204 responses resolve to undefined without parsing a body", async () => {
     const client = new HayverseApiClient({
         baseUrl: "http://localhost:4175",

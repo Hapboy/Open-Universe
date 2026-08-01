@@ -20,7 +20,7 @@ export class PresetsController {
   constructor(private readonly presetsService: PresetsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a preset' })
+  @ApiOperation({ summary: 'Create a preset, or upsert one if dto.id is set' })
   create(@Body() dto: CreatePresetDto): Promise<Preset> {
     return this.presetsService.create(dto);
   }
