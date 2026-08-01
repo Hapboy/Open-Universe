@@ -18,9 +18,9 @@ export interface GenerateVisionRequest {
 export type GenerateVisionResponse = string | null;
 
 // This app only ever reaches the Gemini Developer API (not Vertex AI
-// "Enterprise" mode) — see core/services/gemini.ts for the Vertex-only
-// fields intentionally omitted here (negativePrompt/seed/enhancePrompt/
-// addWatermark/language for Imagen).
+// "Enterprise" mode) — see apps/api/src/ai-gateway/gemini/gemini.service.ts
+// for the Vertex-only fields intentionally omitted here (negativePrompt/
+// seed/enhancePrompt/addWatermark/language for Imagen).
 export interface GenerateImageRequest {
     prompt: string;
     aspectRatio: string;
