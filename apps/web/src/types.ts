@@ -24,6 +24,11 @@ export interface Port {
     id: string;
     name: string;
     type: PortType;
+    // Input pins accept only one incoming edge by default (connecting a new
+    // wire replaces whatever was already plugged in) — set true to opt an
+    // input pin out of that. Meaningless on output pins, which always allow
+    // fanning out to multiple targets.
+    allowMultiple?: boolean;
 }
 
 // Shape stored in React Flow node `data` field
@@ -128,6 +133,10 @@ export interface WGS84Coordinates {
 }
 
 export interface CharacterNodeParams extends Record<string, unknown> {
+    // Doubles as this node's stable cross-scene identity (see synapseData.ts's
+    // identityKey) whether or not it's ever explicitly saved to the shared
+    // preset library — see usePresetDatabase in shared.tsx for how it's
+    // assigned.
     presetId: string;
     selectedItem: string;
     inFrame: boolean;
@@ -135,7 +144,7 @@ export interface CharacterNodeParams extends Record<string, unknown> {
     emotion: CharacterEmotion;
     stylist: CharacterStylist;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     lifetimeFrom: string;
     lifetimeTo: string;
     birthPlace: WGS84Coordinates;
@@ -159,7 +168,7 @@ export interface LocationNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     weather: LocationWeather;
     timeOfDay: LocationTimeOfDay;
     interiorExterior: InteriorExterior;
@@ -174,7 +183,7 @@ export interface MiseEnSceneNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     peopleCount: number;
     cameraCount: number;
     additionalDescription: string;
@@ -185,7 +194,7 @@ export interface BuildingNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     inFrame: boolean;
     floor: number;
 }
@@ -195,7 +204,7 @@ export interface ClothingNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     season: ClothingSeason;
     wear: number;
 }
@@ -205,7 +214,7 @@ export interface ArtworkNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     inFrame: boolean;
     scale: number;
 }
@@ -215,7 +224,7 @@ export interface FurnitureNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     inFrame: boolean;
     density: number;
 }
@@ -225,7 +234,7 @@ export interface MusicNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     mood: MusicMood;
 }
 
@@ -234,7 +243,7 @@ export interface ScriptNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     tone: ScriptTone;
 }
 
@@ -250,6 +259,6 @@ export interface TransportNodeParams extends Record<string, unknown> {
     selectedItem: string;
     name: string;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     inFrame: boolean;
 }

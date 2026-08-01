@@ -2,9 +2,9 @@ import { useState } from "react";
 import { formatTime } from "../timelineUtils.ts";
 import styles from "./DurationEditor.module.css";
 
-// Click-to-edit, mirroring DatabaseSelect's inline-edit interaction pattern
-// (app/ui/NodeCard/params/shared.tsx): click to reveal an input, Enter/blur
-// commits, Escape cancels.
+// Click-to-edit, mirroring PresetsField's inline "add new" interaction
+// pattern (apps/web/src/ui/NodeCard/params/PresetsField/PresetsField.tsx):
+// click to reveal an input, Enter/blur commits, Escape cancels.
 export function DurationEditor({
     totalDuration,
     onChange,

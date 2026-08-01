@@ -1,0 +1,142 @@
+.fld {
+    composes: fld from "../../../../styles/shared.module.css";
+}
+
+.pri {
+    composes: pri from "../../../../styles/shared.module.css";
+}
+
+.iconBtn {
+    composes: iconBtn from "../../../../styles/shared.module.css";
+}
+
+.modal {
+    composes: modal from "../../../../styles/shared.module.css";
+}
+
+.sheet {
+    composes: sheet from "../../../../styles/shared.module.css";
+}
+
+.sheetH {
+    composes: sheetH from "../../../../styles/shared.module.css";
+}
+
+.x {
+    composes: x from "../../../../styles/shared.module.css";
+}
+
+.sheetBody {
+    composes: sheetBody from "../../../../styles/shared.module.css";
+}
+
+.triggerRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.trigger {
+    composes: btn from "../../../../styles/shared.module.css";
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: flex-start;
+    font-weight: 500;
+}
+
+.triggerThumb {
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-bg-primary);
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+}
+
+.triggerLabel {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.triggerChevron {
+    color: var(--color-text-tertiary);
+    flex-shrink: 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 10px;
+}
+
+.card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-tertiary);
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--color-text-primary);
+    transition: border-color 0.15s;
+}
+
+.card:hover {
+    border-color: var(--color-border-active);
+}
+
+.cardActive {
+    border-color: var(--color-bg-accent);
+}
+
+.cardThumb {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-bg-primary);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-tertiary);
+    font-size: 20px;
+}
+
+.cardLabel {
+    font-size: 11px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.cardCheck {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-bg-accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+}
+
+.emptyHint {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}

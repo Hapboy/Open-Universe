@@ -53,13 +53,13 @@ export interface CharacterPresence {
     presenceByScene: Record<string, string[]>;
 }
 
-// A character's cross-scene identity: prefer the stable `id` param (see
-// PresetLibraryContext's migration), fall back to a normalized name match
-// for character nodes placed before that id existed.
+// A character's cross-scene identity: its `presetId`, which every character
+// node carries from creation (see usePresetDatabase's effect in shared.tsx)
+// whether or not it was ever explicitly saved to the shared preset library —
+// duplicating a node copies this value along, so duplicates and re-selected
+// presets are correctly recognized as the same recurring character here.
 function identityKey(params: CharacterNodeParams): string | null {
-    if (params.presetId) return params.presetId;
-    const name = params.name?.trim().toLowerCase();
-    return name ? `name:${name}` : null;
+    return params.presetId || null;
 }
 
 export function deriveCharacterPresence(

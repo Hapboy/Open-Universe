@@ -257,7 +257,7 @@ interface GraphCtx {
     setNodeField: (nodeId: string, patch: Partial<NodeParams>) => void;
     updateNodeParam: (nodeId: string, key: string, value: unknown) => void;
     updateNodeParams: (nodeId: string, patch: Record<string, unknown>) => void;
-    setNodePhotos: (nodeId: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (nodeId: string, photos: string[], coverPhotoIndex: number) => void;
     addImageInput: (nodeId: string) => void;
     addTextInput: (nodeId: string) => void;
     removePinInput: (nodeId: string, portId: string) => void;
@@ -414,9 +414,24 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         setEdges((es) => applyEdgeChanges(changes, es));
     }, []);
 
-    const onConnect: OnConnect = useCallback((conn: Connection) => {
-        setEdges((es) => addEdge(conn, es));
-    }, []);
+    // Input pins accept a single edge by default (see Port.allowMultiple) —
+    // wiring a new connection into an already-occupied one replaces it
+    // instead of stacking a second edge onto the same handle.
+    const onConnect: OnConnect = useCallback(
+        (conn: Connection) => {
+            const targetPort = findPort(nodes, conn.target, conn.targetHandle, "target");
+            setEdges((es) => {
+                const withoutStale = targetPort?.allowMultiple
+                    ? es
+                    : es.filter(
+                          (e) =>
+                              !(e.target === conn.target && e.targetHandle === conn.targetHandle),
+                      );
+                return addEdge(conn, withoutStale);
+            });
+        },
+        [nodes],
+    );
 
     const isValidConnection: IsValidConnection = useCallback(
         (conn) => {
@@ -699,33 +714,36 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     // Single place that mutates a rich entity node's photos — keeps its
     // per-photo output pins (one per photo, id'd by blob ref) in sync with
     // the array, and prunes edges wired to any pin that no longer exists.
-    const setNodePhotos = useCallback((nodeId: string, photos: string[], photoIdx: number) => {
-        const capped = photos.slice(0, MAX_ENTITY_PHOTOS);
-        setNodes((ns) =>
-            ns.map((n) =>
-                n.id !== nodeId
-                    ? n
-                    : {
-                          ...n,
-                          data: {
-                              ...n.data,
-                              outputs: withPhotoOutputs(nodeId, n.data.outputs, capped),
-                              params: { ...n.data.params, photos: capped, photoIdx },
+    const setNodePhotos = useCallback(
+        (nodeId: string, photos: string[], coverPhotoIndex: number) => {
+            const capped = photos.slice(0, MAX_ENTITY_PHOTOS);
+            setNodes((ns) =>
+                ns.map((n) =>
+                    n.id !== nodeId
+                        ? n
+                        : {
+                              ...n,
+                              data: {
+                                  ...n.data,
+                                  outputs: withPhotoOutputs(nodeId, n.data.outputs, capped),
+                                  params: { ...n.data.params, photos: capped, coverPhotoIndex },
+                              },
                           },
-                      },
-            ),
-        );
-        const photoPrefix = `${nodeId}_photo_`;
-        const validIds = new Set(capped.map((ref) => `${photoPrefix}${ref}`));
-        setEdges((es) =>
-            es.filter(
-                (e) =>
-                    e.source !== nodeId ||
-                    !e.sourceHandle?.startsWith(photoPrefix) ||
-                    validIds.has(e.sourceHandle),
-            ),
-        );
-    }, []);
+                ),
+            );
+            const photoPrefix = `${nodeId}_photo_`;
+            const validIds = new Set(capped.map((ref) => `${photoPrefix}${ref}`));
+            setEdges((es) =>
+                es.filter(
+                    (e) =>
+                        e.source !== nodeId ||
+                        !e.sourceHandle?.startsWith(photoPrefix) ||
+                        validIds.has(e.sourceHandle),
+                ),
+            );
+        },
+        [],
+    );
 
     const graphExecution = useGraphExecution({
         nodes,

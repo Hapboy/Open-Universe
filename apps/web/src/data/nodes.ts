@@ -26,7 +26,7 @@ export const RICH_ENTITY_NODE_TYPES: Set<NodeType> = new Set([
     "mise_en_scene",
 ]);
 
-// All entity node types with a preset (`DatabaseSelect`) dropdown — the
+// All entity node types with a preset (`PresetsField`) picker — the
 // shared source of truth for both the "selectedItem passthrough" fallback
 // and the photo-gallery gating in core/graph.ts and GraphContext.tsx.
 export const ENTITY_NODE_TYPES: Set<NodeType> = new Set([
@@ -274,7 +274,7 @@ export const NODE_TEMPLATES = {
             emotion: "",
             stylist: "",
             photos: [] as string[],
-            photoIdx: 0,
+            coverPhotoIndex: 0,
             lifetimeFrom: "",
             lifetimeTo: "",
             birthPlace: { lat: null, lon: null },
@@ -308,7 +308,7 @@ export const NODE_TEMPLATES = {
             selectedItem: "",
             name: "",
             photos: [] as string[],
-            photoIdx: 0,
+            coverPhotoIndex: 0,
             weather: "",
             timeOfDay: "",
             interiorExterior: "",
@@ -334,7 +334,7 @@ export const NODE_TEMPLATES = {
             selectedItem: "",
             name: "",
             photos: [] as string[],
-            photoIdx: 0,
+            coverPhotoIndex: 0,
             peopleCount: 0,
             cameraCount: 0,
             additionalDescription: "",
@@ -353,7 +353,7 @@ export const NODE_TEMPLATES = {
             selectedItem: "",
             name: "",
             photos: [] as string[],
-            photoIdx: 0,
+            coverPhotoIndex: 0,
             inFrame: true,
             floor: 0,
         },
@@ -371,7 +371,7 @@ export const NODE_TEMPLATES = {
             selectedItem: "",
             name: "",
             photos: [] as string[],
-            photoIdx: 0,
+            coverPhotoIndex: 0,
             season: "",
             wear: 0,
         },
@@ -389,7 +389,7 @@ export const NODE_TEMPLATES = {
             selectedItem: "",
             name: "",
             photos: [] as string[],
-            photoIdx: 0,
+            coverPhotoIndex: 0,
             inFrame: true,
             scale: 20, // matches the RangeField's own min in EntityParams.tsx
         },
@@ -407,7 +407,7 @@ export const NODE_TEMPLATES = {
             selectedItem: "",
             name: "",
             photos: [] as string[],
-            photoIdx: 0,
+            coverPhotoIndex: 0,
             inFrame: true,
             density: 1, // matches the RangeField's own min in EntityParams.tsx
         },
@@ -425,7 +425,7 @@ export const NODE_TEMPLATES = {
             selectedItem: "",
             name: "",
             photos: [] as string[],
-            photoIdx: 0,
+            coverPhotoIndex: 0,
             mood: "",
         },
     },
@@ -442,7 +442,7 @@ export const NODE_TEMPLATES = {
             selectedItem: "",
             name: "",
             photos: [] as string[],
-            photoIdx: 0,
+            coverPhotoIndex: 0,
             tone: "",
         },
     },
@@ -474,7 +474,7 @@ export const NODE_TEMPLATES = {
             selectedItem: "",
             name: "",
             photos: [] as string[],
-            photoIdx: 0,
+            coverPhotoIndex: 0,
             inFrame: false,
         },
     },

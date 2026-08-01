@@ -1,7 +1,8 @@
 import { useState } from "react";
 import cn from "classnames";
-import { DatabaseSelect, InFrameToggle, usePresetDatabase } from "../shared.tsx";
+import { InFrameToggle, usePresetDatabase } from "../shared.tsx";
 import type { EP } from "../shared.tsx";
+import { PresetsField } from "../PresetsField/PresetsField.tsx";
 import {
     PhotoGallerySection,
     PhotoPreview,
@@ -90,9 +91,9 @@ export function CharacterParams({
     updateNodeParams,
     setNodePhotos,
 }: EP<CharacterNodeParams> & {
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
@@ -154,7 +155,7 @@ export function CharacterParams({
             <PhotoPreview
                 node={node}
                 photos={params.photos || []}
-                photoIdx={params.photoIdx ?? 0}
+                coverPhotoIndex={params.coverPhotoIndex ?? 0}
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
@@ -173,15 +174,14 @@ export function CharacterParams({
 
             {/* 1. GENERAL CATEGORY */}
             {shouldShow("general", "Персонаж Preset") && (
-                <DatabaseSelect
+                <PresetsField
                     label="Персонаж"
                     items={db}
                     selected={params.presetId}
                     onSelect={onSelect}
-                    onAdd={onAdd}
-                    onUpdate={onUpdate}
+                    onSave={onSave}
                     hasUnsavedChanges={hasUnsavedChanges}
-                    addLabel="Добавить персонажа"
+                    missingSaveFields={missingSaveFields}
                 />
             )}
 
@@ -364,9 +364,9 @@ export function LocationParams({
     updateNodeParams,
     setNodePhotos,
 }: EP<LocationNodeParams> & {
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
@@ -405,7 +405,7 @@ export function LocationParams({
             <PhotoPreview
                 node={node}
                 photos={params.photos || []}
-                photoIdx={params.photoIdx ?? 0}
+                coverPhotoIndex={params.coverPhotoIndex ?? 0}
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
@@ -423,15 +423,14 @@ export function LocationParams({
 
             {/* 1. GENERAL CATEGORY */}
             {shouldShow("general", "Локация Preset") && (
-                <DatabaseSelect
+                <PresetsField
                     label="Локация"
                     items={db}
                     selected={params.presetId}
                     onSelect={onSelect}
-                    onAdd={onAdd}
-                    onUpdate={onUpdate}
+                    onSave={onSave}
                     hasUnsavedChanges={hasUnsavedChanges}
-                    addLabel="Добавить локацию"
+                    missingSaveFields={missingSaveFields}
                 />
             )}
 
@@ -527,22 +526,22 @@ export function MiseEnSceneParams({
     updateNodeParams,
     setNodePhotos,
 }: EP<MiseEnSceneNodeParams> & {
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
     );
 
     const diagrams = getMiseEnSceneDiagrams(params.peopleCount, params.cameraCount);
-    const activeDiagramSrc = (params.photos || [])[params.photoIdx ?? 0];
+    const activeDiagramSrc = (params.photos || [])[params.coverPhotoIndex ?? 0];
 
     const selectDiagram = (src: string) => {
         const photos = params.photos || [];
         const existingIdx = photos.indexOf(src);
         if (existingIdx !== -1) {
-            updateNodeParam(node.id, "photoIdx", existingIdx);
+            updateNodeParam(node.id, "coverPhotoIndex", existingIdx);
             return;
         }
         setNodePhotos(node.id, [...photos, src], photos.length);
@@ -553,19 +552,18 @@ export function MiseEnSceneParams({
             <PhotoPreview
                 node={node}
                 photos={params.photos || []}
-                photoIdx={params.photoIdx ?? 0}
+                coverPhotoIndex={params.coverPhotoIndex ?? 0}
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
-            <DatabaseSelect
+            <PresetsField
                 label="Мизансцена"
                 items={db}
                 selected={params.presetId}
                 onSelect={onSelect}
-                onAdd={onAdd}
-                onUpdate={onUpdate}
+                onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
-                addLabel="Добавить мизансцену"
+                missingSaveFields={missingSaveFields}
             />
             <TextField
                 label="Имя"
@@ -624,9 +622,9 @@ export function BuildingParams({
     updateNodeParams,
     setNodePhotos,
 }: EP<BuildingNodeParams> & {
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
@@ -636,19 +634,18 @@ export function BuildingParams({
             <PhotoPreview
                 node={node}
                 photos={params.photos || []}
-                photoIdx={params.photoIdx ?? 0}
+                coverPhotoIndex={params.coverPhotoIndex ?? 0}
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
-            <DatabaseSelect
+            <PresetsField
                 label="Здание"
                 items={db}
                 selected={params.presetId}
                 onSelect={onSelect}
-                onAdd={onAdd}
-                onUpdate={onUpdate}
+                onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
-                addLabel="Добавить здание"
+                missingSaveFields={missingSaveFields}
             />
             <TextField
                 label="Имя"
@@ -684,9 +681,9 @@ export function ClothingParams({
     updateNodeParams,
     setNodePhotos,
 }: EP<ClothingNodeParams> & {
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
@@ -696,19 +693,18 @@ export function ClothingParams({
             <PhotoPreview
                 node={node}
                 photos={params.photos || []}
-                photoIdx={params.photoIdx ?? 0}
+                coverPhotoIndex={params.coverPhotoIndex ?? 0}
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
-            <DatabaseSelect
+            <PresetsField
                 label="Дизайнер"
                 items={db}
                 selected={params.presetId}
                 onSelect={onSelect}
-                onAdd={onAdd}
-                onUpdate={onUpdate}
+                onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
-                addLabel="Добавить дизайнера"
+                missingSaveFields={missingSaveFields}
             />
             <TextField
                 label="Имя"
@@ -746,9 +742,9 @@ export function ArtworkParams({
     updateNodeParams,
     setNodePhotos,
 }: EP<ArtworkNodeParams> & {
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
@@ -758,19 +754,18 @@ export function ArtworkParams({
             <PhotoPreview
                 node={node}
                 photos={params.photos || []}
-                photoIdx={params.photoIdx ?? 0}
+                coverPhotoIndex={params.coverPhotoIndex ?? 0}
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
-            <DatabaseSelect
+            <PresetsField
                 label="Произведение"
                 items={db}
                 selected={params.presetId}
                 onSelect={onSelect}
-                onAdd={onAdd}
-                onUpdate={onUpdate}
+                onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
-                addLabel="Добавить произведение"
+                missingSaveFields={missingSaveFields}
             />
             <TextField
                 label="Имя"
@@ -806,9 +801,9 @@ export function FurnitureParams({
     updateNodeParams,
     setNodePhotos,
 }: EP<FurnitureNodeParams> & {
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
@@ -818,19 +813,18 @@ export function FurnitureParams({
             <PhotoPreview
                 node={node}
                 photos={params.photos || []}
-                photoIdx={params.photoIdx ?? 0}
+                coverPhotoIndex={params.coverPhotoIndex ?? 0}
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
-            <DatabaseSelect
+            <PresetsField
                 label="Мебель"
                 items={db}
                 selected={params.presetId}
                 onSelect={onSelect}
-                onAdd={onAdd}
-                onUpdate={onUpdate}
+                onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
-                addLabel="Добавить мебель"
+                missingSaveFields={missingSaveFields}
             />
             <TextField
                 label="Имя"
@@ -866,9 +860,9 @@ export function MusicParams({
     updateNodeParams,
     setNodePhotos,
 }: EP<MusicNodeParams> & {
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
@@ -878,19 +872,18 @@ export function MusicParams({
             <PhotoPreview
                 node={node}
                 photos={params.photos || []}
-                photoIdx={params.photoIdx ?? 0}
+                coverPhotoIndex={params.coverPhotoIndex ?? 0}
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
-            <DatabaseSelect
+            <PresetsField
                 label="Трек"
                 items={db}
                 selected={params.presetId}
                 onSelect={onSelect}
-                onAdd={onAdd}
-                onUpdate={onUpdate}
+                onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
-                addLabel="Добавить трек"
+                missingSaveFields={missingSaveFields}
             />
             <TextField
                 label="Имя"
@@ -920,9 +913,9 @@ export function ScriptParams({
     updateNodeParams,
     setNodePhotos,
 }: EP<ScriptNodeParams> & {
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
@@ -932,19 +925,18 @@ export function ScriptParams({
             <PhotoPreview
                 node={node}
                 photos={params.photos || []}
-                photoIdx={params.photoIdx ?? 0}
+                coverPhotoIndex={params.coverPhotoIndex ?? 0}
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
-            <DatabaseSelect
+            <PresetsField
                 label="Сцена"
                 items={db}
                 selected={params.presetId}
                 onSelect={onSelect}
-                onAdd={onAdd}
-                onUpdate={onUpdate}
+                onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
-                addLabel="Добавить сцену"
+                missingSaveFields={missingSaveFields}
             />
             <TextField
                 label="Имя"
@@ -973,22 +965,21 @@ export function StoryboardParams({
     updateNodeParam,
     updateNodeParams,
 }: EP<StoryboardNodeParams>) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
     );
     return (
         <>
-            <DatabaseSelect
+            <PresetsField
                 label="Версия"
                 items={db}
                 selected={params.presetId}
                 onSelect={onSelect}
-                onAdd={onAdd}
-                onUpdate={onUpdate}
+                onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
-                addLabel="Добавить версию"
+                missingSaveFields={missingSaveFields}
             />
             <TextField
                 label="Имя"
@@ -1014,9 +1005,9 @@ export function TransportParams({
     updateNodeParams,
     setNodePhotos,
 }: EP<TransportNodeParams> & {
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onAdd, onUpdate, hasUnsavedChanges } = usePresetDatabase(
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
         node,
         params,
         updateNodeParams,
@@ -1026,19 +1017,18 @@ export function TransportParams({
             <PhotoPreview
                 node={node}
                 photos={params.photos || []}
-                photoIdx={params.photoIdx ?? 0}
+                coverPhotoIndex={params.coverPhotoIndex ?? 0}
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
-            <DatabaseSelect
+            <PresetsField
                 label="Транспорт"
                 items={db}
                 selected={params.presetId}
                 onSelect={onSelect}
-                onAdd={onAdd}
-                onUpdate={onUpdate}
+                onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
-                addLabel="Добавить транспорт"
+                missingSaveFields={missingSaveFields}
             />
             <TextField
                 label="Имя"

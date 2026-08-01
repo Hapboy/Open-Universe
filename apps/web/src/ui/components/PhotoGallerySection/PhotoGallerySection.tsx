@@ -12,15 +12,15 @@ import styles from "./PhotoGallerySection.module.css";
 export function PhotoPreview({
     node,
     photos,
-    photoIdx,
+    coverPhotoIndex,
     updateNodeParam,
     setNodePhotos,
 }: {
     node: NodeRef;
     photos: string[];
-    photoIdx: number;
+    coverPhotoIndex: number;
     updateNodeParam: (id: string, key: string, value: unknown) => void;
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
 }) {
     const resolvedThumbs = useResolvedMediaUrls(photos);
     if (photos.length === 0) return null;
@@ -29,19 +29,26 @@ export function PhotoPreview({
         <>
             <MediaSlider
                 items={resolvedThumbs.map((url) => ({ url, type: "image" }))}
-                index={photoIdx}
-                onIndexChange={(i) => updateNodeParam(node.id, "photoIdx", i)}
+                index={coverPhotoIndex}
+                onIndexChange={(i) => updateNodeParam(node.id, "coverPhotoIndex", i)}
                 onDelete={(i) => {
                     const next = photos.filter((_, idx) => idx !== i);
-                    setNodePhotos(node.id, next, Math.max(0, Math.min(photoIdx, next.length - 1)));
+                    setNodePhotos(
+                        node.id,
+                        next,
+                        Math.max(0, Math.min(coverPhotoIndex, next.length - 1)),
+                    );
                 }}
             />
             <div className={styles.thumbnailsList}>
                 {resolvedThumbs.map((url, idx) => (
                     <div
                         key={idx}
-                        className={cn(styles.thumbCell, idx === photoIdx && styles.thumbCellActive)}
-                        onClick={() => updateNodeParam(node.id, "photoIdx", idx)}
+                        className={cn(
+                            styles.thumbCell,
+                            idx === coverPhotoIndex && styles.thumbCellActive,
+                        )}
+                        onClick={() => updateNodeParam(node.id, "coverPhotoIndex", idx)}
                         style={{ backgroundImage: url ? `url(${url})` : undefined }}
                         title="Установить как обложку"
                     />
@@ -54,7 +61,7 @@ export function PhotoPreview({
 // Reusable "photo section" for entity nodes: an upload button. The
 // slider/thumbnail preview lives separately in `PhotoPreview` above
 // (typically pinned to the top of the node) — backed by the same entity's
-// `photos`/`photoIdx` params and the shared `setNodePhotos` mutator (see
+// `photos`/`coverPhotoIndex` params and the shared `setNodePhotos` mutator (see
 // GraphContext.tsx), which keeps per-photo output pins in sync with the array.
 export function PhotoGallerySection({
     node,
@@ -68,7 +75,7 @@ export function PhotoGallerySection({
     node: NodeRef;
     label: string;
     photos: string[];
-    setNodePhotos: (id: string, photos: string[], photoIdx: number) => void;
+    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
     maxPhotos?: number;
     // Optional AI-generation entry point, opted into per entity type (see
     // CharacterParams) — rendered as an icon-only button next to Upload.
