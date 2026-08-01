@@ -11,6 +11,8 @@ import { Repository } from 'typeorm';
 import { MediaAsset } from './media-asset.entity';
 import { R2_CLIENT } from './r2-client.provider';
 
+type MediaAssetKind = MediaAsset['kind'];
+
 @Injectable()
 export class MediaService {
   constructor(
@@ -21,9 +23,12 @@ export class MediaService {
     private readonly config: ConfigService,
   ) {}
 
-  async upload(file: Express.Multer.File): Promise<MediaAsset> {
-    // Matches blobStore.ts's existing idb:/gen: ref prefix convention on the
-    // frontend - same string doubles as the R2 object key, no separate
+  async upload(
+    file: Express.Multer.File,
+    kind: MediaAssetKind = 'uploaded',
+  ): Promise<MediaAsset> {
+    // Matches blobStore.ts's existing idb:/gen:/s3: ref prefix convention on
+    // the frontend - same string doubles as the R2 object key, no separate
     // key<->ref mapping needed.
     const storageKey = `s3:${randomUUID()}`;
 
@@ -38,7 +43,7 @@ export class MediaService {
 
     const asset = this.mediaAssets.create({
       ownerId: null,
-      kind: 'uploaded',
+      kind,
       storageKey,
       mimeType: file.mimetype,
       sizeBytes: String(file.size),

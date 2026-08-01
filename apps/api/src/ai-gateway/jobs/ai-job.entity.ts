@@ -18,12 +18,15 @@ export class AiJob {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'owner_id' })
-  ownerId: string;
+  // Nullable for now, same as Scene.ownerId/MediaAsset.ownerId/Preset.ownerId
+  // - no auth yet. Every job will be required to have an owner once
+  // AuthModule/UsersModule land.
+  @Column({ name: 'owner_id', nullable: true })
+  ownerId: string | null;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'owner_id' })
-  owner: User;
+  owner: User | null;
 
   @Column()
   provider: string;

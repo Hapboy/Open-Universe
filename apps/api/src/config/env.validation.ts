@@ -2,6 +2,7 @@ const NODE_ENVS = ['development', 'production', 'test'] as const;
 
 const REQUIRED_STRING_VARS = [
   'DATABASE_URL',
+  'REDIS_URL',
   'R2_ACCOUNT_ID',
   'R2_ACCESS_KEY_ID',
   'R2_SECRET_ACCESS_KEY',
@@ -9,8 +10,12 @@ const REQUIRED_STRING_VARS = [
   'R2_PUBLIC_URL',
 ] as const;
 
-// Extend this as each module introduces its own required var (REDIS_URL and
-// a JWT secret once CollaborationModule/AuthModule are built — see
+// GEMINI_KEY is deliberately not required here - AiGatewayModule's Gemini
+// routes soft-fail with 501 when it's unset, same as the frontend routes it
+// replaces, rather than refusing to boot.
+//
+// Extend this as each module introduces its own required var (a JWT secret
+// once CollaborationModule/AuthModule are built — see
 // docs/backend-bootstrap.md and the reordered plan in DECISIONS.md).
 export function validateEnv(
   config: Record<string, unknown>,

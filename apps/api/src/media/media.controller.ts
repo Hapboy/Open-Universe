@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -10,6 +11,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MediaService } from './media.service';
+import { UploadMediaDto } from './dto/upload-media.dto';
 
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
@@ -26,14 +28,20 @@ export class MediaController {
   @ApiBody({
     schema: {
       type: 'object',
-      properties: { file: { type: 'string', format: 'binary' } },
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        kind: { type: 'string', enum: ['uploaded', 'generated'] },
+      },
     },
   })
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }),
   )
-  async upload(@UploadedFile() file: Express.Multer.File) {
-    const asset = await this.mediaService.upload(file);
+  async upload(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UploadMediaDto,
+  ) {
+    const asset = await this.mediaService.upload(file, dto.kind);
     return { ...asset, url: this.mediaService.publicUrl(asset) };
   }
 
