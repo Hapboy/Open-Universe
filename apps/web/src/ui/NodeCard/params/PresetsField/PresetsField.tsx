@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import cn from "classnames";
-import { useResolvedMediaUrls } from "../../../../core/blobStore.ts";
+import { useResolvedMediaUrls } from "../../../../core/mediaRef.ts";
 import type { PresetCardItem } from "../shared.tsx";
 import styles from "./PresetsField.module.css";
 

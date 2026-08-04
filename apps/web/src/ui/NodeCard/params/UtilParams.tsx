@@ -14,7 +14,7 @@ import { CategoryTagGroup } from "../../components/CategoryTagGroup/CategoryTagG
 import { SearchField } from "../../components/SearchField/SearchField.tsx";
 import { EmotionalCurvePreview } from "../../components/EmotionalCurvePreview/EmotionalCurvePreview.tsx";
 import { StoryPhaseBeats } from "../../components/StoryPhaseBeats/StoryPhaseBeats.tsx";
-import { putBlob, useResolvedMediaUrl } from "../../../core/blobStore.ts";
+import { putBlob, useResolvedMediaUrl } from "../../../core/mediaRef.ts";
 import styles from "./UtilParams.module.css";
 
 const OUTPUT_SCENE_CATEGORIES = [

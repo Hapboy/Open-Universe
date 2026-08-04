@@ -4,7 +4,7 @@ import type { Edge, Node } from "@xyflow/react";
 import type { NodeParams, NodeRef } from "../../types.ts";
 import type { SceneOutput } from "../../core/graph.ts";
 import type { SceneNarrativeSettings } from "./NarrativeContext.tsx";
-import { deleteBlobs, putGeneratedBlob } from "../../core/blobStore.ts";
+import { putGeneratedBlob } from "../../core/mediaRef.ts";
 
 type ShowToast = (msg: string) => void;
 
@@ -110,7 +110,6 @@ export function useGraphExecution({
                     const overflow = history.length - MAX_GENERATED_HISTORY;
                     if (overflow > 0) {
                         const dropped = history.splice(0, overflow);
-                        void deleteBlobs(dropped).catch(console.error);
                         for (const droppedRef of dropped) delete paramsHistory[droppedRef];
                     }
                     return {

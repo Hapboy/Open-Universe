@@ -27,7 +27,7 @@ export class MediaService {
     file: Express.Multer.File,
     kind: MediaAssetKind = 'uploaded',
   ): Promise<MediaAsset> {
-    // Matches blobStore.ts's existing idb:/gen:/s3: ref prefix convention on
+    // Matches mediaRef.ts's ref prefix convention on
     // the frontend - same string doubles as the R2 object key, no separate
     // key<->ref mapping needed.
     const storageKey = `s3:${randomUUID()}`;

@@ -2,7 +2,7 @@ import { useMemo, useRef } from "react";
 import cn from "classnames";
 import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
 import type { TimelineScene } from "../../../types.ts";
-import { useResolvedMediaUrls } from "../../../core/blobStore.ts";
+import { useResolvedMediaUrls } from "../../../core/mediaRef.ts";
 import {
     computeRulerTicks,
     findSceneAtTime,

@@ -8,7 +8,7 @@ import {
     PhotoPreview,
 } from "../../../components/PhotoGallerySection/PhotoGallerySection.tsx";
 import { useImageGeneration } from "../../../hooks/useImageGeneration.ts";
-import { resolveMediaRef } from "../../../../core/blobStore.ts";
+import { resolveMediaRef } from "../../../../core/mediaRef.ts";
 import { geminiApiClient } from "../../../../core/api/index.ts";
 import { SelectField } from "../../../components/SelectField/SelectField.tsx";
 import { RangeField } from "../../../components/RangeField/RangeField.tsx";

@@ -4,7 +4,7 @@ import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } f
 import type { NodeParams, PortType } from "../../types.ts";
 import { AI_MODEL_NODE_TYPES, NODE_TEMPLATES, RICH_ENTITY_NODE_TYPES } from "../../data/nodes.ts";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import { deleteBlobs, useResolvedMediaUrls } from "../../core/blobStore.ts";
+import { useResolvedMediaUrls } from "../../core/mediaRef.ts";
 import { CircleLoader } from "../components/CircleLoader/CircleLoader.tsx";
 import { TextAreaField } from "../components/TextAreaField/TextAreaField.tsx";
 import { MediaSlider } from "./MediaSlider/MediaSlider.tsx";
@@ -328,7 +328,6 @@ export const NodeCard = memo(function NodeCard({
                             onDelete={(i) => {
                                 const ref = generatedHistory[i];
                                 const nextHistory = generatedHistory.filter((_, idx) => idx !== i);
-                                if (ref) void deleteBlobs([ref]).catch(console.error);
                                 const nextParamsHistory = { ...generatedParamsHistory };
                                 if (ref) delete nextParamsHistory[ref];
                                 updateNodeParams(id, {

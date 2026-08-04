@@ -22,12 +22,6 @@ export function Topbar() {
             <div className={styles.iconGroup}>
                 <button
                     className={styles.iconBtn}
-                    onClick={() => openModal("storage")}
-                    title="Локальное хранилище">
-                    <i className="ti ti-database" />
-                </button>
-                <button
-                    className={styles.iconBtn}
                     onClick={toggleFullscreen}
                     title="Полноэкранный режим">
                     <i className="ti ti-arrows-maximize" />

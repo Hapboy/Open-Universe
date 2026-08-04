@@ -28,7 +28,7 @@ export class MediaAsset {
   kind: (typeof MEDIA_ASSET_KINDS)[number];
 
   // The MediaModule's own s3:<uuid> ref convention (Phase G) - slots into
-  // blobStore.ts's existing idb:/gen: prefix scheme on the frontend.
+  // mediaRef.ts's ref-prefix scheme on the frontend.
   @Column({ name: 'storage_key' })
   storageKey: string;
 

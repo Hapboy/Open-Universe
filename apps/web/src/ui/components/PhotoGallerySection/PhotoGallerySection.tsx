@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import cn from "classnames";
 import type { NodeRef } from "../../../types.ts";
-import { putBlob, useResolvedMediaUrls } from "../../../core/blobStore.ts";
+import { putBlob, useResolvedMediaUrls } from "../../../core/mediaRef.ts";
 import { MediaSlider } from "../../NodeCard/MediaSlider/MediaSlider.tsx";
 import { CircleLoader } from "../CircleLoader/CircleLoader.tsx";
 import styles from "./PhotoGallerySection.module.css";

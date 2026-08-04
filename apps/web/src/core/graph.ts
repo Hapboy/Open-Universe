@@ -4,7 +4,7 @@ import type { SceneOutputType } from "@hayverse/shared";
 import type { SceneNarrativeSettings } from "../store/contexts/NarrativeContext.tsx";
 import { geminiApiClient, higgsfieldApiClient } from "./api/index.ts";
 import { AI_MODEL_NODE_TYPES, ENTITY_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "../data/nodes.ts";
-import { resolveMediaRef } from "./blobStore.ts";
+import { resolveMediaRef } from "./mediaRef.ts";
 import { photoPortId } from "./characterPorts.ts";
 
 type ShowToast = (msg: string) => void;
@@ -185,7 +185,7 @@ async function computeNodeOutput(
 // Fills an entity node's per-photo output pins, plus Description/JSON for the
 // "rich" entity types that have those ports — pure derivations of its own
 // params, independent of edges/resolution order. Photos are stored as
-// blobStore refs (`idb:<uuid>`), not raw data — resolve them to real URLs
+// media refs (`s3:<uuid>`), not raw data — resolve them to real URLs
 // here so downstream AI-model nodes (e.g. Nano Banana reference images) get
 // usable image data, not an id string. Each photo's pin id is derived from
 // its own ref (see characterPorts.ts), not its position, so this doesn't
