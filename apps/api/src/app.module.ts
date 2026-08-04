@@ -8,6 +8,8 @@ import { AppService } from './app.service';
 import { validateEnv } from './config/env.validation';
 import { HealthController } from './health/health.controller';
 import { User } from './users/user.entity';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 import { Scene } from './scenes/scene.entity';
 import { ScenesModule } from './scenes/scenes.module';
 import { MediaAsset } from './media/media-asset.entity';
@@ -16,6 +18,8 @@ import { Preset } from './presets/preset.entity';
 import { PresetsModule } from './presets/presets.module';
 import { AiJob } from './ai-gateway/jobs/ai-job.entity';
 import { AiGatewayModule } from './ai-gateway/ai-gateway.module';
+import { PinterestConnection } from './pinterest/pinterest-connection.entity';
+import { PinterestModule } from './pinterest/pinterest.module';
 // NarrativeSettings entity already exists but isn't registered here yet -
 // see the same note in src/database/data-source.ts.
 
@@ -31,7 +35,7 @@ import { AiGatewayModule } from './ai-gateway/ai-gateway.module';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
-        entities: [User, Scene, MediaAsset, Preset, AiJob],
+        entities: [User, Scene, MediaAsset, Preset, AiJob, PinterestConnection],
         synchronize: false,
       }),
     }),
@@ -45,10 +49,13 @@ import { AiGatewayModule } from './ai-gateway/ai-gateway.module';
         }),
       }),
     }),
+    UsersModule,
+    AuthModule,
     ScenesModule,
     MediaModule,
     PresetsModule,
     AiGatewayModule,
+    PinterestModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

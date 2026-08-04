@@ -5,29 +5,26 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import {
-  TEAM_SIDES,
-  TEAM_ROLES,
-  type TeamSide,
-  type TeamRole,
-} from '@hayverse/shared';
+import { TEAM_ROLES, type TeamRole } from '@hayverse/shared';
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  name: string;
+  // The login identifier - distinct from firstName/lastName, which are just
+  // display name fields with no uniqueness requirement.
+  @Column({ unique: true })
+  username: string;
 
   @Column({ name: 'password_hash' })
   passwordHash: string;
 
-  @Column({ name: 'char_name' })
-  charName: string;
+  @Column({ name: 'first_name' })
+  firstName: string;
 
-  @Column({ type: 'enum', enum: TEAM_SIDES })
-  side: TeamSide;
+  @Column({ name: 'last_name', type: 'varchar', nullable: true })
+  lastName: string | null;
 
   @Column({ type: 'enum', enum: TEAM_ROLES })
   role: TeamRole;

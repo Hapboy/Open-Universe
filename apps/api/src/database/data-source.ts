@@ -5,6 +5,7 @@ import { Scene } from '../scenes/scene.entity';
 import { MediaAsset } from '../media/media-asset.entity';
 import { Preset } from '../presets/preset.entity';
 import { AiJob } from '../ai-gateway/jobs/ai-job.entity';
+import { PinterestConnection } from '../pinterest/pinterest-connection.entity';
 // NarrativeSettings entity already exists (see its folder) but isn't
 // registered here yet - tables are being connected one at a time, in
 // build-priority order, rather than all at once. Add it to this list (and
@@ -17,7 +18,7 @@ import { AiJob } from '../ai-gateway/jobs/ai-job.entity';
 export default new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  entities: [User, Scene, MediaAsset, Preset, AiJob],
+  entities: [User, Scene, MediaAsset, Preset, AiJob, PinterestConnection],
   migrations: ['src/database/migrations/*.ts'],
   synchronize: false,
 });

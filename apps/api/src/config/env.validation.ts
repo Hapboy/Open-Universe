@@ -8,14 +8,16 @@ const REQUIRED_STRING_VARS = [
   'R2_SECRET_ACCESS_KEY',
   'R2_BUCKET_NAME',
   'R2_PUBLIC_URL',
+  'JWT_SECRET',
 ] as const;
 
-// GEMINI_KEY is deliberately not required here - AiGatewayModule's Gemini
-// routes soft-fail with 501 when it's unset, same as the frontend routes it
-// replaces, rather than refusing to boot.
+// GEMINI_KEY (and the Pinterest OAuth vars, once that module exists) are
+// deliberately not required here - those routes soft-fail with 501 when
+// their credentials are unset, rather than refusing to boot. JWT_SECRET is
+// different: AuthModule is core, not an optional integration, so a missing
+// secret should fail fast at startup instead of 500ing on the first request.
 //
-// Extend this as each module introduces its own required var (a JWT secret
-// once CollaborationModule/AuthModule are built — see
+// Extend this as each module introduces its own required var (see
 // docs/backend-bootstrap.md and the reordered plan in DECISIONS.md).
 export function validateEnv(
   config: Record<string, unknown>,
