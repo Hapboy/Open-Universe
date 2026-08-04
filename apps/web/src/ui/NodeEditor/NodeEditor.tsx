@@ -125,6 +125,7 @@ function NodeEditorCanvas() {
                 fitView
                 deleteKeyCode="Delete"
                 zoomOnDoubleClick={false}
+                minZoom={0.05}
                 proOptions={{ hideAttribution: true }}>
                 <Background gap={20} size={1} color="var(--color-border)" />
                 <Controls />
