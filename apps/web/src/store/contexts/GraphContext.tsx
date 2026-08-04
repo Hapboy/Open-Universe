@@ -26,6 +26,7 @@ import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
 import type { NodeType } from "@hayverse/shared";
 import type { SceneOutput } from "../../core/graph.ts";
 import { useToastContext } from "./ToastContext.tsx";
+import { useUserContext } from "./UserContext.tsx";
 import { useNarrativeContext } from "./NarrativeContext.tsx";
 import { readJSON, readRaw, removeKey, writeRaw } from "../../core/browserStorage.ts";
 import { buildPhotoPorts } from "../../core/characterPorts.ts";
@@ -294,6 +295,7 @@ export const useGraphContext = () => useContext(Ctx);
 
 export function GraphProvider({ children }: { children: React.ReactNode }) {
     const { showToast } = useToastContext();
+    const { pinterestStatus } = useUserContext();
     const { narrativeSettings, getSceneNarrativeSettings } = useNarrativeContext();
 
     // SSR-safe default: identical on the server and the client's first paint
@@ -753,6 +755,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         showToast,
         narrativeSettings,
         getSceneNarrativeSettings,
+        pinterestConnected: pinterestStatus?.connected ?? false,
     });
 
     // ── Assemble and expose ─────────────────────────────────────────────────────

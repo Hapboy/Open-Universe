@@ -34,6 +34,8 @@ interface UseGraphExecutionParams {
     showToast: ShowToast;
     narrativeSettings: Record<string, SceneNarrativeSettings>;
     getSceneNarrativeSettings: (sceneId: string) => SceneNarrativeSettings;
+    // From UserContext's pinterestStatus - see pinterestApiClient.fetchBoards.
+    pinterestConnected: boolean;
 }
 
 interface UseGraphExecutionResult {
@@ -60,6 +62,7 @@ export function useGraphExecution({
     showToast,
     narrativeSettings,
     getSceneNarrativeSettings,
+    pinterestConnected,
 }: UseGraphExecutionParams): UseGraphExecutionResult {
     const resolvedRef = useRef<Record<string, unknown>>({});
     const [resolved, setResolved] = useState<Record<string, unknown>>({});
@@ -243,7 +246,7 @@ export function useGraphExecution({
     const loadPinterestBoards = useCallback(
         async (node: NodeRef) => {
             const { pinterestApiClient } = await import("../../core/api/index.ts");
-            const boards = await pinterestApiClient.fetchBoards(showToast);
+            const boards = await pinterestApiClient.fetchBoards(showToast, pinterestConnected);
             setNodes((ns) =>
                 ns.map((n) => {
                     if (n.id !== node.id) return n;
@@ -256,7 +259,7 @@ export function useGraphExecution({
                 }),
             );
         },
-        [showToast, setNodes],
+        [showToast, setNodes, pinterestConnected],
     );
 
     const loadPinterestPins = useCallback(

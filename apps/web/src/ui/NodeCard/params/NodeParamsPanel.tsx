@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useUserContext } from "../../../store/contexts/UserContext.tsx";
 import type { NodeParamsProps } from "./shared.tsx";
 import { PinterestParams } from "./PinterestParams/PinterestParams.tsx";
 import { SoulParams, CameraParams, SpeakParams } from "./HiggsFieldParams.tsx";
@@ -54,13 +55,21 @@ export function NodeParamsPanel({
 }: NodeParamsProps) {
     const { nodeType, params } = node.data;
     const loadedRef = useRef(false);
+    const { currentUser, hydrated, pinterestStatus } = useUserContext();
+    // Whether we know for sure whether Pinterest is connected (one way or the
+    // other) - logged-out is immediately settled (definitely not connected),
+    // logged-in waits for pinterestStatus to resolve so this doesn't fire the
+    // real fetch's mock fallback before the real answer is in and get stuck
+    // showing mock boards to an actually-connected user (loadedRef below only
+    // ever fires once).
+    const pinterestStatusReady = hydrated && (!currentUser || pinterestStatus !== null);
 
     useEffect(() => {
-        if (nodeType === "pinterest_board" && !loadedRef.current) {
+        if (nodeType === "pinterest_board" && !loadedRef.current && pinterestStatusReady) {
             loadedRef.current = true;
             void loadPinterestBoards(node);
         }
-    }, [node, nodeType, loadPinterestBoards]);
+    }, [node, nodeType, loadPinterestBoards, pinterestStatusReady]);
 
     return (
         <>

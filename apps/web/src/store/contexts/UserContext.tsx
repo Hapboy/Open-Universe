@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ApiError } from "@hayverse/api-client";
+import type { PinterestConnectionStatus } from "@hayverse/api-client";
 import type { CurrentUser, TeamMember } from "../../types.ts";
 import { hayverseApiClient } from "../../core/api/hayverse/client.ts";
 import { clearToken, getToken, setToken } from "../../core/auth/tokenStore.ts";
@@ -49,6 +50,12 @@ interface UserCtx {
     // auth state (e.g. Topbar's login/profile buttons) wait instead of
     // flashing "logged out" for a frame before flipping to the real state.
     hydrated: boolean;
+    // Null while logged out or still being resolved after login/signup/hydrate
+    // - see the currentUser-keyed effect below. Consumers that need to tell
+    // "not connected" apart from "haven't checked yet" should also look at
+    // currentUser/hydrated (e.g. NodeParamsPanel's Pinterest auto-load).
+    pinterestStatus: PinterestConnectionStatus | null;
+    refreshPinterestStatus: () => void;
     signUp: (input: SignupInput) => Promise<AuthResult>;
     logIn: (username: string, password: string) => Promise<AuthResult>;
     logOut: () => void;
@@ -71,6 +78,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     // session is resolved in the mount effect below.
     const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [hydrated, setHydrated] = useState(false);
+    const [pinterestStatus, setPinterestStatus] = useState<PinterestConnectionStatus | null>(null);
 
     useEffect(() => {
         const token = getToken();
@@ -115,6 +123,28 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
+    const refreshPinterestStatus = useCallback(() => {
+        hayverseApiClient.pinterest
+            .getConnectionStatus()
+            .then(setPinterestStatus)
+            .catch(() => setPinterestStatus({ connected: false }));
+    }, []);
+
+    // Re-checks whenever the identity changes (login/signup/hydrate-restore/
+    // logout) rather than being called from each of those call sites
+    // individually - one place to keep in sync instead of four.
+    useEffect(() => {
+        if (!currentUser) {
+            // Resetting derived state to match an external trigger (no
+            // session) going away - same documented valid case as the
+            // hydration effect above.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setPinterestStatus(null);
+            return;
+        }
+        refreshPinterestStatus();
+    }, [currentUser, refreshPinterestStatus]);
+
     const logOut = useCallback(() => {
         clearToken();
         setCurrentUser(null);
@@ -129,11 +159,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             hasAccount: !!currentUser,
             team: INITIAL_TEAM,
             hydrated,
+            pinterestStatus,
+            refreshPinterestStatus,
             signUp,
             logIn,
             logOut,
         }),
-        [currentUser, hydrated, signUp, logIn, logOut],
+        [currentUser, hydrated, pinterestStatus, refreshPinterestStatus, signUp, logIn, logOut],
     );
 
     return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>;

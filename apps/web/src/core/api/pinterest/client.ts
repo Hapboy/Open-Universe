@@ -14,7 +14,7 @@ import type { FetchPinsRequest, FetchBoardsResponse, FetchPinsResponse } from ".
 
 type ShowToast = (msg: string) => void;
 
-const MOCK_BOARDS: BoardItem[] = [
+export const MOCK_BOARDS: BoardItem[] = [
     { id: "board_art", name: "Армянский Авангард" },
     { id: "board_kond", name: "Конд Архитектура" },
     { id: "board_taraz", name: "Тараз & Одежда" },
@@ -53,12 +53,17 @@ const MOCK_PINS_BY_BOARD: Record<string, PinItem[]> = {
 };
 
 export interface PinterestApiClient {
-    fetchBoards(showToast: ShowToast): Promise<FetchBoardsResponse>;
+    // `connected` comes from UserContext's pinterestStatus - skips the real
+    // request (and its toasts) entirely when the caller already knows the
+    // user isn't connected, instead of firing a request that's guaranteed to
+    // fail (logged out -> 401, logged in but not connected -> 403).
+    fetchBoards(showToast: ShowToast, connected: boolean): Promise<FetchBoardsResponse>;
     fetchPins(req: FetchPinsRequest): Promise<FetchPinsResponse>;
 }
 
 export const pinterestApiClient: PinterestApiClient = {
-    async fetchBoards(showToast) {
+    async fetchBoards(showToast, connected) {
+        if (!connected) return MOCK_BOARDS;
         try {
             showToast("Загрузка досок Pinterest...");
             const { boards } = await hayverseApiClient.pinterest.listBoards();

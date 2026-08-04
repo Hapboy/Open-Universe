@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import cn from "classnames";
 import { ApiError } from "@hayverse/api-client";
-import type { PinterestConnectionStatus } from "@hayverse/api-client";
 import { useUserContext } from "../../store/contexts/UserContext.tsx";
 import { useToastContext } from "../../store/contexts/ToastContext.tsx";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
@@ -272,17 +271,8 @@ function TeamTab() {
 
 function IntegrationsTab() {
     const { showToast } = useToastContext();
-    const [status, setStatus] = useState<PinterestConnectionStatus | null>(null);
+    const { pinterestStatus, refreshPinterestStatus } = useUserContext();
     const [busy, setBusy] = useState(false);
-
-    const refreshStatus = useCallback(() => {
-        hayverseApiClient.pinterest
-            .getConnectionStatus()
-            .then(setStatus)
-            .catch(() => setStatus({ connected: false }));
-    }, []);
-
-    useEffect(refreshStatus, [refreshStatus]);
 
     useEffect(() => {
         function onMessage(event: MessageEvent) {
@@ -292,11 +282,11 @@ function IntegrationsTab() {
             showToast(
                 result === "success" ? "Pinterest подключён!" : "Не удалось подключить Pinterest.",
             );
-            refreshStatus();
+            refreshPinterestStatus();
         }
         window.addEventListener("message", onMessage);
         return () => window.removeEventListener("message", onMessage);
-    }, [refreshStatus, showToast]);
+    }, [refreshPinterestStatus, showToast]);
 
     const handleConnect = async () => {
         setBusy(true);
@@ -319,7 +309,7 @@ function IntegrationsTab() {
         try {
             await hayverseApiClient.pinterest.disconnect();
             showToast("Pinterest отключён.");
-            refreshStatus();
+            refreshPinterestStatus();
         } catch {
             showToast("Не удалось отключить Pinterest.");
         } finally {
@@ -327,7 +317,7 @@ function IntegrationsTab() {
         }
     };
 
-    if (!status) {
+    if (!pinterestStatus) {
         return <p className={styles.sub}>Загрузка...</p>;
     }
 
@@ -336,11 +326,11 @@ function IntegrationsTab() {
             <p className={styles.sub}>
                 Подключите свой аккаунт Pinterest, чтобы видеть свои доски и пины в узлах графа.
             </p>
-            {status.connected ? (
+            {pinterestStatus.connected ? (
                 <>
                     <div className={styles.statRow}>
                         <span>Pinterest</span>
-                        <strong>{status.pinterestUsername ?? "Подключено"}</strong>
+                        <strong>{pinterestStatus.pinterestUsername ?? "Подключено"}</strong>
                     </div>
                     <button
                         className={cn(styles.btn, styles.pri)}
