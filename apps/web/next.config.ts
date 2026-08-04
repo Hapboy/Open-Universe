@@ -19,7 +19,6 @@ const nextConfig: NextConfig = {
         // time, same as NEXT_PUBLIC_GIT_HASH above: changing .env.local needs a
         // rebuild/dev-server-restart to take effect.
         NEXT_PUBLIC_HIGGSFIELD_CONFIGURED: String(!!process.env.HIGGSFIELD_KEY),
-        NEXT_PUBLIC_PINTEREST_CONFIGURED: String(!!process.env.PINTEREST_TOKEN),
     },
 };
 

@@ -93,20 +93,15 @@ export interface TeamMember {
     isMe: boolean;
 }
 
+// Mirrors apps/api's AuthUser (see @hayverse/api-client) — the real,
+// backend-authenticated identity. Distinct from TeamMember, which is the
+// hardcoded in-universe team roster shown in ProfileModal's "Команда" tab.
 export interface CurrentUser {
     id: string;
-    name: string;
-    charName: string;
-    side: TeamSide;
+    username: string;
+    firstName: string;
+    lastName: string | null;
     role: TeamRole;
-}
-
-// The persisted local "account" record (signup/login stub — see
-// UserContext.tsx): same shape as CurrentUser plus a password, kept separate
-// from CurrentUser so the password never leaks into values passed around the
-// rest of the app (ProfileModal, etc. only ever see CurrentUser).
-export interface StoredAccount extends CurrentUser {
-    password: string;
 }
 
 export interface Palette {

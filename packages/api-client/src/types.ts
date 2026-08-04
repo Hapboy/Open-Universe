@@ -1,3 +1,53 @@
+// apps/api's TeamRole - kept as a plain string union here rather than
+// importing @hayverse/shared, matching how the rest of this file avoids
+// depending on domain enums it doesn't otherwise need.
+export type AuthUserRole = "Режиссер" | "Разработчик" | "Художник" | "Стилист";
+
+export interface AuthUser {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string | null;
+    role: AuthUserRole;
+}
+
+export interface SignupInput {
+    username: string;
+    password: string;
+    firstName: string;
+    lastName?: string;
+}
+
+export interface LoginInput {
+    username: string;
+    password: string;
+}
+
+export interface AuthResponse {
+    user: AuthUser;
+    token: string;
+}
+
+export interface PinterestBoard {
+    id: string;
+    name: string;
+}
+
+export interface PinterestPin {
+    id: string;
+    title: string;
+    image: string;
+}
+
+export interface PinterestConnectionStatus {
+    connected: boolean;
+    pinterestUsername?: string;
+}
+
+export interface PinterestAuthorizeResponse {
+    url: string;
+}
+
 export interface Scene {
     id: string;
     ownerId: string | null;

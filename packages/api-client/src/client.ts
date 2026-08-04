@@ -1,5 +1,7 @@
 import type {
     AiJob,
+    AuthResponse,
+    AuthUser,
     CreateSceneInput,
     GenerateImagenInput,
     GenerateImagenResult,
@@ -9,10 +11,16 @@ import type {
     GenerateVeoInput,
     GenerateVisionInput,
     GeminiModelInfo,
+    LoginInput,
     MediaAsset,
     MediaAssetKind,
+    PinterestAuthorizeResponse,
+    PinterestBoard,
+    PinterestConnectionStatus,
+    PinterestPin,
     Preset,
     Scene,
+    SignupInput,
     UpdateSceneInput,
     UpsertPresetInput,
 } from "./types";
@@ -87,6 +95,30 @@ export class HayverseApiClient {
         if (res.status === 204) return undefined as T;
         return (await res.json()) as T;
     }
+
+    readonly auth = {
+        signup: (input: SignupInput): Promise<AuthResponse> =>
+            this.request<AuthResponse>("POST", "/auth/signup", { json: input }),
+        login: (input: LoginInput): Promise<AuthResponse> =>
+            this.request<AuthResponse>("POST", "/auth/login", { json: input }),
+        logout: (): Promise<void> => this.request<void>("POST", "/auth/logout"),
+        me: (): Promise<{ user: AuthUser }> => this.request<{ user: AuthUser }>("GET", "/auth/me"),
+    };
+
+    readonly pinterest = {
+        getConnectionStatus: (): Promise<PinterestConnectionStatus> =>
+            this.request<PinterestConnectionStatus>("GET", "/pinterest/connection"),
+        getAuthorizeUrl: (): Promise<PinterestAuthorizeResponse> =>
+            this.request<PinterestAuthorizeResponse>("GET", "/pinterest/oauth/authorize"),
+        disconnect: (): Promise<void> => this.request<void>("DELETE", "/pinterest/connection"),
+        listBoards: (): Promise<{ boards: PinterestBoard[] }> =>
+            this.request<{ boards: PinterestBoard[] }>("GET", "/pinterest/boards"),
+        listPins: (boardId: string): Promise<{ pins: PinterestPin[] }> =>
+            this.request<{ pins: PinterestPin[] }>(
+                "GET",
+                `/pinterest/boards/${encodeURIComponent(boardId)}/pins`,
+            ),
+    };
 
     readonly scenes = {
         create: (input: CreateSceneInput): Promise<Scene> =>

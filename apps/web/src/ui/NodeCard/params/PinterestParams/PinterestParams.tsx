@@ -33,7 +33,12 @@ export function PinterestParams({
                 onChange={handleBoardChange}
                 options={
                     boards.length === 0
-                        ? [{ value: "", label: "Сначала введите API Pinterest в настройках..." }]
+                        ? [
+                              {
+                                  value: "",
+                                  label: "Подключите Pinterest в профиле, чтобы увидеть доски...",
+                              },
+                          ]
                         : boards.map((b) => ({ value: b.id, label: b.name }))
                 }
             />

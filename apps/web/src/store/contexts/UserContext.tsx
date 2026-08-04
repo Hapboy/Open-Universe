@@ -1,10 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import type { CurrentUser, StoredAccount, TeamMember } from "../../types.ts";
-import { readJSON, removeKey, writeJSON } from "../../core/browserStorage.ts";
-
-const ACCOUNT_KEY = "hv_account";
-const SESSION_KEY = "hv_session_active";
-const LEGACY_CURRENT_USER_KEY = "hv_current_user";
+import { ApiError } from "@hayverse/api-client";
+import type { CurrentUser, TeamMember } from "../../types.ts";
+import { hayverseApiClient } from "../../core/api/hayverse/client.ts";
+import { clearToken, getToken, setToken } from "../../core/auth/tokenStore.ts";
 
 const INITIAL_TEAM: TeamMember[] = [
     {
@@ -35,114 +33,108 @@ const INITIAL_TEAM: TeamMember[] = [
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
+export interface SignupInput {
+    username: string;
+    password: string;
+    firstName: string;
+    lastName?: string;
+}
+
 interface UserCtx {
     currentUser: CurrentUser | null;
     hasAccount: boolean;
     team: TeamMember[];
-    // False until the mount effect below has read the real stored account —
-    // lets consumers whose rendering meaningfully differs by auth state (e.g.
-    // Topbar's login/profile buttons) wait instead of flashing "logged out"
-    // for a frame before flipping to the real state.
+    // False until the mount effect below has resolved the stored token (or
+    // found none) - lets consumers whose rendering meaningfully differs by
+    // auth state (e.g. Topbar's login/profile buttons) wait instead of
+    // flashing "logged out" for a frame before flipping to the real state.
     hydrated: boolean;
-    signUp: (name: string, password: string) => AuthResult;
-    logIn: (name: string, password: string) => AuthResult;
+    signUp: (input: SignupInput) => Promise<AuthResult>;
+    logIn: (username: string, password: string) => Promise<AuthResult>;
     logOut: () => void;
 }
 
 const Ctx = createContext<UserCtx>(null!);
 export const useUserContext = () => useContext(Ctx);
 
-// TODO(remove-legacy-account-migration): one-time upgrade from the old
-// always-logged-in CurrentUser shape (no id, no password, no separate
-// session concept — the app just had "the onboarded user" or nothing) to the
-// id-keyed account + session model. Safe to delete once active users'
-// localStorage is assumed to have already gone through it.
-function loadAccount(): StoredAccount | null {
-    const stored = readJSON<StoredAccount | null>(ACCOUNT_KEY, null);
-    if (stored) return stored;
-
-    const legacy = readJSON<CurrentUser | null>(LEGACY_CURRENT_USER_KEY, null);
-    if (!legacy) return null;
-    const migrated: StoredAccount = { ...legacy, id: crypto.randomUUID(), password: "" };
-    writeJSON(ACCOUNT_KEY, migrated);
-    writeJSON(SESSION_KEY, true);
-    removeKey(LEGACY_CURRENT_USER_KEY);
-    return migrated;
+function authErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof ApiError) {
+        if (error.status === 409) return "Это имя пользователя уже занято.";
+        if (error.status === 401) return "Неверное имя пользователя или пароль.";
+    }
+    return fallback;
 }
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-    // SSR-safe default (logged out, no localStorage access) — identical on the
-    // server and the client's first paint. The real account/session load in
-    // the mount effect below.
-    const [account, setAccount] = useState<StoredAccount | null>(null);
-    const [sessionActive, setSessionActive] = useState<boolean>(false);
+    // SSR-safe default (logged out, no localStorage/network access) —
+    // identical on the server and the client's first paint. The real
+    // session is resolved in the mount effect below.
+    const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
     const [hydrated, setHydrated] = useState(false);
 
     useEffect(() => {
-        // Syncing from localStorage, an external system unreadable at render
-        // time on the server; this is the documented valid case for the rule.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setAccount(loadAccount());
-        setSessionActive(readJSON<boolean>(SESSION_KEY, false));
-        setHydrated(true);
+        const token = getToken();
+        if (!token) {
+            // No stored session to resolve - synchronous, but this is the
+            // same documented valid case UserContext has always had for this
+            // rule: reading an external system (localStorage) unreadable at
+            // render time on the server.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setHydrated(true);
+            return;
+        }
+        hayverseApiClient.auth
+            .me()
+            .then(({ user }) => setCurrentUser(user))
+            .catch(() => {
+                clearToken();
+                setCurrentUser(null);
+            })
+            .finally(() => setHydrated(true));
     }, []);
 
-    const signUp = useCallback(
-        (name: string, password: string): AuthResult => {
-            if (account) {
-                return { ok: false, error: "На этом устройстве уже есть аккаунт — войдите." };
-            }
-            if (!name.trim() || !password) {
-                return { ok: false, error: "Заполните имя и пароль." };
-            }
-            const created: StoredAccount = {
-                id: crypto.randomUUID(),
-                name: name.trim(),
-                password,
-                charName: name.trim(),
-                side: "urvakan",
-                role: "Режиссер",
-            };
-            writeJSON(ACCOUNT_KEY, created);
-            writeJSON(SESSION_KEY, true);
-            setAccount(created);
-            setSessionActive(true);
+    const signUp = useCallback(async (input: SignupInput): Promise<AuthResult> => {
+        try {
+            const { user, token } = await hayverseApiClient.auth.signup(input);
+            setToken(token);
+            setCurrentUser(user);
             return { ok: true };
-        },
-        [account],
-    );
-
-    const logIn = useCallback((name: string, password: string): AuthResult => {
-        const stored = loadAccount();
-        if (!stored || stored.name !== name.trim() || stored.password !== password) {
-            return { ok: false, error: "Неверное имя или пароль." };
+        } catch (error) {
+            return { ok: false, error: authErrorMessage(error, "Не удалось зарегистрироваться.") };
         }
-        writeJSON(SESSION_KEY, true);
-        setAccount(stored);
-        setSessionActive(true);
-        return { ok: true };
+    }, []);
+
+    const logIn = useCallback(async (username: string, password: string): Promise<AuthResult> => {
+        try {
+            const { user, token } = await hayverseApiClient.auth.login({ username, password });
+            setToken(token);
+            setCurrentUser(user);
+            return { ok: true };
+        } catch (error) {
+            return { ok: false, error: authErrorMessage(error, "Не удалось войти.") };
+        }
     }, []);
 
     const logOut = useCallback(() => {
-        writeJSON(SESSION_KEY, false);
-        setSessionActive(false);
+        clearToken();
+        setCurrentUser(null);
+        // Stateless on the server (see AuthController.logout) - fire and
+        // forget, nothing to await for the UI to reflect being logged out.
+        void hayverseApiClient.auth.logout().catch(() => {});
     }, []);
 
-    const currentUser = useMemo<CurrentUser | null>(() => {
-        if (!sessionActive || !account) return null;
-        const { password: _password, ...rest } = account;
-        return rest;
-    }, [sessionActive, account]);
-
-    const ctx: UserCtx = {
-        currentUser,
-        hasAccount: !!account,
-        team: INITIAL_TEAM,
-        hydrated,
-        signUp,
-        logIn,
-        logOut,
-    };
+    const ctx: UserCtx = useMemo(
+        () => ({
+            currentUser,
+            hasAccount: !!currentUser,
+            team: INITIAL_TEAM,
+            hydrated,
+            signUp,
+            logIn,
+            logOut,
+        }),
+        [currentUser, hydrated, signUp, logIn, logOut],
+    );
 
     return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>;
 }

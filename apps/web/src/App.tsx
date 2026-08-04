@@ -52,13 +52,10 @@ function StatusBar() {
     const { nodes, selectedNodeId } = useGraphContext();
     const sel = nodes.find((n) => n.id === selectedNodeId);
     const hfLive = isProviderConfigured("higgsfield");
-    const pinLive = isProviderConfigured("pinterest");
     return (
         <>
             <span id="statJobs">очередь: 0</span>
-            <span className={styles.muted}>
-                Higgsfield: {hfLive ? "live" : "mock"} · Pinterest: {pinLive ? "live" : "mock"}
-            </span>
+            <span className={styles.muted}>Higgsfield: {hfLive ? "live" : "mock"}</span>
             <span className={styles.spacer} />
             <span className={styles.muted}>
                 {sel ? `${sel.data.label} (${sel.id.slice(0, 8)})` : "—"}

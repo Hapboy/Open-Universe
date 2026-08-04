@@ -5,5 +5,9 @@
 // alongside, so call sites depend on its typed methods directly.
 import { HayverseApiClient } from "@hayverse/api-client";
 import { getApiUrl } from "../env.ts";
+import { getToken } from "../../auth/tokenStore.ts";
 
-export const hayverseApiClient = new HayverseApiClient({ baseUrl: getApiUrl() });
+export const hayverseApiClient = new HayverseApiClient({
+    baseUrl: getApiUrl(),
+    getAuthToken: getToken,
+});

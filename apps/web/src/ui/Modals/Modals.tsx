@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import cn from "classnames";
+import { ApiError } from "@hayverse/api-client";
+import type { PinterestConnectionStatus } from "@hayverse/api-client";
 import { useUserContext } from "../../store/contexts/UserContext.tsx";
 import { useToastContext } from "../../store/contexts/ToastContext.tsx";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
 import { usePresetLibraryContext } from "../../store/contexts/PresetLibraryContext.tsx";
 import { useModalContext } from "../../store/contexts/ModalContext.tsx";
-import type { TeamSide, TeamRole } from "@hayverse/shared";
+import { hayverseApiClient } from "../../core/api/hayverse/client.ts";
 import { TextField } from "../components/TextField/TextField.tsx";
 import { collectLiveMediaRefs, listBlobIds, sweepUnusedBlobs } from "../../core/blobStore.ts";
 import styles from "./Modals.module.css";
@@ -15,19 +17,6 @@ function sideColor(side: string): string {
     if (side === "rambalkoshe") return "var(--color-node-util)";
     return "var(--color-node-scene)";
 }
-
-const SIDE_LABELS: Record<TeamSide, string> = {
-    urvakan: "Urvakan (Авангард, музыкальные архивы)",
-    rambalkoshe: "Rambalkoshe (Визуальное искусство, модерн)",
-    moct: "Moct (Современная архитектура, мосты культур)",
-};
-
-const ROLE_LABELS: Record<TeamRole, string> = {
-    Режиссер: "Режиссер (Director)",
-    Разработчик: "Разработчик (Developer)",
-    Художник: "Художник (Artist)",
-    Стилист: "Стилист (Stylist)",
-};
 
 export function Modals() {
     const { modalType, closeModal, openModal } = useModalContext();
@@ -57,16 +46,23 @@ function SignupModal({
 }) {
     const { signUp } = useUserContext();
     const { showToast } = useToastContext();
-    const [name, setName] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
 
-    const handleSignUp = () => {
-        const result = signUp(name, password);
+    const handleSignUp = async () => {
+        const result = await signUp({
+            username,
+            password,
+            firstName,
+            lastName: lastName.trim() || undefined,
+        });
         if (!result.ok) {
             showToast(result.error);
             return;
         }
-        showToast(`Добро пожаловать, ${name.trim()}!`);
+        showToast(`Добро пожаловать, ${firstName.trim()}!`);
         onClose();
     };
 
@@ -78,10 +74,10 @@ function SignupModal({
                 </div>
                 <div className={styles.sheetBody}>
                     <TextField
-                        label="Имя"
-                        value={name}
-                        onChange={setName}
-                        placeholder="Введите имя..."
+                        label="Имя пользователя"
+                        value={username}
+                        onChange={setUsername}
+                        placeholder="Введите имя пользователя..."
                         autoFocus
                     />
                     <TextField
@@ -91,8 +87,22 @@ function SignupModal({
                         onChange={setPassword}
                         placeholder="Придумайте пароль..."
                     />
+                    <TextField
+                        label="Имя"
+                        value={firstName}
+                        onChange={setFirstName}
+                        placeholder="Ваше имя..."
+                    />
+                    <TextField
+                        label="Фамилия (необязательно)"
+                        value={lastName}
+                        onChange={setLastName}
+                        placeholder="Ваша фамилия..."
+                    />
                     <br />
-                    <button className={cn(styles.btn, styles.pri)} onClick={handleSignUp}>
+                    <button
+                        className={cn(styles.btn, styles.pri)}
+                        onClick={() => void handleSignUp()}>
                         Зарегистрироваться
                     </button>
                     <button className={styles.switchLink} onClick={onSwitchToLogin}>
@@ -113,11 +123,11 @@ function LoginModal({
 }) {
     const { logIn } = useUserContext();
     const { showToast } = useToastContext();
-    const [name, setName] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
 
-    const handleLogIn = () => {
-        const result = logIn(name, password);
+    const handleLogIn = async () => {
+        const result = await logIn(username, password);
         if (!result.ok) {
             showToast(result.error);
             return;
@@ -133,10 +143,10 @@ function LoginModal({
                 </div>
                 <div className={styles.sheetBody}>
                     <TextField
-                        label="Имя"
-                        value={name}
-                        onChange={setName}
-                        placeholder="Введите имя..."
+                        label="Имя пользователя"
+                        value={username}
+                        onChange={setUsername}
+                        placeholder="Введите имя пользователя..."
                         autoFocus
                     />
                     <TextField
@@ -147,7 +157,9 @@ function LoginModal({
                         placeholder="Введите пароль..."
                     />
                     <br />
-                    <button className={cn(styles.btn, styles.pri)} onClick={handleLogIn}>
+                    <button
+                        className={cn(styles.btn, styles.pri)}
+                        onClick={() => void handleLogIn()}>
                         Войти
                     </button>
                     <button className={styles.switchLink} onClick={onSwitchToSignup}>
@@ -164,6 +176,7 @@ function LoginModal({
 const PROFILE_TABS = [
     { key: "personal", label: "Личные данные" },
     { key: "team", label: "Команда" },
+    { key: "integrations", label: "Интеграции" },
 ] as const;
 type ProfileTab = (typeof PROFILE_TABS)[number]["key"];
 
@@ -192,6 +205,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
                 <div className={styles.sheetBody}>
                     {tab === "personal" && <PersonalDetailsTab />}
                     {tab === "team" && <TeamTab />}
+                    {tab === "integrations" && <IntegrationsTab />}
                 </div>
             </div>
         </div>
@@ -208,17 +222,19 @@ function PersonalDetailsTab() {
     return (
         <div className={styles.devList}>
             <div className={styles.statRow}>
+                <span>Имя пользователя</span>
+                <strong>{currentUser.username}</strong>
+            </div>
+            <div className={styles.statRow}>
                 <span>Имя</span>
-                <strong>{currentUser.name}</strong>
+                <strong>{currentUser.firstName}</strong>
             </div>
-            <div className={styles.statRow}>
-                <span>Персонаж</span>
-                <strong>{currentUser.charName}</strong>
-            </div>
-            <div className={styles.statRow}>
-                <span>Фракция</span>
-                <strong>{currentUser.side.toUpperCase()}</strong>
-            </div>
+            {currentUser.lastName && (
+                <div className={styles.statRow}>
+                    <span>Фамилия</span>
+                    <strong>{currentUser.lastName}</strong>
+                </div>
+            )}
             <div className={styles.statRow}>
                 <span>Роль</span>
                 <strong>{currentUser.role}</strong>
@@ -228,21 +244,17 @@ function PersonalDetailsTab() {
 }
 
 function TeamTab() {
-    const { team, currentUser } = useUserContext();
-    const all = [...team, ...(currentUser ? [{ ...currentUser, isMe: true }] : [])];
+    const { team } = useUserContext();
 
     return (
         <div className={styles.devList}>
-            {all.map((dev, i) => (
+            {team.map((dev, i) => (
                 <div key={i} className={styles.devItem}>
                     <div className={styles.devAvatar} style={{ background: sideColor(dev.side) }}>
                         {dev.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div className={styles.devInfo}>
-                        <div className={styles.devName}>
-                            {dev.name}
-                            {dev.isMe && <strong> (Вы)</strong>}
-                        </div>
+                        <div className={styles.devName}>{dev.name}</div>
                         <div className={styles.devChar}>
                             Персонаж: {dev.charName} · Роль: {dev.role}
                         </div>
@@ -252,6 +264,99 @@ function TeamTab() {
                     </div>
                 </div>
             ))}
+        </div>
+    );
+}
+
+// ── Integrations ──────────────────────────────────────────────────────────────
+
+function IntegrationsTab() {
+    const { showToast } = useToastContext();
+    const [status, setStatus] = useState<PinterestConnectionStatus | null>(null);
+    const [busy, setBusy] = useState(false);
+
+    const refreshStatus = useCallback(() => {
+        hayverseApiClient.pinterest
+            .getConnectionStatus()
+            .then(setStatus)
+            .catch(() => setStatus({ connected: false }));
+    }, []);
+
+    useEffect(refreshStatus, [refreshStatus]);
+
+    useEffect(() => {
+        function onMessage(event: MessageEvent) {
+            if (event.origin !== window.location.origin) return;
+            if ((event.data as { type?: string })?.type !== "pinterest-oauth") return;
+            const { status: result } = event.data as { status: "success" | "error" };
+            showToast(
+                result === "success" ? "Pinterest подключён!" : "Не удалось подключить Pinterest.",
+            );
+            refreshStatus();
+        }
+        window.addEventListener("message", onMessage);
+        return () => window.removeEventListener("message", onMessage);
+    }, [refreshStatus, showToast]);
+
+    const handleConnect = async () => {
+        setBusy(true);
+        try {
+            const { url } = await hayverseApiClient.pinterest.getAuthorizeUrl();
+            window.open(url, "pinterest-oauth", "width=600,height=700");
+        } catch (e) {
+            showToast(
+                e instanceof ApiError && e.status === 501
+                    ? "Pinterest не настроен на сервере."
+                    : "Не удалось начать подключение к Pinterest.",
+            );
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const handleDisconnect = async () => {
+        setBusy(true);
+        try {
+            await hayverseApiClient.pinterest.disconnect();
+            showToast("Pinterest отключён.");
+            refreshStatus();
+        } catch {
+            showToast("Не удалось отключить Pinterest.");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    if (!status) {
+        return <p className={styles.sub}>Загрузка...</p>;
+    }
+
+    return (
+        <div className={styles.devList}>
+            <p className={styles.sub}>
+                Подключите свой аккаунт Pinterest, чтобы видеть свои доски и пины в узлах графа.
+            </p>
+            {status.connected ? (
+                <>
+                    <div className={styles.statRow}>
+                        <span>Pinterest</span>
+                        <strong>{status.pinterestUsername ?? "Подключено"}</strong>
+                    </div>
+                    <button
+                        className={cn(styles.btn, styles.pri)}
+                        onClick={() => void handleDisconnect()}
+                        disabled={busy}>
+                        Отключить
+                    </button>
+                </>
+            ) : (
+                <button
+                    className={cn(styles.btn, styles.pri)}
+                    onClick={() => void handleConnect()}
+                    disabled={busy}>
+                    Подключить Pinterest
+                </button>
+            )}
         </div>
     );
 }
