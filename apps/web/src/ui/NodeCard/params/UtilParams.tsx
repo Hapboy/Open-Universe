@@ -15,6 +15,7 @@ import { SearchField } from "../../components/SearchField/SearchField.tsx";
 import { EmotionalCurvePreview } from "../../components/EmotionalCurvePreview/EmotionalCurvePreview.tsx";
 import { StoryPhaseBeats } from "../../components/StoryPhaseBeats/StoryPhaseBeats.tsx";
 import { putBlob, useResolvedMediaUrl } from "../../../core/mediaRef.ts";
+import { MediaPickerButton } from "../../components/MediaLibrary/MediaLibrary.tsx";
 import styles from "./UtilParams.module.css";
 
 const OUTPUT_SCENE_CATEGORIES = [
@@ -116,6 +117,8 @@ export function OutputParams({
             .catch(console.error);
         e.target.value = "";
     };
+
+    const handleCoverPick = (ref: string) => updateNodeParam(node.id, "coverUrl", ref);
 
     return (
         <>
@@ -235,12 +238,18 @@ export function OutputParams({
                             />
                         )}
                         {shouldShow("general", "Обложка сцены") && (
-                            <button
-                                className={styles.iconBtn}
-                                onClick={() => fileInputRef.current?.click()}
-                                title="Загрузить обложку">
-                                <i className="ti ti-upload" />
-                            </button>
+                            <>
+                                <button
+                                    className={styles.iconBtn}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    title="Загрузить обложку">
+                                    <i className="ti ti-upload" />
+                                </button>
+                                <MediaPickerButton
+                                    onPick={handleCoverPick}
+                                    title="Выбрать обложку из медиатеки"
+                                />
+                            </>
                         )}
                     </div>
                 </div>

@@ -26,6 +26,7 @@ export class MediaService {
   async upload(
     file: Express.Multer.File,
     kind: MediaAssetKind = 'uploaded',
+    ownerId: string,
   ): Promise<MediaAsset> {
     // Matches mediaRef.ts's ref prefix convention on
     // the frontend - same string doubles as the R2 object key, no separate
@@ -42,7 +43,7 @@ export class MediaService {
     );
 
     const asset = this.mediaAssets.create({
-      ownerId: null,
+      ownerId,
       kind,
       storageKey,
       mimeType: file.mimetype,
@@ -56,18 +57,25 @@ export class MediaService {
     return `${base.replace(/\/$/, '')}/${asset.storageKey}`;
   }
 
-  findAll(): Promise<MediaAsset[]> {
-    return this.mediaAssets.find({ order: { createdAt: 'ASC' } });
+  findAll(ownerId: string): Promise<MediaAsset[]> {
+    return this.mediaAssets.find({
+      where: { ownerId },
+      order: { createdAt: 'ASC' },
+    });
   }
 
-  async findOne(id: string): Promise<MediaAsset> {
+  // Not-yours and doesn't-exist both 404, not 403 - avoids leaking whether
+  // another user's asset id exists at all.
+  async findOne(id: string, ownerId: string): Promise<MediaAsset> {
     const asset = await this.mediaAssets.findOneBy({ id });
-    if (!asset) throw new NotFoundException(`Media asset ${id} not found`);
+    if (!asset || asset.ownerId !== ownerId) {
+      throw new NotFoundException(`Media asset ${id} not found`);
+    }
     return asset;
   }
 
-  async remove(id: string): Promise<void> {
-    const asset = await this.findOne(id);
+  async remove(id: string, ownerId: string): Promise<void> {
+    const asset = await this.findOne(id, ownerId);
     await this.r2.send(
       new DeleteObjectCommand({
         Bucket: this.config.get<string>('R2_BUCKET_NAME'),

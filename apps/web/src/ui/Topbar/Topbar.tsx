@@ -35,9 +35,24 @@ export function Topbar() {
                 <i className="ti ti-player-play" />
                 <span>Прогнать граф</span>
             </button>
+            <LibraryButton />
             <ProfileButton />
             <AuthButton />
         </header>
+    );
+}
+
+function LibraryButton() {
+    const { currentUser, hydrated } = useUserContext();
+    const { openModal } = useModalContext();
+
+    if (!hydrated || !currentUser) return null;
+
+    return (
+        <button className={styles.tb} id="btnLibrary" onClick={() => openModal("library")}>
+            <i className="ti ti-photo" />
+            <span>Медиатека</span>
+        </button>
     );
 }
 

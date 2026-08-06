@@ -4,6 +4,7 @@ import type { NodeRef } from "../../../types.ts";
 import { putBlob, useResolvedMediaUrls } from "../../../core/mediaRef.ts";
 import { MediaSlider } from "../../NodeCard/MediaSlider/MediaSlider.tsx";
 import { CircleLoader } from "../CircleLoader/CircleLoader.tsx";
+import { MediaPickerButton } from "../MediaLibrary/MediaLibrary.tsx";
 import styles from "./PhotoGallerySection.module.css";
 
 // MediaSlider + clickable thumbnail strip for picking the cover photo, split
@@ -94,6 +95,11 @@ export function PhotoGallerySection({
         e.target.value = "";
     };
 
+    const handlePick = (ref: string) => {
+        const next = [...photos, ref];
+        setNodePhotos(node.id, next, next.length - 1);
+    };
+
     return (
         <div className={styles.fld}>
             <span>
@@ -115,6 +121,11 @@ export function PhotoGallerySection({
                     title="Загрузить фото">
                     <i className="ti ti-upload" />
                 </button>
+                <MediaPickerButton
+                    onPick={handlePick}
+                    disabled={photos.length >= maxPhotos}
+                    title="Выбрать из медиатеки"
+                />
                 {onGenerate && (
                     <button
                         className={styles.iconBtn}

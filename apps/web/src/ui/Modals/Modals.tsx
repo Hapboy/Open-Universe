@@ -6,6 +6,10 @@ import { useToastContext } from "../../store/contexts/ToastContext.tsx";
 import { useModalContext } from "../../store/contexts/ModalContext.tsx";
 import { hayverseApiClient } from "../../core/api/hayverse/client.ts";
 import { TextField } from "../components/TextField/TextField.tsx";
+import {
+    MediaLibraryGrid,
+    MediaLibraryModalShell,
+} from "../components/MediaLibrary/MediaLibrary.tsx";
 import styles from "./Modals.module.css";
 
 function sideColor(side: string): string {
@@ -26,6 +30,7 @@ export function Modals() {
                 <LoginModal onClose={closeModal} onSwitchToSignup={() => openModal("signup")} />
             )}
             {modalType === "profile" && <ProfileModal onClose={closeModal} />}
+            {modalType === "library" && <LibraryModal onClose={closeModal} />}
         </>
     );
 }
@@ -204,6 +209,20 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
                 </div>
             </div>
         </div>
+    );
+}
+
+// ── Media Library ────────────────────────────────────────────────────────────
+
+// Browse-only entry point (opened from Topbar) — no selection callback, just
+// lets the user see what's in their library. Picking a photo to reuse in a
+// node happens via MediaPickerButton next to that node's upload button
+// instead, which reuses the same MediaLibraryGrid.
+function LibraryModal({ onClose }: { onClose: () => void }) {
+    return (
+        <MediaLibraryModalShell title="Медиатека" onClose={onClose}>
+            <MediaLibraryGrid onSelect={() => {}} />
+        </MediaLibraryModalShell>
     );
 }
 
