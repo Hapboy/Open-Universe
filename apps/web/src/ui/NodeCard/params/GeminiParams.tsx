@@ -5,8 +5,12 @@ import { geminiApiClient } from "../../../core/api/index.ts";
 import type { GeminiModel } from "../../../core/api/gemini/dto.ts";
 import { WirableTextField, type EEP } from "./shared.tsx";
 import { useNodeParamsForm } from "./useNodeParamsForm.ts";
+import { geminiTextParamsSchema } from "./geminiText.schema.ts";
+import { geminiVisionParamsSchema } from "./geminiVision.schema.ts";
 import { geminiImagenParamsSchema } from "./geminiImagen.schema.ts";
+import { geminiVeoParamsSchema } from "./geminiVeo.schema.ts";
 import { geminiNanoBananaParamsSchema } from "./geminiNanoBanana.schema.ts";
+import { geminiLyriaParamsSchema } from "./geminiLyria.schema.ts";
 import { SelectField } from "../../components/SelectField/SelectField.tsx";
 import { Select } from "../../components/Select/Select.tsx";
 import { TextField } from "../../components/TextField/TextField.tsx";
@@ -71,22 +75,40 @@ function modelOptions(models: GeminiModel[]) {
 export function GeminiTextParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
     const MODELS = useGeminiModels(params.model as string);
     const prompt = edgeInput(node.data, edges, resolved, 0);
+    const { control } = useNodeParamsForm(geminiTextParamsSchema, params);
     return (
         <>
-            <WirableTextField
-                label="Промпт"
-                node={node}
-                paramKey="prompt"
-                params={params}
-                wired={prompt.wired}
-                liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
-                updateNodeParam={updateNodeParam}
+            <Controller
+                control={control}
+                name="prompt"
+                render={({ field }) => (
+                    <WirableTextField
+                        label="Промпт"
+                        node={node}
+                        paramKey="prompt"
+                        params={params}
+                        wired={prompt.wired}
+                        liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
+                        updateNodeParam={updateNodeParam}
+                        value={field.value}
+                        onChange={field.onChange}
+                    />
+                )}
             />
-            <SelectField
-                label="Модель"
-                value={params.model as string}
-                onChange={(v) => updateNodeParam(node.id, "model", v)}
-                options={modelOptions(MODELS)}
+            <Controller
+                control={control}
+                name="model"
+                render={({ field }) => (
+                    <SelectField
+                        label="Модель"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "model", v);
+                        }}
+                        options={modelOptions(MODELS)}
+                    />
+                )}
             />
         </>
     );
@@ -95,22 +117,40 @@ export function GeminiTextParams({ node, params, edges, resolved, updateNodePara
 export function GeminiVisionParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
     const MODELS = useGeminiModels(params.model as string);
     const query = edgeInput(node.data, edges, resolved, 1);
+    const { control } = useNodeParamsForm(geminiVisionParamsSchema, params);
     return (
         <>
-            <WirableTextField
-                label="Запрос к изображению"
-                node={node}
-                paramKey="query"
-                params={params}
-                wired={query.wired}
-                liveValue={wiredFieldDisplayValue(params, query.value, "query")}
-                updateNodeParam={updateNodeParam}
+            <Controller
+                control={control}
+                name="query"
+                render={({ field }) => (
+                    <WirableTextField
+                        label="Запрос к изображению"
+                        node={node}
+                        paramKey="query"
+                        params={params}
+                        wired={query.wired}
+                        liveValue={wiredFieldDisplayValue(params, query.value, "query")}
+                        updateNodeParam={updateNodeParam}
+                        value={field.value}
+                        onChange={field.onChange}
+                    />
+                )}
             />
-            <SelectField
-                label="Модель"
-                value={params.model as string}
-                onChange={(v) => updateNodeParam(node.id, "model", v)}
-                options={modelOptions(MODELS)}
+            <Controller
+                control={control}
+                name="model"
+                render={({ field }) => (
+                    <SelectField
+                        label="Модель"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "model", v);
+                        }}
+                        options={modelOptions(MODELS)}
+                    />
+                )}
             />
         </>
     );
@@ -403,76 +443,156 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
     const RESOLUTIONS = ["720p", "1080p"];
     const prompt = edgeInput(node.data, edges, resolved, 0);
     const requiresFullDuration = params.resolution !== "720p";
+    const { control } = useNodeParamsForm(geminiVeoParamsSchema, params);
     return (
         <>
-            <WirableTextField
-                label="Промпт"
-                node={node}
-                paramKey="prompt"
-                params={params}
-                wired={prompt.wired}
-                liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
-                updateNodeParam={updateNodeParam}
+            <Controller
+                control={control}
+                name="prompt"
+                render={({ field }) => (
+                    <WirableTextField
+                        label="Промпт"
+                        node={node}
+                        paramKey="prompt"
+                        params={params}
+                        wired={prompt.wired}
+                        liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
+                        updateNodeParam={updateNodeParam}
+                        value={field.value}
+                        onChange={field.onChange}
+                    />
+                )}
             />
-            <SelectField
-                label="Модель"
-                value={params.model as string}
-                onChange={(v) => updateNodeParam(node.id, "model", v)}
-                options={modelOptions(VEO_MODELS)}
+            <Controller
+                control={control}
+                name="model"
+                render={({ field }) => (
+                    <SelectField
+                        label="Модель"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "model", v);
+                        }}
+                        options={modelOptions(VEO_MODELS)}
+                    />
+                )}
             />
-            <SelectField
-                label="Соотношение сторон"
-                value={params.aspectRatio as string}
-                onChange={(v) => updateNodeParam(node.id, "aspectRatio", v)}
-                options={RATIOS}
+            <Controller
+                control={control}
+                name="aspectRatio"
+                render={({ field }) => (
+                    <SelectField
+                        label="Соотношение сторон"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "aspectRatio", v);
+                        }}
+                        options={RATIOS}
+                    />
+                )}
             />
-            <SelectField
-                label="Разрешение"
-                value={params.resolution as string}
-                onChange={(v) => updateNodeParam(node.id, "resolution", v)}
-                options={RESOLUTIONS}
+            <Controller
+                control={control}
+                name="resolution"
+                render={({ field }) => (
+                    <SelectField
+                        label="Разрешение"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "resolution", v);
+                        }}
+                        options={RESOLUTIONS}
+                    />
+                )}
             />
-            <TextField
-                key={String(requiresFullDuration)}
-                label="Длительность (сек)"
-                disabled={requiresFullDuration}
-                title={requiresFullDuration ? VEO_NON_720P_DURATION_HINT : undefined}
-                defaultValue={String(requiresFullDuration ? 8 : (params.durationSeconds as number))}
-                onBlur={(v) => updateNodeParam(node.id, "durationSeconds", Number(v))}
+            <Controller
+                control={control}
+                name="durationSeconds"
+                render={({ field }) => (
+                    <TextField
+                        label="Длительность (сек)"
+                        disabled={requiresFullDuration}
+                        title={requiresFullDuration ? VEO_NON_720P_DURATION_HINT : undefined}
+                        value={requiresFullDuration ? "8" : String(field.value)}
+                        onChange={(v) => field.onChange(Number(v))}
+                        onBlur={(v) => {
+                            field.onBlur();
+                            updateNodeParam(node.id, "durationSeconds", Number(v));
+                        }}
+                    />
+                )}
             />
-            <TextField
-                label="Негативный промпт"
-                defaultValue={params.negativePrompt as string}
-                onBlur={(v) => updateNodeParam(node.id, "negativePrompt", v)}
+            <Controller
+                control={control}
+                name="negativePrompt"
+                render={({ field }) => (
+                    <TextField
+                        label="Негативный промпт"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={(v) => {
+                            field.onBlur();
+                            updateNodeParam(node.id, "negativePrompt", v);
+                        }}
+                    />
+                )}
             />
-            <TextField
-                label="Сид (seed)"
-                disabled
-                placeholder="авто"
-                defaultValue={params.seed as string}
-                title={ENTERPRISE_ONLY_HINT}
+            <Controller
+                control={control}
+                name="seed"
+                render={({ field }) => (
+                    <TextField
+                        label="Сид (seed)"
+                        disabled
+                        placeholder="авто"
+                        value={field.value}
+                        onChange={field.onChange}
+                        title={ENTERPRISE_ONLY_HINT}
+                    />
+                )}
             />
-            <SelectField
-                label="Генерация людей"
-                disabled
-                value={params.personGeneration as string}
-                onChange={() => {}}
-                options={VEO_PERSON_GENERATION_OPTIONS}
-                title={VEO_PREVIEW_UNSUPPORTED_HINT}
+            <Controller
+                control={control}
+                name="personGeneration"
+                render={({ field }) => (
+                    <SelectField
+                        label="Генерация людей"
+                        disabled
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={VEO_PERSON_GENERATION_OPTIONS}
+                        title={VEO_PREVIEW_UNSUPPORTED_HINT}
+                    />
+                )}
             />
-            <Switch
-                label="Улучшить промпт"
-                value={!!params.enhancePrompt}
-                onChange={() => {}}
-                disabled
-                title={VEO_PREVIEW_UNSUPPORTED_HINT}
+            <Controller
+                control={control}
+                name="enhancePrompt"
+                render={({ field }) => (
+                    <Switch
+                        label="Улучшить промпт"
+                        value={!!field.value}
+                        onChange={field.onChange}
+                        disabled
+                        title={VEO_PREVIEW_UNSUPPORTED_HINT}
+                    />
+                )}
             />
-            <Switch
-                label="Звук"
-                value={!!params.generateAudio}
-                onChange={() => {}}
-                disabled
-                title={ENTERPRISE_ONLY_HINT}
+            <Controller
+                control={control}
+                name="generateAudio"
+                render={({ field }) => (
+                    <Switch
+                        label="Звук"
+                        value={!!field.value}
+                        onChange={field.onChange}
+                        disabled
+                        title={ENTERPRISE_ONLY_HINT}
+                    />
+                )}
             />
         </>
     );
@@ -633,28 +753,56 @@ const LYRIA_MODELS: GeminiModel[] = [
 
 export function GeminiLyriaParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
     const prompt = edgeInput(node.data, edges, resolved, 0);
+    const { control } = useNodeParamsForm(geminiLyriaParamsSchema, params);
     return (
         <>
-            <WirableTextField
-                label="Промпт"
-                node={node}
-                paramKey="prompt"
-                params={params}
-                wired={prompt.wired}
-                liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
-                updateNodeParam={updateNodeParam}
+            <Controller
+                control={control}
+                name="prompt"
+                render={({ field }) => (
+                    <WirableTextField
+                        label="Промпт"
+                        node={node}
+                        paramKey="prompt"
+                        params={params}
+                        wired={prompt.wired}
+                        liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
+                        updateNodeParam={updateNodeParam}
+                        value={field.value}
+                        onChange={field.onChange}
+                    />
+                )}
             />
-            <SelectField
-                label="Модель"
-                value={params.model as string}
-                onChange={(v) => updateNodeParam(node.id, "model", v)}
-                options={modelOptions(LYRIA_MODELS)}
+            <Controller
+                control={control}
+                name="model"
+                render={({ field }) => (
+                    <SelectField
+                        label="Модель"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "model", v);
+                        }}
+                        options={modelOptions(LYRIA_MODELS)}
+                    />
+                )}
             />
-            <TextField
-                label="Сид (seed)"
-                placeholder="авто"
-                defaultValue={params.seed as string}
-                onBlur={(v) => updateNodeParam(node.id, "seed", v)}
+            <Controller
+                control={control}
+                name="seed"
+                render={({ field }) => (
+                    <TextField
+                        label="Сид (seed)"
+                        placeholder="авто"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={(v) => {
+                            field.onBlur();
+                            updateNodeParam(node.id, "seed", v);
+                        }}
+                    />
+                )}
             />
         </>
     );

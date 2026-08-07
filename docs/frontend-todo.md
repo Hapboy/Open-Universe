@@ -147,15 +147,31 @@ tls, maxRetriesPerRequest }` options object instead of a live client, so
   variable-height text block. `gemini_lyria`'s audio player also moved from
   below the params form to the top of the card, alongside the other 3 kinds
   — deliberate consistency fix, not incidental.
-    - **Next**: the RHF/zod/`Controller` wiring itself for these 4
-      components' param fields — same `useNodeParamsForm`/schema pattern as
-      `GeminiImagenParams`/`GeminiNanoBananaParams`, now that there's
-      history for a form to actually restore. Not done in this pass.
-    - While at it: snapshotting can switch from denylisting the 4 bookkeeping
+    - The RHF/zod/`Controller` wiring itself for these 4 components' param
+      fields is now done too — see the bullet below.
+    - Still open: snapshotting can switch from denylisting the 4 bookkeeping
       keys (`GENERATION_BOOKKEEPING_KEYS` in `graphExecution.ts`) to picking
       only each schema's known keys — self-maintaining, since a schema
       change automatically changes what gets snapshotted without a second
       list to keep in sync.
+
+- **Done: react-hook-form + zod for `gemini_text`/`gemini_vision`/
+  `gemini_veo`/`gemini_lyria` params (2026-08-07).** Same
+  `useNodeParamsForm` + `Controller`-per-field pattern as
+  `gemini_imagen`/`gemini_nanobanana`, applied now that these 4 have
+  history to restore (previous bullet). New `geminiText.schema.ts`,
+  `geminiVision.schema.ts`, `geminiVeo.schema.ts`, `geminiLyria.schema.ts`.
+  All 6 Gemini node types now share the identical form/history pattern —
+  nothing Gemini-specific left on the old `defaultValue` path. One
+  incidental fix along the way: `gemini_veo`'s editable `negativePrompt`
+  field was still on the old `defaultValue`/`onBlur` pattern (only its
+  disabled Enterprise-only fields had been left alone deliberately) — now
+  Controller-wired like everything else, so it no longer goes stale after a
+  history restore either. `durationSeconds`' forced-`"8"`-while-disabled
+  display (for non-720p resolutions) is preserved exactly as before — a
+  computed display value now instead of the old remount-via-`key` trick,
+  same visual behavior, no change to the underlying (pre-existing, out of
+  scope here) quirk where the stored value isn't itself forced to 8.
 
 - **Move generation bookkeeping out of `params` into a sibling field
   (after the above).** `generatedHistory`/`generatedIdx`/
