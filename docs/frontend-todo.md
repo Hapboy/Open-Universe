@@ -99,41 +99,46 @@ tls, maxRetriesPerRequest }` options object instead of a live client, so
 
 ## Generative Node Params
 
-- **react-hook-form + zod for node param panels.** Today param inputs
-  (`apps/web/src/ui/NodeCard/params/GeminiParams.tsx`, `shared.tsx`'s
-  `WirableTextField`, `TextField.tsx`) are mostly uncontrolled
-  (`defaultValue`), so React never re-renders them after mount. This causes a
-  real bug: `MediaSlider`'s `onIndexChange`
-  (`apps/web/src/ui/NodeCard/NodeCard.tsx:319-327`) correctly writes the
-  selected photo's saved param snapshot back into `node.data.params` via
-  `updateNodeParams`, but the prompt/seed/negativePrompt/guidanceScale text
-  fields don't visually update — and blurring one of them re-writes the
-  DOM's stale value over the just-restored state, silently undoing the
-  restore. Only `SelectField`-based dropdowns (model, aspectRatio, ...) are
-  truly controlled and update correctly today.
-    - Move to `react-hook-form` (+ `@hookform/resolvers/zod`, one zod schema
-      per node type) via a shared `useNodeParamsForm(nodeId, schema,
-defaultValues)` hook that bridges RHF's local per-node-instance form
-      state with the graph store: push edits to `updateNodeParams` on change,
-      and call `form.reset(storeParams)` on mount and whenever the store
-      changes from outside the form itself (slider `generatedIdx` change,
-      future undo/redo). `reset()` is what actually fixes the stale-field bug.
-    - Same move gets two more things for free: `formState.dirtyFields` for
-      "only include changed/non-empty fields" when serializing params to
-      JSON, and `formState.errors.fieldName` (from the zod schema) for
-      per-param inline validation errors.
-    - Prototype against `gemini_imagen`/`GeminiParams.tsx` first (it already
-      has the full history/snapshot mechanism —
-      `apps/web/src/store/contexts/graphExecution.ts`'s `appendGeneratedRef`/
-      `generatedParamsHistory`), then generalize the schema-per-node-type +
-      shared hook pattern to other generative nodes. Note `gemini_veo`
-      (video) and `gemini_lyria` (audio) currently have no history/slider at
-      all — each generation just overwrites the last — so extending
-      "restore params on selecting a past output" to them means giving them
-      the history mechanism first, not just the form layer.
+- **Done: react-hook-form + zod for `gemini_imagen`/`gemini_nanobanana`
+  params (2026-08-07).** New `useNodeParamsForm.ts` (RHF form mirroring a
+  node's store params, keyed by a zod schema — `geminiImagen.schema.ts`,
+  `geminiNanoBanana.schema.ts`), wired into `GeminiParams.tsx` via
+  `Controller` for every field in both components (uniform, including the
+  select/switch-driven and permanently-`disabled` Enterprise-only ones —
+  not just the fields that were actually broken). Fixes the stale-
+  `defaultValue`-after-`MediaSlider`-restore bug for real this time. Also
+  fixed a related bug found while doing this: a _wired_ prompt pin's actual
+  resolved text was never captured into the per-generation params snapshot
+  (`graphExecution.ts`'s `persistGeneratedImages` now captures it via
+  `edgeInput`), so scrubbing history now shows the prompt that actually
+  produced each past generation instead of whatever the upstream node
+  currently says.
+    - **Follow-up, not done here**: once a backend Vertex proxy exists,
+      revisit enabling the currently-`disabled` Enterprise-only fields —
+      Imagen's `negativePrompt`/`seed`/`language`/`enhancePrompt`, Veo's
+      `seed`/`personGeneration`/`enhancePrompt`/`generateAudio`, NanoBanana's
+      `personGeneration`. The `Controller` plumbing for the two node types
+      already touched here is already in place; they just need `disabled`
+      dropped once there's somewhere for the value to actually go.
+    - **Not done here (deliberately out of scope)**: `gemini_text`/
+      `gemini_vision`/`gemini_veo`/`gemini_lyria` have no history/slider
+      mechanism at all yet, so they weren't touched — see the next bullet.
+
+- **Generalize the RHF/zod pattern to the remaining Gemini node types.**
+  `gemini_text`/`gemini_vision`/`gemini_veo`/`gemini_lyria` still use the old
+  `defaultValue`-based fields (same `useNodeParamsForm`/schema/`Controller`
+  pattern from the bullet above would apply once they need it). `gemini_veo`
+  (video) and `gemini_lyria` (audio) currently have no history/slider
+  mechanism at all — each generation just overwrites the last — so "restore
+  params on selecting a past output" for them means giving them the history
+  mechanism first (per `appendGeneratedRef`/`generatedParamsHistory` in
+  `graphExecution.ts`), not just the form layer. `gemini_text`/
+  `gemini_vision` have no image/media output to slide through at all, so
+  the stale-field bug doesn't really bite them the same way — lower
+  priority.
     - While at it: snapshotting can switch from denylisting the 4 bookkeeping
       keys (`GENERATION_BOOKKEEPING_KEYS` in `graphExecution.ts`) to picking
-      only the zod schema's known keys — self-maintaining, since a schema
+      only each schema's known keys — self-maintaining, since a schema
       change automatically changes what gets snapshotted without a second
       list to keep in sync.
 

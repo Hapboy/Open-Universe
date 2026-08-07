@@ -5,6 +5,7 @@ import type { NodeParams, NodeRef } from "../../types.ts";
 import type { SceneOutput } from "../../core/graph.ts";
 import type { SceneNarrativeSettings } from "./NarrativeContext.tsx";
 import { putGeneratedBlob } from "../../core/mediaRef.ts";
+import { edgeInput } from "../../core/graph.ts";
 
 type ShowToast = (msg: string) => void;
 
@@ -143,6 +144,13 @@ export function useGraphExecution({
                 if (persistedImageRef.current.get(node.id) === value) continue;
                 persistedImageRef.current.set(node.id, value);
                 const paramsSnapshot = snapshotGenerationParams(node.data.params);
+                // When the prompt pin is wired, the text actually sent to the
+                // API is the live resolved edge value (see graph.ts), never
+                // written into node.data.params — capture it here so scrubbing
+                // the MediaSlider back to this generation later shows what was
+                // actually used, not whatever the upstream node currently says.
+                const promptInput = edgeInput(node.data, edges, resolvedMap, 0);
+                if (promptInput.wired) paramsSnapshot.prompt = promptInput.value;
                 fetch(value)
                     .then((r) => r.blob())
                     .then(putGeneratedBlob)
@@ -150,7 +158,7 @@ export function useGraphExecution({
                     .catch(console.error);
             }
         },
-        [appendGeneratedRef],
+        [appendGeneratedRef, edges],
     );
 
     const executeGraph = useCallback(async () => {

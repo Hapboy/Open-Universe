@@ -39,6 +39,11 @@ export type EEP = {
 // Renders a "Промпт"-style field that shows a plain editable input when its
 // source input pin is unwired, or a disabled input mirroring the live
 // resolved value from the connected node when it's wired.
+//
+// The unwired branch defaults to the same defaultValue/onBlur pattern every
+// other param field used to use — pass `value`/`onChange` (e.g. from an RHF
+// `Controller`) to make it fully controlled instead, so it can't go stale
+// after an out-of-band store update (see useNodeParamsForm.ts).
 export function WirableTextField({
     label,
     node,
@@ -47,6 +52,8 @@ export function WirableTextField({
     wired,
     liveValue,
     updateNodeParam,
+    value,
+    onChange,
 }: {
     label: string;
     node: NodeRef;
@@ -55,6 +62,8 @@ export function WirableTextField({
     wired: boolean;
     liveValue: unknown;
     updateNodeParam: NodeParamsProps["updateNodeParam"];
+    value?: string;
+    onChange?: (value: string) => void;
 }) {
     return (
         <div className={styles.fld}>
@@ -65,7 +74,9 @@ export function WirableTextField({
                 disabled={wired}
                 {...(wired
                     ? { value: (liveValue as string) ?? "" }
-                    : { defaultValue: params[paramKey] as string })}
+                    : value !== undefined
+                      ? { value, onChange: (e) => onChange?.(e.target.value) }
+                      : { defaultValue: params[paramKey] as string })}
                 onBlur={(e) => {
                     if (!wired) updateNodeParam(node.id, paramKey, e.target.value);
                 }}

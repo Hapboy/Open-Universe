@@ -1,13 +1,37 @@
 import { useEffect, useState } from "react";
+import { Controller } from "react-hook-form";
 import { edgeInput } from "../../../core/graph.ts";
 import { geminiApiClient } from "../../../core/api/index.ts";
 import type { GeminiModel } from "../../../core/api/gemini/dto.ts";
 import { WirableTextField, type EEP } from "./shared.tsx";
+import { useNodeParamsForm } from "./useNodeParamsForm.ts";
+import { geminiImagenParamsSchema } from "./geminiImagen.schema.ts";
+import { geminiNanoBananaParamsSchema } from "./geminiNanoBanana.schema.ts";
 import { SelectField } from "../../components/SelectField/SelectField.tsx";
 import { Select } from "../../components/Select/Select.tsx";
 import { TextField } from "../../components/TextField/TextField.tsx";
 import { Switch } from "../../components/Switch/Switch.tsx";
 import sharedStyles from "../../../styles/shared.module.css";
+
+// Shared by GeminiImagenParams/GeminiNanoBananaParams: when the prompt pin
+// is wired, prefer the currently-selected history entry's captured resolved
+// prompt (see graphExecution.ts's persistGeneratedImages) over the live
+// edge value, so scrubbing the MediaSlider back to an older generation
+// shows the text that actually produced it rather than whatever the
+// upstream node currently says. At the latest generation (or before any
+// generation), there's no "history" to prefer — live value is correct.
+function wiredPromptDisplayValue(params: Record<string, unknown>, liveValue: unknown): unknown {
+    const generatedHistory = (params.generatedHistory as string[] | undefined) ?? [];
+    const generatedIdx = params.generatedIdx as number | undefined;
+    const generatedParamsHistory =
+        (params.generatedParamsHistory as Record<string, Record<string, unknown>> | undefined) ??
+        {};
+    const isViewingHistory =
+        generatedIdx !== undefined && generatedIdx < generatedHistory.length - 1;
+    if (!isViewingHistory) return liveValue;
+    const historicalPrompt = generatedParamsHistory[generatedHistory[generatedIdx]]?.prompt;
+    return historicalPrompt !== undefined ? historicalPrompt : liveValue;
+}
 
 const FALLBACK_MODELS: GeminiModel[] = [
     { id: "gemini-flash-latest", displayName: "Gemini Flash (latest)" },
@@ -137,101 +161,220 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
     const prompt = edgeInput(node.data, edges, resolved, 0);
     const isJpeg = params.outputMimeType === "image/jpeg";
     const isFastModel = params.model === "imagen-4.0-fast-generate-001";
+    const { control } = useNodeParamsForm(geminiImagenParamsSchema, params);
     return (
         <>
-            <WirableTextField
-                label="Промпт"
-                node={node}
-                paramKey="prompt"
-                params={params}
-                wired={prompt.wired}
-                liveValue={prompt.value}
-                updateNodeParam={updateNodeParam}
+            <Controller
+                control={control}
+                name="prompt"
+                render={({ field }) => (
+                    <WirableTextField
+                        label="Промпт"
+                        node={node}
+                        paramKey="prompt"
+                        params={params}
+                        wired={prompt.wired}
+                        liveValue={wiredPromptDisplayValue(params, prompt.value)}
+                        updateNodeParam={updateNodeParam}
+                        value={field.value}
+                        onChange={field.onChange}
+                    />
+                )}
             />
-            <SelectField
-                label="Модель"
-                value={params.model as string}
-                onChange={(v) => updateNodeParam(node.id, "model", v)}
-                options={modelOptions(IMAGEN_MODELS)}
+            <Controller
+                control={control}
+                name="model"
+                render={({ field }) => (
+                    <SelectField
+                        label="Модель"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "model", v);
+                        }}
+                        options={modelOptions(IMAGEN_MODELS)}
+                    />
+                )}
             />
-            <SelectField
-                label="Соотношение сторон"
-                value={params.aspectRatio as string}
-                onChange={(v) => updateNodeParam(node.id, "aspectRatio", v)}
-                options={RATIOS}
+            <Controller
+                control={control}
+                name="aspectRatio"
+                render={({ field }) => (
+                    <SelectField
+                        label="Соотношение сторон"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "aspectRatio", v);
+                        }}
+                        options={RATIOS}
+                    />
+                )}
             />
-            <SelectField
-                label="Разрешение"
-                value={params.resolution as string}
-                onChange={(v) => updateNodeParam(node.id, "resolution", v)}
-                options={RESOLUTIONS}
-                disabled={isFastModel}
-                title={isFastModel ? IMAGEN_FAST_FIXED_SIZE_HINT : undefined}
+            <Controller
+                control={control}
+                name="resolution"
+                render={({ field }) => (
+                    <SelectField
+                        label="Разрешение"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "resolution", v);
+                        }}
+                        options={RESOLUTIONS}
+                        disabled={isFastModel}
+                        title={isFastModel ? IMAGEN_FAST_FIXED_SIZE_HINT : undefined}
+                    />
+                )}
             />
-            <TextField
-                label="Негативный промпт"
-                disabled
-                defaultValue={params.negativePrompt as string}
-                title={ENTERPRISE_ONLY_HINT}
+            <Controller
+                control={control}
+                name="negativePrompt"
+                render={({ field }) => (
+                    <TextField
+                        label="Негативный промпт"
+                        disabled
+                        value={field.value}
+                        onChange={field.onChange}
+                        title={ENTERPRISE_ONLY_HINT}
+                    />
+                )}
             />
-            <SelectField
-                label="Количество изображений"
-                value={String(params.numberOfImages ?? 1)}
-                onChange={(v) => updateNodeParam(node.id, "numberOfImages", Number(v))}
-                options={["1", "2", "3", "4"]}
+            <Controller
+                control={control}
+                name="numberOfImages"
+                render={({ field }) => (
+                    <SelectField
+                        label="Количество изображений"
+                        value={String(field.value ?? 1)}
+                        onChange={(v) => {
+                            const n = Number(v);
+                            field.onChange(n);
+                            updateNodeParam(node.id, "numberOfImages", n);
+                        }}
+                        options={["1", "2", "3", "4"]}
+                    />
+                )}
             />
-            <TextField
-                label="Сид (seed)"
-                disabled
-                placeholder="авто"
-                defaultValue={params.seed as string}
-                title={ENTERPRISE_ONLY_HINT}
+            <Controller
+                control={control}
+                name="seed"
+                render={({ field }) => (
+                    <TextField
+                        label="Сид (seed)"
+                        disabled
+                        placeholder="авто"
+                        value={field.value}
+                        onChange={field.onChange}
+                        title={ENTERPRISE_ONLY_HINT}
+                    />
+                )}
             />
-            <TextField
-                label="Guidance Scale"
-                placeholder="авто"
-                defaultValue={params.guidanceScale as string}
-                onBlur={(v) => updateNodeParam(node.id, "guidanceScale", v)}
+            <Controller
+                control={control}
+                name="guidanceScale"
+                render={({ field }) => (
+                    <TextField
+                        label="Guidance Scale"
+                        placeholder="авто"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={(v) => {
+                            field.onBlur();
+                            updateNodeParam(node.id, "guidanceScale", v);
+                        }}
+                    />
+                )}
             />
-            <SelectField
-                label="Генерация людей"
-                value={params.personGeneration as string}
-                onChange={(v) => updateNodeParam(node.id, "personGeneration", v)}
-                options={PERSON_GENERATION_OPTIONS}
+            <Controller
+                control={control}
+                name="personGeneration"
+                render={({ field }) => (
+                    <SelectField
+                        label="Генерация людей"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "personGeneration", v);
+                        }}
+                        options={PERSON_GENERATION_OPTIONS}
+                    />
+                )}
             />
-            <SelectField
-                label="Уровень safety-фильтра"
-                value={params.safetyFilterLevel as string}
-                onChange={(v) => updateNodeParam(node.id, "safetyFilterLevel", v)}
-                options={SAFETY_FILTER_OPTIONS}
+            <Controller
+                control={control}
+                name="safetyFilterLevel"
+                render={({ field }) => (
+                    <SelectField
+                        label="Уровень safety-фильтра"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "safetyFilterLevel", v);
+                        }}
+                        options={SAFETY_FILTER_OPTIONS}
+                    />
+                )}
             />
-            <SelectField
-                label="Формат вывода"
-                value={params.outputMimeType as string}
-                onChange={(v) => updateNodeParam(node.id, "outputMimeType", v)}
-                options={OUTPUT_MIME_OPTIONS}
+            <Controller
+                control={control}
+                name="outputMimeType"
+                render={({ field }) => (
+                    <SelectField
+                        label="Формат вывода"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "outputMimeType", v);
+                        }}
+                        options={OUTPUT_MIME_OPTIONS}
+                    />
+                )}
             />
             {isJpeg && (
-                <TextField
-                    label="Качество JPEG (0-100)"
-                    defaultValue={String(params.outputCompressionQuality as number)}
-                    onBlur={(v) => updateNodeParam(node.id, "outputCompressionQuality", Number(v))}
+                <Controller
+                    control={control}
+                    name="outputCompressionQuality"
+                    render={({ field }) => (
+                        <TextField
+                            label="Качество JPEG (0-100)"
+                            value={String(field.value ?? "")}
+                            onChange={(v) => field.onChange(Number(v))}
+                            onBlur={(v) => {
+                                field.onBlur();
+                                updateNodeParam(node.id, "outputCompressionQuality", Number(v));
+                            }}
+                        />
+                    )}
                 />
             )}
-            <SelectField
-                label="Язык промпта"
-                value={params.language as string}
-                onChange={() => {}}
-                options={LANGUAGE_OPTIONS}
-                disabled
-                title={ENTERPRISE_ONLY_HINT}
+            <Controller
+                control={control}
+                name="language"
+                render={({ field }) => (
+                    <SelectField
+                        label="Язык промпта"
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={LANGUAGE_OPTIONS}
+                        disabled
+                        title={ENTERPRISE_ONLY_HINT}
+                    />
+                )}
             />
-            <Switch
-                label="Улучшить промпт"
-                value={!!params.enhancePrompt}
-                onChange={() => {}}
-                disabled
-                title={ENTERPRISE_ONLY_HINT}
+            <Controller
+                control={control}
+                name="enhancePrompt"
+                render={({ field }) => (
+                    <Switch
+                        label="Улучшить промпт"
+                        value={!!field.value}
+                        onChange={field.onChange}
+                        disabled
+                        title={ENTERPRISE_ONLY_HINT}
+                    />
+                )}
             />
         </>
     );
@@ -362,25 +505,43 @@ export function GeminiNanoBananaParams({
     const prompt = edgeInput(node.data, edges, resolved, 0);
     const imageCount = node.data.inputs.length - 1;
     const atLimit = imageCount >= MAX_NANO_BANANA_REFERENCE_IMAGES;
+    const { control } = useNodeParamsForm(geminiNanoBananaParamsSchema, params);
     return (
         <>
-            <WirableTextField
-                label="Промпт"
-                node={node}
-                paramKey="prompt"
-                params={params}
-                wired={prompt.wired}
-                liveValue={prompt.value}
-                updateNodeParam={updateNodeParam}
+            <Controller
+                control={control}
+                name="prompt"
+                render={({ field }) => (
+                    <WirableTextField
+                        label="Промпт"
+                        node={node}
+                        paramKey="prompt"
+                        params={params}
+                        wired={prompt.wired}
+                        liveValue={wiredPromptDisplayValue(params, prompt.value)}
+                        updateNodeParam={updateNodeParam}
+                        value={field.value}
+                        onChange={field.onChange}
+                    />
+                )}
             />
             <div className={sharedStyles.fld}>
                 <span>Модель</span>
                 <div className={sharedStyles.presetRow}>
-                    <Select
-                        className={sharedStyles.presetSelect}
-                        value={params.model as string}
-                        onChange={(v) => updateNodeParam(node.id, "model", v)}
-                        options={modelOptions(NANO_BANANA_MODELS)}
+                    <Controller
+                        control={control}
+                        name="model"
+                        render={({ field }) => (
+                            <Select
+                                className={sharedStyles.presetSelect}
+                                value={field.value}
+                                onChange={(v) => {
+                                    field.onChange(v);
+                                    updateNodeParam(node.id, "model", v);
+                                }}
+                                options={modelOptions(NANO_BANANA_MODELS)}
+                            />
+                        )}
                     />
                     <button
                         className={sharedStyles.iconBtn}
@@ -395,31 +556,65 @@ export function GeminiNanoBananaParams({
                     </button>
                 </div>
             </div>
-            <SelectField
-                label="Соотношение сторон"
-                value={params.aspectRatio as string}
-                onChange={(v) => updateNodeParam(node.id, "aspectRatio", v)}
-                options={RATIOS}
+            <Controller
+                control={control}
+                name="aspectRatio"
+                render={({ field }) => (
+                    <SelectField
+                        label="Соотношение сторон"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "aspectRatio", v);
+                        }}
+                        options={RATIOS}
+                    />
+                )}
             />
-            <SelectField
-                label="Разрешение"
-                value={params.imageSize as string}
-                onChange={(v) => updateNodeParam(node.id, "imageSize", v)}
-                options={SIZES}
+            <Controller
+                control={control}
+                name="imageSize"
+                render={({ field }) => (
+                    <SelectField
+                        label="Разрешение"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            updateNodeParam(node.id, "imageSize", v);
+                        }}
+                        options={SIZES}
+                    />
+                )}
             />
-            <TextField
-                label="Сид (seed)"
-                placeholder="авто"
-                defaultValue={params.seed as string}
-                onBlur={(v) => updateNodeParam(node.id, "seed", v)}
+            <Controller
+                control={control}
+                name="seed"
+                render={({ field }) => (
+                    <TextField
+                        label="Сид (seed)"
+                        placeholder="авто"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={(v) => {
+                            field.onBlur();
+                            updateNodeParam(node.id, "seed", v);
+                        }}
+                    />
+                )}
             />
-            <SelectField
-                label="Генерация людей"
-                disabled
-                value={params.personGeneration as string}
-                onChange={() => {}}
-                options={NANO_BANANA_PERSON_OPTIONS}
-                title={ENTERPRISE_ONLY_HINT}
+            <Controller
+                control={control}
+                name="personGeneration"
+                render={({ field }) => (
+                    <SelectField
+                        label="Генерация людей"
+                        disabled
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={NANO_BANANA_PERSON_OPTIONS}
+                        title={ENTERPRISE_ONLY_HINT}
+                    />
+                )}
             />
         </>
     );
