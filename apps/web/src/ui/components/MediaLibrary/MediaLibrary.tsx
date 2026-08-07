@@ -13,12 +13,11 @@ const LIBRARY_TABS = [
 ] as const;
 type MediaLibraryTab = (typeof LIBRARY_TABS)[number]["key"];
 
-// Chrome-free grid+tabs, shared by the browse-only Topbar entry (Modals.tsx's
-// LibraryModal) and the per-node picker (MediaPickerButton below) — fetches
-// the full list once per mount and filters by tab client-side, since GET
-// /media has no kind filter param. Selection always hands back
-// asset.storageKey (the s3:<uuid> ref), matching what putBlob/putGeneratedBlob
-// already resolve to and what every node param stores.
+// Chrome-free grid+tabs backing MediaPickerButton below — fetches the full
+// list once per mount and filters by tab client-side, since GET /media has
+// no kind filter param. Selection always hands back asset.storageKey (the
+// s3:<uuid> ref), matching what putBlob/putGeneratedBlob already resolve to
+// and what every node param stores.
 export function MediaLibraryGrid({
     onSelect,
 }: {

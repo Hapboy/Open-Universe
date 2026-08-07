@@ -7,33 +7,24 @@ lose track of things between sessions.
 
 ## Media
 
-- **Media library modal.** A modal listing all of the user's uploaded and
-  generated photos/videos, two tabs ("Uploaded" / "Generated") filtering on
-  `MediaAsset.kind`. Backend already has what's needed: `GET /media`
-  (`apps/api/src/media/media.controller.ts:48-56`) lists all assets with a
-  resolved `url` per item — just needs a `media.list()` method added to
-  `hayverseApiClient` (`src/core/api/hayverse/client.ts`) if it's not there
-  yet. Render via `resolveMediaRefCached`/`useResolvedMediaUrls`
-  (`src/core/mediaRef.ts`) same as node thumbnails do.
-
-- **"Choose from library" next to every upload button (depends on the
-  above).** Every node with an upload-photo button only supports picking a
-  new file from disk (`putBlob(file)` → new `s3:<uuid>` ref each time), no
-  way to reuse something already uploaded/generated elsewhere. Add a second
-  button next to each upload button that opens the media library modal in
-  picker mode and, on selection, imports the existing ref the same way an
-  upload result is consumed today (no re-upload, no new asset — just wire
-  the picked ref into the same place `putBlob`'s resolved ref goes). Known
-  upload sites to add this next to:
-    - `apps/web/src/ui/components/PhotoGallerySection/PhotoGallerySection.tsx`
-      (~line 104-117) — shared multi-photo gallery upload used by
-      character/etc. nodes, feeds `setNodePhotos(node.id, next, idx)`.
-    - `apps/web/src/ui/NodeCard/params/UtilParams.tsx` (~line 222-243) —
-      single cover-image upload, feeds
-      `updateNodeParam(node.id, "coverUrl", ref)`.
-      Worth a shared `MediaPickerButton`/hook wrapping the media library modal
-      in "select and return a ref" mode, rather than duplicating open/select
-      wiring at each of the two (growing) call sites.
+- **Done: "Choose from library" next to upload buttons (2026-08-06/07).**
+  `apps/web/src/ui/components/MediaLibrary/MediaLibrary.tsx` — shared
+  `MediaLibraryGrid` (tabs: uploaded/generated, backed by
+  `hayverseApiClient.media.list()`) + `MediaPickerButton` (trigger + portal
+  modal, single-pick-per-open, hands back `asset.storageKey`). Wired into
+  `PhotoGallerySection.tsx` (appends to the photo array) and
+  `UtilParams.tsx`'s cover field (`updateNodeParam(..., "coverUrl", ref)`).
+  Backend `/media` was scoped to the authenticated owner as part of this
+  (see git log — was previously unguarded, any user could list/delete
+  anyone's media).
+    - **Deliberately not built**: a standalone "browse your whole library"
+      modal (there was briefly a Topbar entry + `LibraryModal` for this, since
+      reverted). It rendered the exact same `MediaLibraryGrid` with a no-op
+      `onSelect` — a browse-only view where clicking a card does nothing is a
+      UX dead end, and it added nothing the picker doesn't already show when
+      opened from any node. Revisit only if a real "just look, don't pick"
+      need shows up — a read-only tab in `ProfileModal` (`Modals.tsx`) would
+      be a better home for it than a dedicated Topbar button.
 
 ## Testing / Infra
 
