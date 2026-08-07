@@ -1,0 +1,21 @@
+.bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px 0;
+}
+
+.count {
+    font-size: 11px;
+    color: var(--color-text-tertiary);
+    min-width: 30px;
+    text-align: center;
+}
+
+.del {
+    color: var(--color-text-secondary);
+}
+
+.del:hover {
+    color: #e5484d;
+}

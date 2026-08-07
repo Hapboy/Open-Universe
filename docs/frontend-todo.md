@@ -122,20 +122,35 @@ tls, maxRetriesPerRequest }` options object instead of a live client, so
       dropped once there's somewhere for the value to actually go.
     - **Not done here (deliberately out of scope)**: `gemini_text`/
       `gemini_vision`/`gemini_veo`/`gemini_lyria` have no history/slider
-      mechanism at all yet, so they weren't touched — see the next bullet.
+      mechanism at all yet, so they weren't touched — see the next bullet
+      (now done — the persistence function referenced above was renamed
+      `persistGeneratedOutputs` as part of that work).
 
-- **Generalize the RHF/zod pattern to the remaining Gemini node types.**
-  `gemini_text`/`gemini_vision`/`gemini_veo`/`gemini_lyria` still use the old
-  `defaultValue`-based fields (same `useNodeParamsForm`/schema/`Controller`
-  pattern from the bullet above would apply once they need it). `gemini_veo`
-  (video) and `gemini_lyria` (audio) currently have no history/slider
-  mechanism at all — each generation just overwrites the last — so "restore
-  params on selecting a past output" for them means giving them the history
-  mechanism first (per `appendGeneratedRef`/`generatedParamsHistory` in
-  `graphExecution.ts`), not just the form layer. `gemini_text`/
-  `gemini_vision` have no image/media output to slide through at all, so
-  the stale-field bug doesn't really bite them the same way — lower
-  priority.
+- **Done: generation-history mechanism for `gemini_text`/`gemini_vision`/
+  `gemini_veo`/`gemini_lyria` (2026-08-07).** These 4 had no
+  history/slider at all before — each generation just overwrote the last.
+  `graphExecution.ts`'s `persistGeneratedImages` (image-only) is now
+  `persistGeneratedOutputs`, driven by two lookup tables —
+  `HISTORY_OUTPUT_KIND` (`"blob"` for image/video/audio, uploaded via
+  `mediaRef.ts`'s already-generic `putGeneratedBlob`; `"text"` for
+  text/vision, stored inline as the history "ref" itself, no R2 round-trip)
+  and `WIRABLE_FIELD` (per-type `{paramKey, pinIndex}` — generalizes last
+  session's wired-prompt-history fix beyond just imagen/nanobanana's
+  `prompt`@pin0, since `gemini_vision`'s wirable field is `query`@pin1).
+  `NodeCard.tsx` now derives `generatedHistory`/`generatedParamsHistory`/
+  `generatedIdx` generically off a new `HISTORY_NODE_TYPES` set
+  (`data/nodes.ts`) instead of an image-only gate, and renders by
+  `outputKind`: image/video reuse `MediaSlider` (video just needed real
+  history threading, no component changes); audio/text use a new plain-flow
+  `HistoryNav.tsx` bar (prev/count/next/delete) instead of `MediaSlider`'s
+  overlay chrome, which doesn't suit a thin `<audio>` control bar or a
+  variable-height text block. `gemini_lyria`'s audio player also moved from
+  below the params form to the top of the card, alongside the other 3 kinds
+  — deliberate consistency fix, not incidental.
+    - **Next**: the RHF/zod/`Controller` wiring itself for these 4
+      components' param fields — same `useNodeParamsForm`/schema pattern as
+      `GeminiImagenParams`/`GeminiNanoBananaParams`, now that there's
+      history for a form to actually restore. Not done in this pass.
     - While at it: snapshotting can switch from denylisting the 4 bookkeeping
       keys (`GENERATION_BOOKKEEPING_KEYS` in `graphExecution.ts`) to picking
       only each schema's known keys — self-maintaining, since a schema

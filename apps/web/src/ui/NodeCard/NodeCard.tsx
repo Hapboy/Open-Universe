@@ -2,12 +2,18 @@ import { memo, useEffect, useState } from "react";
 import cn from "classnames";
 import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/react";
 import type { NodeParams, PortType } from "../../types.ts";
-import { AI_MODEL_NODE_TYPES, NODE_TEMPLATES, RICH_ENTITY_NODE_TYPES } from "../../data/nodes.ts";
+import {
+    AI_MODEL_NODE_TYPES,
+    HISTORY_NODE_TYPES,
+    NODE_TEMPLATES,
+    RICH_ENTITY_NODE_TYPES,
+} from "../../data/nodes.ts";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
 import { useResolvedMediaUrls } from "../../core/mediaRef.ts";
 import { CircleLoader } from "../components/CircleLoader/CircleLoader.tsx";
 import { TextAreaField } from "../components/TextAreaField/TextAreaField.tsx";
 import { MediaSlider } from "./MediaSlider/MediaSlider.tsx";
+import { HistoryNav } from "./HistoryNav/HistoryNav.tsx";
 import { NodeParamsPanel } from "./params/NodeParamsPanel.tsx";
 import { NodeMenu } from "./NodeMenu/NodeMenu.tsx";
 import styles from "./NodeCard.module.css";
@@ -70,19 +76,30 @@ export const NodeCard = memo(function NodeCard({
     const isAiModel = AI_MODEL_NODE_TYPES.includes(data.nodeType);
     const isRunning = runningNodeIds.has(id);
     const outputId = data.outputs[0]?.id;
-    const generatedText =
-        (data.nodeType === "gemini_text" || data.nodeType === "gemini_vision") && outputId
-            ? (resolved[outputId] as string | undefined)
-            : undefined;
-    const isImageGenNode =
-        data.nodeType === "gemini_imagen" || data.nodeType === "gemini_nanobanana";
-    const liveGeneratedImage =
-        isImageGenNode && outputId ? (resolved[outputId] as string | undefined) : undefined;
-    // Every past generation cached in IndexedDB (see GraphContext's
-    // persistGeneratedImages/appendGeneratedRef), browsable via the photo
-    // slider below. Falls back to the legacy single `lastGeneratedRef` for
-    // nodes generated before this history array existed.
-    const generatedHistory = isImageGenNode
+
+    // Which of the 6 HISTORY_NODE_TYPES this is, for choosing how to render
+    // its history below — image/video reuse MediaSlider's overlay chrome,
+    // audio/text use the plain-flow HistoryNav bar instead (see
+    // HistoryNav.tsx for why).
+    const outputKind: "image" | "video" | "audio" | "text" | undefined =
+        data.nodeType === "gemini_imagen" || data.nodeType === "gemini_nanobanana"
+            ? "image"
+            : data.nodeType === "gemini_veo"
+              ? "video"
+              : data.nodeType === "gemini_lyria"
+                ? "audio"
+                : data.nodeType === "gemini_text" || data.nodeType === "gemini_vision"
+                  ? "text"
+                  : undefined;
+    const hasHistory = HISTORY_NODE_TYPES.has(data.nodeType);
+    const liveOutput =
+        hasHistory && outputId ? (resolved[outputId] as string | undefined) : undefined;
+    // Every past generation cached (R2-backed for image/video/audio kinds,
+    // inline for text — see GraphContext's persistGeneratedOutputs/
+    // appendGeneratedRef), browsable via the nav below. Falls back to the
+    // legacy single `lastGeneratedRef` for nodes generated before this
+    // history array existed.
+    const generatedHistory = hasHistory
         ? Array.isArray(data.params.generatedHistory)
             ? (data.params.generatedHistory as string[])
             : data.params.lastGeneratedRef
@@ -92,41 +109,47 @@ export const NodeCard = memo(function NodeCard({
     const resolvedGeneratedHistory = useResolvedMediaUrls(generatedHistory);
     // Snapshot of the params that produced each history entry, keyed by ref —
     // see GraphContext's appendGeneratedRef. Missing for entries generated
-    // before this map existed, in which case the slider just leaves current
+    // before this map existed, in which case the nav just leaves current
     // params untouched.
     const generatedParamsHistory = (data.params.generatedParamsHistory ?? {}) as Record<
         string,
         Record<string, unknown>
     >;
-    // The freshly-generated image (this session, not yet round-tripped
-    // through IndexedDB) is shown in place of the newest slot immediately,
-    // rather than waiting on the async blob write to land.
-    const generatedItems = generatedHistory.length
-        ? generatedHistory.map((_, i) => ({
-              url:
-                  liveGeneratedImage && i === generatedHistory.length - 1
-                      ? liveGeneratedImage
-                      : resolvedGeneratedHistory[i],
-              type: "image" as const,
-          }))
-        : liveGeneratedImage
-          ? [{ url: liveGeneratedImage, type: "image" as const }]
+    // The freshly-generated output (this session, not yet round-tripped
+    // through persistence) is shown in place of the newest slot immediately,
+    // rather than waiting on the async blob write (or, for text, the store
+    // update) to land.
+    const generatedValues = generatedHistory.length
+        ? generatedHistory.map((_, i) =>
+              liveOutput && i === generatedHistory.length - 1
+                  ? liveOutput
+                  : resolvedGeneratedHistory[i],
+          )
+        : liveOutput
+          ? [liveOutput]
           : [];
     const generatedIdx = Math.max(
         0,
         Math.min(
-            (data.params.generatedIdx as number) ?? generatedItems.length - 1,
-            generatedItems.length - 1,
+            (data.params.generatedIdx as number) ?? generatedValues.length - 1,
+            generatedValues.length - 1,
         ),
     );
-    const generatedVideo =
-        data.nodeType === "gemini_veo" && outputId
-            ? (resolved[outputId] as string | undefined)
-            : undefined;
-    const generatedAudio =
-        data.nodeType === "gemini_lyria" && outputId
-            ? (resolved[outputId] as string | undefined)
-            : undefined;
+    const onHistoryIndexChange = (i: number) => {
+        const snapshot = generatedParamsHistory[generatedHistory[i]];
+        updateNodeParams(id, snapshot ? { ...snapshot, generatedIdx: i } : { generatedIdx: i });
+    };
+    const onHistoryDelete = (i: number) => {
+        const ref = generatedHistory[i];
+        const nextHistory = generatedHistory.filter((_, idx) => idx !== i);
+        const nextParamsHistory = { ...generatedParamsHistory };
+        if (ref) delete nextParamsHistory[ref];
+        updateNodeParams(id, {
+            generatedHistory: nextHistory,
+            generatedParamsHistory: nextParamsHistory,
+            generatedIdx: Math.max(0, Math.min(generatedIdx, nextHistory.length - 1)),
+        });
+    };
     // Which node types offer the "show JSON" menu toggle: rich entities show
     // their own params (computed inline below, for instant live-typing
     // feedback); output_scene instead mirrors its "Arc JSON" output pin
@@ -298,52 +321,52 @@ export const NodeCard = memo(function NodeCard({
                 </div>
 
                 <div className={styles.paramsCol}>
-                    {generatedText && (
-                        <div className={styles.body}>
-                            <div
-                                className={cn(
-                                    styles.titleVal,
-                                    styles.titleValFull,
-                                    "nodrag",
-                                    "nowheel",
-                                )}>
-                                {generatedText}
+                    {(outputKind === "image" || outputKind === "video") &&
+                        generatedValues.length > 0 && (
+                            <MediaSlider
+                                items={generatedValues.map((url) => ({ url, type: outputKind }))}
+                                index={generatedIdx}
+                                onIndexChange={onHistoryIndexChange}
+                                onDelete={onHistoryDelete}
+                            />
+                        )}
+
+                    {outputKind === "audio" && generatedValues.length > 0 && (
+                        <>
+                            <HistoryNav
+                                index={generatedIdx}
+                                count={generatedValues.length}
+                                onIndexChange={onHistoryIndexChange}
+                                onDelete={() => onHistoryDelete(generatedIdx)}
+                            />
+                            <audio
+                                src={generatedValues[generatedIdx]}
+                                controls
+                                className={cn(styles.audioPlayer, "nodrag", "nowheel")}
+                            />
+                        </>
+                    )}
+
+                    {outputKind === "text" && generatedValues.length > 0 && (
+                        <>
+                            <HistoryNav
+                                index={generatedIdx}
+                                count={generatedValues.length}
+                                onIndexChange={onHistoryIndexChange}
+                                onDelete={() => onHistoryDelete(generatedIdx)}
+                            />
+                            <div className={styles.body}>
+                                <div
+                                    className={cn(
+                                        styles.titleVal,
+                                        styles.titleValFull,
+                                        "nodrag",
+                                        "nowheel",
+                                    )}>
+                                    {generatedValues[generatedIdx]}
+                                </div>
                             </div>
-                        </div>
-                    )}
-
-                    {generatedItems.length > 0 && (
-                        <MediaSlider
-                            items={generatedItems}
-                            index={generatedIdx}
-                            onIndexChange={(i) => {
-                                const snapshot = generatedParamsHistory[generatedHistory[i]];
-                                updateNodeParams(
-                                    id,
-                                    snapshot
-                                        ? { ...snapshot, generatedIdx: i }
-                                        : { generatedIdx: i },
-                                );
-                            }}
-                            onDelete={(i) => {
-                                const ref = generatedHistory[i];
-                                const nextHistory = generatedHistory.filter((_, idx) => idx !== i);
-                                const nextParamsHistory = { ...generatedParamsHistory };
-                                if (ref) delete nextParamsHistory[ref];
-                                updateNodeParams(id, {
-                                    generatedHistory: nextHistory,
-                                    generatedParamsHistory: nextParamsHistory,
-                                    generatedIdx: Math.max(
-                                        0,
-                                        Math.min(generatedIdx, nextHistory.length - 1),
-                                    ),
-                                });
-                            }}
-                        />
-                    )}
-
-                    {generatedVideo && (
-                        <MediaSlider items={[{ url: generatedVideo, type: "video" }]} />
+                        </>
                     )}
 
                     <div className={cn(styles.paramsWrap, "nodrag", "nowheel")}>
@@ -376,14 +399,6 @@ export const NodeCard = memo(function NodeCard({
                             </div>
                         )}
                     </div>
-
-                    {generatedAudio && (
-                        <audio
-                            src={generatedAudio}
-                            controls
-                            className={cn(styles.audioPlayer, "nodrag", "nowheel")}
-                        />
-                    )}
 
                     {jsonPreview && (
                         <div className={styles.body}>

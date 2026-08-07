@@ -17,6 +17,19 @@ export const AI_MODEL_NODE_TYPES: readonly NodeType[] = [
     "higgsfield_speak",
 ];
 
+// The 6 Gemini node types that keep a browsable per-node generation
+// history (generatedHistory/generatedIdx/generatedParamsHistory in
+// node.data.params, persisted via graphExecution.ts's appendGeneratedRef) —
+// the 3 Higgsfield types in AI_MODEL_NODE_TYPES above don't have this yet.
+export const HISTORY_NODE_TYPES: Set<NodeType> = new Set([
+    "gemini_text",
+    "gemini_vision",
+    "gemini_imagen",
+    "gemini_veo",
+    "gemini_nanobanana",
+    "gemini_lyria",
+]);
+
 // Entity node types with the "rich" editing UI: a toggleable prompt column
 // for additionalDescription, and Description/JSON output pins (instead of a
 // plain selectedItem passthrough).

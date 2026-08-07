@@ -13,14 +13,20 @@ import { TextField } from "../../components/TextField/TextField.tsx";
 import { Switch } from "../../components/Switch/Switch.tsx";
 import sharedStyles from "../../../styles/shared.module.css";
 
-// Shared by GeminiImagenParams/GeminiNanoBananaParams: when the prompt pin
-// is wired, prefer the currently-selected history entry's captured resolved
-// prompt (see graphExecution.ts's persistGeneratedImages) over the live
-// edge value, so scrubbing the MediaSlider back to an older generation
-// shows the text that actually produced it rather than whatever the
-// upstream node currently says. At the latest generation (or before any
-// generation), there's no "history" to prefer — live value is correct.
-function wiredPromptDisplayValue(params: Record<string, unknown>, liveValue: unknown): unknown {
+// Shared by every Gemini component with a wirable prompt/query-style field:
+// when that pin is wired, prefer the currently-selected history entry's
+// captured resolved value (see graphExecution.ts's WIRABLE_FIELD /
+// persistGeneratedOutputs) over the live edge value, so scrubbing the
+// history nav back to an older generation shows the text that actually
+// produced it rather than whatever the upstream node currently says. At the
+// latest generation (or before any generation), there's no "history" to
+// prefer — live value is correct. `fieldKey` is "prompt" everywhere except
+// GeminiVisionParams, whose wirable field is "query".
+function wiredFieldDisplayValue(
+    params: Record<string, unknown>,
+    liveValue: unknown,
+    fieldKey: string,
+): unknown {
     const generatedHistory = (params.generatedHistory as string[] | undefined) ?? [];
     const generatedIdx = params.generatedIdx as number | undefined;
     const generatedParamsHistory =
@@ -29,8 +35,8 @@ function wiredPromptDisplayValue(params: Record<string, unknown>, liveValue: unk
     const isViewingHistory =
         generatedIdx !== undefined && generatedIdx < generatedHistory.length - 1;
     if (!isViewingHistory) return liveValue;
-    const historicalPrompt = generatedParamsHistory[generatedHistory[generatedIdx]]?.prompt;
-    return historicalPrompt !== undefined ? historicalPrompt : liveValue;
+    const historicalValue = generatedParamsHistory[generatedHistory[generatedIdx]]?.[fieldKey];
+    return historicalValue !== undefined ? historicalValue : liveValue;
 }
 
 const FALLBACK_MODELS: GeminiModel[] = [
@@ -73,7 +79,7 @@ export function GeminiTextParams({ node, params, edges, resolved, updateNodePara
                 paramKey="prompt"
                 params={params}
                 wired={prompt.wired}
-                liveValue={prompt.value}
+                liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
                 updateNodeParam={updateNodeParam}
             />
             <SelectField
@@ -97,7 +103,7 @@ export function GeminiVisionParams({ node, params, edges, resolved, updateNodePa
                 paramKey="query"
                 params={params}
                 wired={query.wired}
-                liveValue={query.value}
+                liveValue={wiredFieldDisplayValue(params, query.value, "query")}
                 updateNodeParam={updateNodeParam}
             />
             <SelectField
@@ -174,7 +180,7 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         paramKey="prompt"
                         params={params}
                         wired={prompt.wired}
-                        liveValue={wiredPromptDisplayValue(params, prompt.value)}
+                        liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
                         updateNodeParam={updateNodeParam}
                         value={field.value}
                         onChange={field.onChange}
@@ -405,7 +411,7 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                 paramKey="prompt"
                 params={params}
                 wired={prompt.wired}
-                liveValue={prompt.value}
+                liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
                 updateNodeParam={updateNodeParam}
             />
             <SelectField
@@ -518,7 +524,7 @@ export function GeminiNanoBananaParams({
                         paramKey="prompt"
                         params={params}
                         wired={prompt.wired}
-                        liveValue={wiredPromptDisplayValue(params, prompt.value)}
+                        liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
                         updateNodeParam={updateNodeParam}
                         value={field.value}
                         onChange={field.onChange}
@@ -635,7 +641,7 @@ export function GeminiLyriaParams({ node, params, edges, resolved, updateNodePar
                 paramKey="prompt"
                 params={params}
                 wired={prompt.wired}
-                liveValue={prompt.value}
+                liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
                 updateNodeParam={updateNodeParam}
             />
             <SelectField

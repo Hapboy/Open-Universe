@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Edge, Node } from "@xyflow/react";
+import type { NodeType } from "@hayverse/shared";
 import type { NodeParams, NodeRef } from "../../types.ts";
 import type { SceneOutput } from "../../core/graph.ts";
 import type { SceneNarrativeSettings } from "./NarrativeContext.tsx";
@@ -9,17 +10,43 @@ import { edgeInput } from "../../core/graph.ts";
 
 type ShowToast = (msg: string) => void;
 
-const MAX_GENERATED_HISTORY = 20; // cap per-node generated-image history
+const MAX_GENERATED_HISTORY = 20; // cap per-node generated-output history
 
-// Runtime bookkeeping keys on gemini_imagen/gemini_nanobanana params — never
-// part of the "params that produced this image" snapshot, since they're
-// written by the history mechanism itself, not by the user.
+// Runtime bookkeeping keys on any node type's params — never part of the
+// "params that produced this output" snapshot, since they're written by the
+// history mechanism itself, not by the user.
 const GENERATION_BOOKKEEPING_KEYS = new Set([
     "generatedHistory",
     "generatedIdx",
     "generatedParamsHistory",
     "lastGeneratedRef",
 ]);
+
+// Which of the 6 HISTORY_NODE_TYPES (data/nodes.ts) need a blob upload
+// (image/video/audio, via mediaRef.ts's putGeneratedBlob) vs which can just
+// store their output string directly as the history "ref" (plain generated
+// text — small enough to keep inline, no R2 round-trip needed).
+const HISTORY_OUTPUT_KIND: Partial<Record<NodeType, "blob" | "text">> = {
+    gemini_imagen: "blob",
+    gemini_nanobanana: "blob",
+    gemini_veo: "blob",
+    gemini_lyria: "blob",
+    gemini_text: "text",
+    gemini_vision: "text",
+};
+
+// Each history node type's "prompt-like" wirable field: which param key it
+// writes to and which input pin index feeds it (see core/graph.ts's
+// computeNodeOutput) — mostly `prompt`/pin 0, except gemini_vision's field
+// is `query`/pin 1 (pin 0 is its image input).
+const WIRABLE_FIELD: Partial<Record<NodeType, { paramKey: string; pinIndex: number }>> = {
+    gemini_text: { paramKey: "prompt", pinIndex: 0 },
+    gemini_vision: { paramKey: "query", pinIndex: 1 },
+    gemini_imagen: { paramKey: "prompt", pinIndex: 0 },
+    gemini_veo: { paramKey: "prompt", pinIndex: 0 },
+    gemini_nanobanana: { paramKey: "prompt", pinIndex: 0 },
+    gemini_lyria: { paramKey: "prompt", pinIndex: 0 },
+};
 
 function snapshotGenerationParams(params: Record<string, unknown>): Record<string, unknown> {
     return Object.fromEntries(
@@ -83,17 +110,17 @@ export function useGraphExecution({
         });
     }, []);
 
-    // Caches a fresh Imagen/Nano Banana result to IndexedDB and appends its
-    // ref onto the node's `generatedHistory` (shown by NodeCard as a photo
-    // slider, and as a fallback for when `resolved` is empty, e.g. right
-    // after page load, before the node has been re-run this session).
-    // `resolved` itself keeps holding the raw data: URL untouched — other
-    // nodes/edges consuming it (e.g. wiring this output into another Gemini
-    // call, or into output_scene's Visual Render pin) still get a directly
-    // usable value. `persistedImageRef` dedups against repeated "Прогнать
-    // граф" clicks: a node whose output didn't change since the last persist
-    // is skipped.
-    const persistedImageRef = useRef<Map<string, string>>(new Map());
+    // Caches a fresh generation result (R2-backed for blob kinds, inline for
+    // text) and appends its ref onto the node's `generatedHistory` (shown by
+    // NodeCard as a nav-able slider/history bar, and as a fallback for when
+    // `resolved` is empty, e.g. right after page load, before the node has
+    // been re-run this session). `resolved` itself keeps holding the raw
+    // value untouched — other nodes/edges consuming it (e.g. wiring this
+    // output into another Gemini call, or into output_scene's Visual Render
+    // pin) still get a directly usable value. `persistedOutputRef` dedups
+    // against repeated "Прогнать граф" clicks: a node whose output didn't
+    // change since the last persist is skipped.
+    const persistedOutputRef = useRef<Map<string, string>>(new Map());
     const appendGeneratedRef = useCallback(
         (nodeId: string, ref: string, paramsSnapshot: Record<string, unknown>) => {
             setNodes((ns) =>
@@ -130,28 +157,35 @@ export function useGraphExecution({
         },
         [setNodes],
     );
-    const persistGeneratedImages = useCallback(
+    const persistGeneratedOutputs = useCallback(
         (currentNodes: Node<NodeParams>[], resolvedMap: Record<string, unknown>) => {
             for (const node of currentNodes) {
-                if (
-                    node.data.nodeType !== "gemini_imagen" &&
-                    node.data.nodeType !== "gemini_nanobanana"
-                )
-                    continue;
+                const kind = HISTORY_OUTPUT_KIND[node.data.nodeType];
+                if (!kind) continue;
                 const outputId = node.data.outputs[0]?.id;
                 const value = outputId ? resolvedMap[outputId] : undefined;
-                if (typeof value !== "string" || !value.startsWith("data:image")) continue;
-                if (persistedImageRef.current.get(node.id) === value) continue;
-                persistedImageRef.current.set(node.id, value);
+                if (kind === "blob" && (typeof value !== "string" || !value.startsWith("data:")))
+                    continue;
+                if (kind === "text" && (typeof value !== "string" || value === "")) continue;
+                if (persistedOutputRef.current.get(node.id) === value) continue;
+                persistedOutputRef.current.set(node.id, value as string);
                 const paramsSnapshot = snapshotGenerationParams(node.data.params);
-                // When the prompt pin is wired, the text actually sent to the
-                // API is the live resolved edge value (see graph.ts), never
-                // written into node.data.params — capture it here so scrubbing
-                // the MediaSlider back to this generation later shows what was
-                // actually used, not whatever the upstream node currently says.
-                const promptInput = edgeInput(node.data, edges, resolvedMap, 0);
-                if (promptInput.wired) paramsSnapshot.prompt = promptInput.value;
-                fetch(value)
+                // When the prompt/query pin is wired, the text actually sent
+                // to the API is the live resolved edge value (see graph.ts),
+                // never written into node.data.params — capture it here so
+                // scrubbing the history back to this generation later shows
+                // what was actually used, not whatever the upstream node
+                // currently says.
+                const field = WIRABLE_FIELD[node.data.nodeType];
+                if (field) {
+                    const fieldInput = edgeInput(node.data, edges, resolvedMap, field.pinIndex);
+                    if (fieldInput.wired) paramsSnapshot[field.paramKey] = fieldInput.value;
+                }
+                if (kind === "text") {
+                    appendGeneratedRef(node.id, value as string, paramsSnapshot);
+                    continue;
+                }
+                fetch(value as string)
                     .then((r) => r.blob())
                     .then(putGeneratedBlob)
                     .then((ref) => appendGeneratedRef(node.id, ref, paramsSnapshot))
@@ -169,7 +203,7 @@ export function useGraphExecution({
             narrativeSettings: sceneId ? getSceneNarrativeSettings(sceneId) : undefined,
         });
         setResolved({ ...resolvedRef.current });
-        persistGeneratedImages(nodes, resolvedRef.current);
+        persistGeneratedOutputs(nodes, resolvedRef.current);
         cacheSceneOutput(sceneId, output);
     }, [
         nodes,
@@ -177,7 +211,7 @@ export function useGraphExecution({
         showToast,
         activeSceneId,
         cacheSceneOutput,
-        persistGeneratedImages,
+        persistGeneratedOutputs,
         getSceneNarrativeSettings,
     ]);
 
@@ -200,7 +234,7 @@ export function useGraphExecution({
                         return next;
                     });
                     setResolved({ ...resolvedRef.current });
-                    persistGeneratedImages(nodes, resolvedRef.current);
+                    persistGeneratedOutputs(nodes, resolvedRef.current);
                 },
             );
             cacheSceneOutput(sceneId, output);
@@ -211,7 +245,7 @@ export function useGraphExecution({
             showToast,
             activeSceneId,
             cacheSceneOutput,
-            persistGeneratedImages,
+            persistGeneratedOutputs,
             getSceneNarrativeSettings,
         ],
     );
