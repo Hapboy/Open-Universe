@@ -1,6 +1,11 @@
 # CLAUDE.md
 
-Проектный контекст для Claude Code. Подробности — в [docs/DESIGN.md](docs/DESIGN.md).
+Проектный контекст для Claude Code (монорепо). Подробности — в
+[docs/DESIGN.md](docs/DESIGN.md) (концепция, каталог нод, план AI-провайдеров),
+[docs/DECISIONS.md](docs/DECISIONS.md) (ADR-lite лог решений, «почему») и
+[docs/backend-bootstrap.md](docs/backend-bootstrap.md) (поэтажный статус
+миграции на реальный бэкенд — сверяйтесь с ним, прежде чем предполагать, что
+фаза сделана или не сделана).
 
 ## Что это
 
@@ -11,57 +16,43 @@
 git-подобным процессом (форк → PR → модерация → merge в `main`); непринятое
 живёт в мультивселенной. Это отдельный проект, **не** связан с PROUN-игрой.
 
-## Стек приложения
-
-**React 19 + Next.js (App Router) + TypeScript**. `src/` — корень исходников;
-`app/` (Next-конвенция) содержит только роут-файлы (`layout.tsx`, `page.tsx`,
-позже `api/*/route.ts`) — миграция с Vite ещё не закончена, план — 4 фазы,
-сейчас завершена только фаза 1 (шаблон/тулчейн-swap, без реального SSR-safe
-хайдрейшна контекстов — см. ниже).
+## Структура монорепо
 
 ```
-src/
-├── core/        graph.ts, renderer.ts, services/ (index.ts, pinterest.ts,
-│                higgsfield.ts, gemini.ts)
-├── data/        nodes.ts (NODE_TEMPLATES), presets.ts, scenes.ts
-├── store/       AppProviders.tsx + contexts/ (Graph/Player/User/Toast/Pwa —
-│                React Context per concern, глобальное состояние)
-├── ui/          App.tsx (+ App.module.css), NodeEditor/, NodeCard/,
-│                NodeBrowser/, PlayerPanel/ (MiniPlayer only), Topbar/,
-│                Modals/, Toast/, inspector/, game.ts — каждый компонент =
-│                папка с колокейтед `Name.module.css`
-├── styles/      global.css (CSS-переменные, reset; импортируется из
-│                app/layout.tsx), shared.module.css (общие атомы через
-│                `composes`)
-└── types.ts     TS-интерфейсы (NodeParams, PinItem, BoardItem, ...)
-
-app/
-├── layout.tsx   root layout: metadata/viewport, глобальный CSS, StrictMode
-└── page.tsx     'use client', рендерит <App /> из src/App.tsx
-
-public/          статика (Next-конвенция): assets/, icon.svg,
-                 manifest.webmanifest, sw.js, prototypes/, terms.html
+open-universe/
+├── apps/
+│   ├── web/            Next.js 16 + React 19 фронтенд — см. apps/web/CLAUDE.md
+│   └── api/             NestJS + Bun бэкенд — см. apps/api/CLAUDE.md
+├── packages/
+│   ├── shared/          @hayverse/shared — общие типы/enum'ы (src/enums.ts)
+│   └── api-client/       @hayverse/api-client — типизированный клиент apps/api
+├── docs/                 DESIGN.md, DECISIONS.md, backend-bootstrap.md, frontend-todo.md, api-testing-guide.md
+├── package.json           workspaces: ["apps/web", "packages/*"] (apps/api на Bun, вне npm workspaces)
+└── tsconfig.base.json
 ```
 
-- `public/prototypes/` — **устаревшие** HTML-прототипы; игнорировать.
-- `docs/DESIGN.md` — концепция, план интеграции AI-провайдеров, каталог нод.
-- `.claude/launch.json` — конфиг превью (сервер `openuniverse`).
-- Env-переменные — `NEXT_PUBLIC_*` (не `VITE_*`); `src/core/api/env.ts` держит
-  их в статичной map, т.к. Next инлайнит только буквальные
-  `process.env.NEXT_PUBLIC_X` — динамический `process.env[name]` не работает.
-
-## Запуск / превью
-
-`npm run dev` → `http://localhost:4174/` (Next.js dev server, Turbopack).
-`npm run build` → `.next/`; `npm run start` — прод-сервер локально.
-
-## Ключевые паттерны кода
-
-- Параметры ноды — `params: Record<string, unknown>` (гибко, без смены типов).
-- Обновление: `updateNodeParam(nodeId, key, value)` из `GraphContext`.
-- Стили — CSS Modules: каждый компонент импортирует свой `Name.module.css`;
-  общие переиспользуемые классы — через `composes` из `styles/shared.module.css`,
-  не копипастить и не заводить новый глобальный CSS.
-- CSS-переменные (в `styles/global.css`): `--color-bg-primary/secondary/tertiary/card`, `--color-text-primary/secondary/tertiary`, `--color-border`, `--radius-sm/md/lg`.
-- Иконки — Tabler Icons (`ti-*`).
 - Бренд внутри UI — «Hayverse»; имя репозитория — `open-universe`.
+- `apps/web/public/prototypes/` — устаревшие HTML-прототипы, игнорировать.
+
+## Запуск
+
+Корневые скрипты делегируют в `apps/web`: `npm run dev` (→
+`next dev -p 4174`), `npm run build`, `npm run typecheck`, `npm run lint` /
+`npm run format` (эти два — по всему репозиторию). Бэкенд запускается
+отдельно из `apps/api/` (`bun run start:dev`) — Bun намеренно не входит в
+npm workspaces.
+
+## Кросс-app конвенции
+
+- `packages/shared` и `packages/api-client` собираются в `dist/` корневым
+  `postinstall`-скриптом — `dist/` гитигнорится, на свежем клоне (Vercel)
+  нужен реальный build, TS source сам по себе не потребляется.
+- Фронтенд и бэкенд общаются только через `@hayverse/api-client`
+  (типизированный клиент, растущий вместе со Swagger-поверхностью apps/api),
+  не через hand-written fetch — см. «Talking to the backend» в
+  `apps/web/CLAUDE.md`.
+- Деплой асимметричен: `apps/web` на Vercel — автодеплой на push в `main`;
+  `apps/api` на Railway — **нет** автодеплоя, нужен `railway up` из
+  `apps/api/` вручную. Vercel CLI-команды (`vercel --prod`, `vercel env add`)
+  всегда запускать из корня репозитория, не из `apps/web` — Root Directory в
+  Vercel уже настроен на `apps/web`, `cd` туда задваивает путь.
