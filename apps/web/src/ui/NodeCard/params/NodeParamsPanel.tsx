@@ -25,19 +25,17 @@ import {
     TransportParams,
 } from "./EntityParams/EntityParams.tsx";
 import { OutputParams, TextParams } from "./UtilParams.tsx";
-import type {
-    CharacterNodeParams,
-    LocationNodeParams,
-    MiseEnSceneNodeParams,
-    BuildingNodeParams,
-    ClothingNodeParams,
-    ArtworkNodeParams,
-    FurnitureNodeParams,
-    MusicNodeParams,
-    ScriptNodeParams,
-    StoryboardNodeParams,
-    TransportNodeParams,
-} from "../../../types.ts";
+import type { CharacterNodeParams } from "../../../schemas/entities/character.schema.ts";
+import type { LocationNodeParams } from "../../../schemas/entities/location.schema.ts";
+import type { MiseEnSceneNodeParams } from "../../../schemas/entities/miseEnScene.schema.ts";
+import type { BuildingNodeParams } from "../../../schemas/entities/building.schema.ts";
+import type { ClothingNodeParams } from "../../../schemas/entities/clothing.schema.ts";
+import type { ArtworkNodeParams } from "../../../schemas/entities/artwork.schema.ts";
+import type { FurnitureNodeParams } from "../../../schemas/entities/furniture.schema.ts";
+import type { MusicNodeParams } from "../../../schemas/entities/music.schema.ts";
+import type { ScriptNodeParams } from "../../../schemas/entities/script.schema.ts";
+import type { StoryboardNodeParams } from "../../../schemas/entities/storyboard.schema.ts";
+import type { TransportNodeParams } from "../../../schemas/entities/transport.schema.ts";
 
 export function NodeParamsPanel({
     node,

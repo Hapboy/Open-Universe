@@ -1,7 +1,53 @@
 import { useState } from "react";
 import cn from "classnames";
+import { Controller, useController } from "react-hook-form";
 import { InFrameToggle, usePresetDatabase } from "../shared.tsx";
 import type { EP } from "../shared.tsx";
+import { useNodeParamsForm } from "../useNodeParamsForm.ts";
+import {
+    characterParamsSchema,
+    type CharacterNodeParams,
+} from "../../../../schemas/entities/character.schema.ts";
+import {
+    locationParamsSchema,
+    type LocationNodeParams,
+} from "../../../../schemas/entities/location.schema.ts";
+import {
+    miseEnSceneParamsSchema,
+    type MiseEnSceneNodeParams,
+} from "../../../../schemas/entities/miseEnScene.schema.ts";
+import {
+    buildingParamsSchema,
+    type BuildingNodeParams,
+} from "../../../../schemas/entities/building.schema.ts";
+import {
+    clothingParamsSchema,
+    type ClothingNodeParams,
+} from "../../../../schemas/entities/clothing.schema.ts";
+import {
+    artworkParamsSchema,
+    type ArtworkNodeParams,
+} from "../../../../schemas/entities/artwork.schema.ts";
+import {
+    furnitureParamsSchema,
+    type FurnitureNodeParams,
+} from "../../../../schemas/entities/furniture.schema.ts";
+import {
+    musicParamsSchema,
+    type MusicNodeParams,
+} from "../../../../schemas/entities/music.schema.ts";
+import {
+    scriptParamsSchema,
+    type ScriptNodeParams,
+} from "../../../../schemas/entities/script.schema.ts";
+import {
+    storyboardParamsSchema,
+    type StoryboardNodeParams,
+} from "../../../../schemas/entities/storyboard.schema.ts";
+import {
+    transportParamsSchema,
+    type TransportNodeParams,
+} from "../../../../schemas/entities/transport.schema.ts";
 import { PresetsField } from "../PresetsField/PresetsField.tsx";
 import {
     PhotoGallerySection,
@@ -27,19 +73,6 @@ import {
     accessoryOptions,
     clothingOptions,
 } from "./CharacterStyling.tsx";
-import type {
-    CharacterNodeParams,
-    LocationNodeParams,
-    BuildingNodeParams,
-    ClothingNodeParams,
-    ArtworkNodeParams,
-    FurnitureNodeParams,
-    MusicNodeParams,
-    ScriptNodeParams,
-    StoryboardNodeParams,
-    TransportNodeParams,
-    MiseEnSceneNodeParams,
-} from "../../../../types.ts";
 import { getMiseEnSceneDiagrams } from "../../../../data/miseEnSceneDiagrams.ts";
 import {
     CHARACTER_EMOTIONS,
@@ -99,6 +132,9 @@ export function CharacterParams({
         updateNodeParams,
     );
     const { generate, isGenerating } = useImageGeneration();
+    const { control, isFieldValid } = useNodeParamsForm(characterParamsSchema, params);
+    const lifetimeFrom = useController({ control, name: "lifetimeFrom" });
+    const lifetimeTo = useController({ control, name: "lifetimeTo" });
 
     const handleGeneratePhoto = async () => {
         const prompt = buildCharacterPrompt(params);
@@ -186,10 +222,21 @@ export function CharacterParams({
             )}
 
             {shouldShow("general", "Имя") && (
-                <TextField
-                    label="Имя"
-                    value={params.name}
-                    onChange={(v) => updateNodeParam(node.id, "name", v)}
+                <Controller
+                    control={control}
+                    name="name"
+                    render={({ field, fieldState }) => (
+                        <TextField
+                            label="Имя"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                            }}
+                            onBlur={field.onBlur}
+                            error={fieldState.error?.message}
+                        />
+                    )}
                 />
             )}
 
@@ -205,10 +252,20 @@ export function CharacterParams({
             )}
 
             {shouldShow("general", "Текущие координаты") && (
-                <CoordinateField
-                    label="Текущие координаты"
-                    value={params.currentPosition}
-                    onChange={(v) => updateNodeParam(node.id, "currentPosition", v)}
+                <Controller
+                    control={control}
+                    name="currentPosition"
+                    render={({ field }) => (
+                        <CoordinateField
+                            label="Текущие координаты"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("currentPosition", v))
+                                    updateNodeParam(node.id, "currentPosition", v);
+                            }}
+                        />
+                    )}
                 />
             )}
 
@@ -217,140 +274,298 @@ export function CharacterParams({
                 <DateRangeField
                     fromLabel="Дата рождения"
                     toLabel="Дата смерти"
-                    from={params.lifetimeFrom}
-                    to={params.lifetimeTo}
-                    onChangeFrom={(v) => updateNodeParam(node.id, "lifetimeFrom", v)}
-                    onChangeTo={(v) => updateNodeParam(node.id, "lifetimeTo", v)}
+                    from={lifetimeFrom.field.value}
+                    to={lifetimeTo.field.value}
+                    onChangeFrom={(v) => {
+                        lifetimeFrom.field.onChange(v);
+                        if (isFieldValid("lifetimeFrom", v))
+                            updateNodeParam(node.id, "lifetimeFrom", v);
+                    }}
+                    onChangeTo={(v) => {
+                        lifetimeTo.field.onChange(v);
+                        if (isFieldValid("lifetimeTo", v))
+                            updateNodeParam(node.id, "lifetimeTo", v);
+                    }}
                 />
             )}
 
             {shouldShow("birth", "Место рождения") && (
-                <CoordinateField
-                    label="Место рождения"
-                    value={params.birthPlace}
-                    onChange={(v) => updateNodeParam(node.id, "birthPlace", v)}
+                <Controller
+                    control={control}
+                    name="birthPlace"
+                    render={({ field }) => (
+                        <CoordinateField
+                            label="Место рождения"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("birthPlace", v))
+                                    updateNodeParam(node.id, "birthPlace", v);
+                            }}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("birth", "Место смерти") && (
-                <CoordinateField
-                    label="Место смерти"
-                    value={params.deathPlace}
-                    onChange={(v) => updateNodeParam(node.id, "deathPlace", v)}
+                <Controller
+                    control={control}
+                    name="deathPlace"
+                    render={({ field }) => (
+                        <CoordinateField
+                            label="Место смерти"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("deathPlace", v))
+                                    updateNodeParam(node.id, "deathPlace", v);
+                            }}
+                        />
+                    )}
                 />
             )}
 
             {/* 3. ARC CATEGORY */}
             {shouldShow("arc", "Кто она?") && (
-                <TextAreaField
-                    label="Кто она?"
-                    value={params.arcWho}
-                    onChange={(v) => updateNodeParam(node.id, "arcWho", v)}
+                <Controller
+                    control={control}
+                    name="arcWho"
+                    render={({ field }) => (
+                        <TextAreaField
+                            label="Кто она?"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("arcWho", v))
+                                    updateNodeParam(node.id, "arcWho", v);
+                            }}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("arc", "Чего она хочет внутри?") && (
-                <TextAreaField
-                    label="Чего она хочет внутри?"
-                    value={params.arcWants}
-                    onChange={(v) => updateNodeParam(node.id, "arcWants", v)}
+                <Controller
+                    control={control}
+                    name="arcWants"
+                    render={({ field }) => (
+                        <TextAreaField
+                            label="Чего она хочет внутри?"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("arcWants", v))
+                                    updateNodeParam(node.id, "arcWants", v);
+                            }}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("arc", "Как она этого достигнет?") && (
-                <TextAreaField
-                    label="Как она этого достигнет?"
-                    value={params.arcHow}
-                    onChange={(v) => updateNodeParam(node.id, "arcHow", v)}
+                <Controller
+                    control={control}
+                    name="arcHow"
+                    render={({ field }) => (
+                        <TextAreaField
+                            label="Как она этого достигнет?"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("arcHow", v))
+                                    updateNodeParam(node.id, "arcHow", v);
+                            }}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("arc", "Что на кону?") && (
-                <TextAreaField
-                    label="Что на кону?"
-                    value={params.arcStake}
-                    onChange={(v) => updateNodeParam(node.id, "arcStake", v)}
+                <Controller
+                    control={control}
+                    name="arcStake"
+                    render={({ field }) => (
+                        <TextAreaField
+                            label="Что на кону?"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("arcStake", v))
+                                    updateNodeParam(node.id, "arcStake", v);
+                            }}
+                        />
+                    )}
                 />
             )}
 
             {/* 4. STYLING CATEGORY */}
             {shouldShow("styling", "Возраст") && (
-                <NumberField
-                    label="Возраст"
-                    min={10}
-                    max={90}
-                    step={1}
-                    value={params.age}
-                    onChange={(v) => updateNodeParam(node.id, "age", v)}
+                <Controller
+                    control={control}
+                    name="age"
+                    render={({ field, fieldState }) => (
+                        <NumberField
+                            label="Возраст"
+                            min={10}
+                            max={90}
+                            step={1}
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("age", v)) updateNodeParam(node.id, "age", v);
+                            }}
+                            onBlur={field.onBlur}
+                            error={fieldState.error?.message}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("styling", "Эмоция") && (
-                <SelectField
-                    label="Эмоция"
-                    value={params.emotion}
-                    onChange={(v) => updateNodeParam(node.id, "emotion", v)}
-                    options={CHARACTER_EMOTIONS}
+                <Controller
+                    control={control}
+                    name="emotion"
+                    render={({ field }) => (
+                        <SelectField
+                            label="Эмоция"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("emotion", v))
+                                    updateNodeParam(node.id, "emotion", v);
+                            }}
+                            options={CHARACTER_EMOTIONS}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("styling", "Стилист") && (
-                <SelectField
-                    label="Стилист"
-                    value={params.stylist}
-                    onChange={(v) => updateNodeParam(node.id, "stylist", v)}
-                    options={CHARACTER_STYLISTS}
+                <Controller
+                    control={control}
+                    name="stylist"
+                    render={({ field }) => (
+                        <SelectField
+                            label="Стилист"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("stylist", v))
+                                    updateNodeParam(node.id, "stylist", v);
+                            }}
+                            options={CHARACTER_STYLISTS}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("styling", "В кадре") && (
-                <InFrameToggle
-                    value={params.inFrame}
-                    onChange={(v) => updateNodeParam(node.id, "inFrame", v)}
+                <Controller
+                    control={control}
+                    name="inFrame"
+                    render={({ field }) => (
+                        <InFrameToggle
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("inFrame", v))
+                                    updateNodeParam(node.id, "inFrame", v);
+                            }}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("styling", "Прическа") && (
-                <DropdownWithPreviews
-                    label="Прическа"
-                    value={params.haircut}
-                    onChange={(v) => updateNodeParam(node.id, "haircut", v)}
-                    options={haircutOptions}
+                <Controller
+                    control={control}
+                    name="haircut"
+                    render={({ field }) => (
+                        <DropdownWithPreviews
+                            label="Прическа"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("haircut", v))
+                                    updateNodeParam(node.id, "haircut", v);
+                            }}
+                            options={haircutOptions}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("styling", "Татуировки") && (
-                <DropdownWithPreviews
-                    label="Татуировки"
-                    value={params.tattoos}
-                    onChange={(v) => updateNodeParam(node.id, "tattoos", v)}
-                    options={tattooOptions}
+                <Controller
+                    control={control}
+                    name="tattoos"
+                    render={({ field }) => (
+                        <DropdownWithPreviews
+                            label="Татуировки"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("tattoos", v))
+                                    updateNodeParam(node.id, "tattoos", v);
+                            }}
+                            options={tattooOptions}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("styling", "Аксессуары") && (
-                <DropdownWithPreviews
-                    label="Аксессуары"
-                    value={params.accessories}
-                    onChange={(v) => updateNodeParam(node.id, "accessories", v)}
-                    options={accessoryOptions}
+                <Controller
+                    control={control}
+                    name="accessories"
+                    render={({ field }) => (
+                        <DropdownWithPreviews
+                            label="Аксессуары"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("accessories", v))
+                                    updateNodeParam(node.id, "accessories", v);
+                            }}
+                            options={accessoryOptions}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("styling", "Одежда") && (
-                <DropdownWithPreviews
-                    label="Одежда"
-                    value={params.clothing}
-                    onChange={(v) => updateNodeParam(node.id, "clothing", v)}
-                    options={clothingOptions}
+                <Controller
+                    control={control}
+                    name="clothing"
+                    render={({ field }) => (
+                        <DropdownWithPreviews
+                            label="Одежда"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("clothing", v))
+                                    updateNodeParam(node.id, "clothing", v);
+                            }}
+                            options={clothingOptions}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("styling", "Цвет") && (
-                <ColorField
-                    label="Цвет"
-                    value={params.color}
-                    onChange={(v) => updateNodeParam(node.id, "color", v)}
+                <Controller
+                    control={control}
+                    name="color"
+                    render={({ field }) => (
+                        <ColorField
+                            label="Цвет"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("color", v)) updateNodeParam(node.id, "color", v);
+                            }}
+                        />
+                    )}
                 />
             )}
         </>
@@ -371,6 +586,7 @@ export function LocationParams({
         params,
         updateNodeParams,
     );
+    const { control, isFieldValid } = useNodeParamsForm(locationParamsSchema, params);
 
     // Toggle Category Tags and Search State
     const [activeTags, setActiveTags] = useState<Record<string, boolean>>({
@@ -435,10 +651,21 @@ export function LocationParams({
             )}
 
             {shouldShow("general", "Имя") && (
-                <TextField
-                    label="Имя"
-                    value={params.name}
-                    onChange={(v) => updateNodeParam(node.id, "name", v)}
+                <Controller
+                    control={control}
+                    name="name"
+                    render={({ field, fieldState }) => (
+                        <TextField
+                            label="Имя"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                            }}
+                            onBlur={field.onBlur}
+                            error={fieldState.error?.message}
+                        />
+                    )}
                 />
             )}
 
@@ -452,67 +679,127 @@ export function LocationParams({
             )}
 
             {shouldShow("general", "Координаты") && (
-                <CoordinateField
-                    label="Координаты"
-                    value={params.coordinates}
-                    onChange={(v) => updateNodeParam(node.id, "coordinates", v)}
+                <Controller
+                    control={control}
+                    name="coordinates"
+                    render={({ field }) => (
+                        <CoordinateField
+                            label="Координаты"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("coordinates", v))
+                                    updateNodeParam(node.id, "coordinates", v);
+                            }}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("general", "Радиус зоны") && (
-                <NumberField
-                    label={`Радиус зоны (${params.radiusKm ?? 0} км)`}
-                    min={0.1}
-                    max={500}
-                    step={0.5}
-                    value={params.radiusKm}
-                    onChange={(v) => updateNodeParam(node.id, "radiusKm", v)}
+                <Controller
+                    control={control}
+                    name="radiusKm"
+                    render={({ field }) => (
+                        <NumberField
+                            label={`Радиус зоны (${field.value ?? 0} км)`}
+                            min={0.1}
+                            max={500}
+                            step={0.5}
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("radiusKm", v))
+                                    updateNodeParam(node.id, "radiusKm", v);
+                            }}
+                        />
+                    )}
                 />
             )}
 
             {/* 2. ATMOSPHERE CATEGORY */}
             {shouldShow("atmosphere", "Погода") && (
-                <SelectField
-                    label="Погода"
-                    value={params.weather}
-                    onChange={(v) => updateNodeParam(node.id, "weather", v)}
-                    options={LOCATION_WEATHERS}
+                <Controller
+                    control={control}
+                    name="weather"
+                    render={({ field }) => (
+                        <SelectField
+                            label="Погода"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("weather", v))
+                                    updateNodeParam(node.id, "weather", v);
+                            }}
+                            options={LOCATION_WEATHERS}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("atmosphere", "Время суток") && (
-                <SelectField
-                    label="Время суток"
-                    value={params.timeOfDay}
-                    onChange={(v) => updateNodeParam(node.id, "timeOfDay", v)}
-                    options={LOCATION_TIMES_OF_DAY}
+                <Controller
+                    control={control}
+                    name="timeOfDay"
+                    render={({ field }) => (
+                        <SelectField
+                            label="Время суток"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("timeOfDay", v))
+                                    updateNodeParam(node.id, "timeOfDay", v);
+                            }}
+                            options={LOCATION_TIMES_OF_DAY}
+                        />
+                    )}
                 />
             )}
 
             {shouldShow("atmosphere", "Интерьер / Экстерьер") && (
-                <div className={styles.fld}>
-                    <span>Интерьер / Экстерьер</span>
-                    <div className={styles.segBtn}>
-                        {INTERIOR_EXTERIOR.map((v) => (
-                            <button
-                                key={v}
-                                className={cn(params.interiorExterior === v && styles.isOn)}
-                                onClick={() => updateNodeParam(node.id, "interiorExterior", v)}>
-                                {v}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                <Controller
+                    control={control}
+                    name="interiorExterior"
+                    render={({ field }) => (
+                        <div className={styles.fld}>
+                            <span>Интерьер / Экстерьер</span>
+                            <div className={styles.segBtn}>
+                                {INTERIOR_EXTERIOR.map((v) => (
+                                    <button
+                                        key={v}
+                                        className={cn(field.value === v && styles.isOn)}
+                                        onClick={() => {
+                                            field.onChange(v);
+                                            if (isFieldValid("interiorExterior", v))
+                                                updateNodeParam(node.id, "interiorExterior", v);
+                                        }}>
+                                        {v}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                />
             )}
 
             {shouldShow("atmosphere", "Уровень повреждения дома") && (
-                <RangeField
-                    label={`Уровень повреждения дома (${params.damageLevel ?? 0}%)`}
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={params.damageLevel ?? 0}
-                    onChange={(v) => updateNodeParam(node.id, "damageLevel", v)}
+                <Controller
+                    control={control}
+                    name="damageLevel"
+                    render={({ field }) => (
+                        <RangeField
+                            label={`Уровень повреждения дома (${field.value ?? 0}%)`}
+                            min={0}
+                            max={100}
+                            step={5}
+                            value={field.value ?? 0}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("damageLevel", v))
+                                    updateNodeParam(node.id, "damageLevel", v);
+                            }}
+                        />
+                    )}
                 />
             )}
         </>
@@ -533,6 +820,7 @@ export function MiseEnSceneParams({
         params,
         updateNodeParams,
     );
+    const { control, isFieldValid } = useNodeParamsForm(miseEnSceneParamsSchema, params);
 
     const diagrams = getMiseEnSceneDiagrams(params.peopleCount, params.cameraCount);
     const activeDiagramSrc = (params.photos || [])[params.coverPhotoIndex ?? 0];
@@ -565,10 +853,21 @@ export function MiseEnSceneParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
             />
-            <TextField
-                label="Имя"
-                value={params.name}
-                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                    <TextField
+                        label="Имя"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                        }}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                    />
+                )}
             />
             <PhotoGallerySection
                 node={node}
@@ -576,21 +875,41 @@ export function MiseEnSceneParams({
                 photos={params.photos || []}
                 setNodePhotos={setNodePhotos}
             />
-            <NumberField
-                label="Количество людей в кадре"
-                min={1}
-                max={20}
-                step={1}
-                value={params.peopleCount}
-                onChange={(v) => updateNodeParam(node.id, "peopleCount", v)}
+            <Controller
+                control={control}
+                name="peopleCount"
+                render={({ field }) => (
+                    <NumberField
+                        label="Количество людей в кадре"
+                        min={1}
+                        max={20}
+                        step={1}
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("peopleCount", v))
+                                updateNodeParam(node.id, "peopleCount", v);
+                        }}
+                    />
+                )}
             />
-            <NumberField
-                label="Количество камер"
-                min={1}
-                max={10}
-                step={1}
-                value={params.cameraCount}
-                onChange={(v) => updateNodeParam(node.id, "cameraCount", v)}
+            <Controller
+                control={control}
+                name="cameraCount"
+                render={({ field }) => (
+                    <NumberField
+                        label="Количество камер"
+                        min={1}
+                        max={10}
+                        step={1}
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("cameraCount", v))
+                                updateNodeParam(node.id, "cameraCount", v);
+                        }}
+                    />
+                )}
             />
             {diagrams.length > 0 && (
                 <div className={styles.fld}>
@@ -629,6 +948,7 @@ export function BuildingParams({
         params,
         updateNodeParams,
     );
+    const { control, isFieldValid } = useNodeParamsForm(buildingParamsSchema, params);
     return (
         <>
             <PhotoPreview
@@ -647,10 +967,21 @@ export function BuildingParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
             />
-            <TextField
-                label="Имя"
-                value={params.name}
-                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                    <TextField
+                        label="Имя"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                        }}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                    />
+                )}
             />
             <PhotoGallerySection
                 node={node}
@@ -658,17 +989,35 @@ export function BuildingParams({
                 photos={params.photos || []}
                 setNodePhotos={setNodePhotos}
             />
-            <NumberField
-                label="Этаж"
-                min={1}
-                max={10}
-                step={1}
-                value={params.floor}
-                onChange={(v) => updateNodeParam(node.id, "floor", v)}
+            <Controller
+                control={control}
+                name="floor"
+                render={({ field }) => (
+                    <NumberField
+                        label="Этаж"
+                        min={1}
+                        max={10}
+                        step={1}
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("floor", v)) updateNodeParam(node.id, "floor", v);
+                        }}
+                    />
+                )}
             />
-            <InFrameToggle
-                value={params.inFrame}
-                onChange={(v) => updateNodeParam(node.id, "inFrame", v)}
+            <Controller
+                control={control}
+                name="inFrame"
+                render={({ field }) => (
+                    <InFrameToggle
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("inFrame", v)) updateNodeParam(node.id, "inFrame", v);
+                        }}
+                    />
+                )}
             />
         </>
     );
@@ -688,6 +1037,7 @@ export function ClothingParams({
         params,
         updateNodeParams,
     );
+    const { control, isFieldValid } = useNodeParamsForm(clothingParamsSchema, params);
     return (
         <>
             <PhotoPreview
@@ -706,10 +1056,21 @@ export function ClothingParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
             />
-            <TextField
-                label="Имя"
-                value={params.name}
-                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                    <TextField
+                        label="Имя"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                        }}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                    />
+                )}
             />
             <PhotoGallerySection
                 node={node}
@@ -717,19 +1078,37 @@ export function ClothingParams({
                 photos={params.photos || []}
                 setNodePhotos={setNodePhotos}
             />
-            <SelectField
-                label="Сезон"
-                value={params.season}
-                onChange={(v) => updateNodeParam(node.id, "season", v)}
-                options={CLOTHING_SEASONS}
+            <Controller
+                control={control}
+                name="season"
+                render={({ field }) => (
+                    <SelectField
+                        label="Сезон"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("season", v)) updateNodeParam(node.id, "season", v);
+                        }}
+                        options={CLOTHING_SEASONS}
+                    />
+                )}
             />
-            <RangeField
-                label={`Износ (${params.wear}%)`}
-                min={0}
-                max={100}
-                step={1}
-                value={params.wear}
-                onChange={(v) => updateNodeParam(node.id, "wear", v)}
+            <Controller
+                control={control}
+                name="wear"
+                render={({ field }) => (
+                    <RangeField
+                        label={`Износ (${field.value}%)`}
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("wear", v)) updateNodeParam(node.id, "wear", v);
+                        }}
+                    />
+                )}
             />
         </>
     );
@@ -749,6 +1128,7 @@ export function ArtworkParams({
         params,
         updateNodeParams,
     );
+    const { control, isFieldValid } = useNodeParamsForm(artworkParamsSchema, params);
     return (
         <>
             <PhotoPreview
@@ -767,10 +1147,21 @@ export function ArtworkParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
             />
-            <TextField
-                label="Имя"
-                value={params.name}
-                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                    <TextField
+                        label="Имя"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                        }}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                    />
+                )}
             />
             <PhotoGallerySection
                 node={node}
@@ -778,17 +1169,35 @@ export function ArtworkParams({
                 photos={params.photos || []}
                 setNodePhotos={setNodePhotos}
             />
-            <RangeField
-                label={`Масштаб (${params.scale}%)`}
-                min={20}
-                max={300}
-                step={10}
-                value={params.scale}
-                onChange={(v) => updateNodeParam(node.id, "scale", v)}
+            <Controller
+                control={control}
+                name="scale"
+                render={({ field }) => (
+                    <RangeField
+                        label={`Масштаб (${field.value}%)`}
+                        min={20}
+                        max={300}
+                        step={10}
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("scale", v)) updateNodeParam(node.id, "scale", v);
+                        }}
+                    />
+                )}
             />
-            <InFrameToggle
-                value={params.inFrame}
-                onChange={(v) => updateNodeParam(node.id, "inFrame", v)}
+            <Controller
+                control={control}
+                name="inFrame"
+                render={({ field }) => (
+                    <InFrameToggle
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("inFrame", v)) updateNodeParam(node.id, "inFrame", v);
+                        }}
+                    />
+                )}
             />
         </>
     );
@@ -808,6 +1217,7 @@ export function FurnitureParams({
         params,
         updateNodeParams,
     );
+    const { control, isFieldValid } = useNodeParamsForm(furnitureParamsSchema, params);
     return (
         <>
             <PhotoPreview
@@ -826,10 +1236,21 @@ export function FurnitureParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
             />
-            <TextField
-                label="Имя"
-                value={params.name}
-                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                    <TextField
+                        label="Имя"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                        }}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                    />
+                )}
             />
             <PhotoGallerySection
                 node={node}
@@ -837,17 +1258,35 @@ export function FurnitureParams({
                 photos={params.photos || []}
                 setNodePhotos={setNodePhotos}
             />
-            <RangeField
-                label={`Плотность (${params.density})`}
-                min={1}
-                max={10}
-                step={1}
-                value={params.density}
-                onChange={(v) => updateNodeParam(node.id, "density", v)}
+            <Controller
+                control={control}
+                name="density"
+                render={({ field }) => (
+                    <RangeField
+                        label={`Плотность (${field.value})`}
+                        min={1}
+                        max={10}
+                        step={1}
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("density", v)) updateNodeParam(node.id, "density", v);
+                        }}
+                    />
+                )}
             />
-            <InFrameToggle
-                value={params.inFrame}
-                onChange={(v) => updateNodeParam(node.id, "inFrame", v)}
+            <Controller
+                control={control}
+                name="inFrame"
+                render={({ field }) => (
+                    <InFrameToggle
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("inFrame", v)) updateNodeParam(node.id, "inFrame", v);
+                        }}
+                    />
+                )}
             />
         </>
     );
@@ -867,6 +1306,7 @@ export function MusicParams({
         params,
         updateNodeParams,
     );
+    const { control, isFieldValid } = useNodeParamsForm(musicParamsSchema, params);
     return (
         <>
             <PhotoPreview
@@ -885,10 +1325,21 @@ export function MusicParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
             />
-            <TextField
-                label="Имя"
-                value={params.name}
-                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                    <TextField
+                        label="Имя"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                        }}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                    />
+                )}
             />
             <PhotoGallerySection
                 node={node}
@@ -896,11 +1347,20 @@ export function MusicParams({
                 photos={params.photos || []}
                 setNodePhotos={setNodePhotos}
             />
-            <SelectField
-                label="Настроение"
-                value={params.mood}
-                onChange={(v) => updateNodeParam(node.id, "mood", v)}
-                options={MUSIC_MOODS}
+            <Controller
+                control={control}
+                name="mood"
+                render={({ field }) => (
+                    <SelectField
+                        label="Настроение"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("mood", v)) updateNodeParam(node.id, "mood", v);
+                        }}
+                        options={MUSIC_MOODS}
+                    />
+                )}
             />
         </>
     );
@@ -920,6 +1380,7 @@ export function ScriptParams({
         params,
         updateNodeParams,
     );
+    const { control, isFieldValid } = useNodeParamsForm(scriptParamsSchema, params);
     return (
         <>
             <PhotoPreview
@@ -938,10 +1399,21 @@ export function ScriptParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
             />
-            <TextField
-                label="Имя"
-                value={params.name}
-                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                    <TextField
+                        label="Имя"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                        }}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                    />
+                )}
             />
             <PhotoGallerySection
                 node={node}
@@ -949,11 +1421,20 @@ export function ScriptParams({
                 photos={params.photos || []}
                 setNodePhotos={setNodePhotos}
             />
-            <SelectField
-                label="Тон"
-                value={params.tone}
-                onChange={(v) => updateNodeParam(node.id, "tone", v)}
-                options={SCRIPT_TONES}
+            <Controller
+                control={control}
+                name="tone"
+                render={({ field }) => (
+                    <SelectField
+                        label="Тон"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("tone", v)) updateNodeParam(node.id, "tone", v);
+                        }}
+                        options={SCRIPT_TONES}
+                    />
+                )}
             />
         </>
     );
@@ -970,6 +1451,7 @@ export function StoryboardParams({
         params,
         updateNodeParams,
     );
+    const { control, isFieldValid } = useNodeParamsForm(storyboardParamsSchema, params);
     return (
         <>
             <PresetsField
@@ -981,18 +1463,38 @@ export function StoryboardParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
             />
-            <TextField
-                label="Имя"
-                value={params.name}
-                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                    <TextField
+                        label="Имя"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                        }}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                    />
+                )}
             />
-            <NumberField
-                label="Кадров"
-                min={1}
-                max={12}
-                step={1}
-                value={params.shots}
-                onChange={(v) => updateNodeParam(node.id, "shots", v)}
+            <Controller
+                control={control}
+                name="shots"
+                render={({ field }) => (
+                    <NumberField
+                        label="Кадров"
+                        min={1}
+                        max={12}
+                        step={1}
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("shots", v)) updateNodeParam(node.id, "shots", v);
+                        }}
+                    />
+                )}
             />
         </>
     );
@@ -1012,6 +1514,7 @@ export function TransportParams({
         params,
         updateNodeParams,
     );
+    const { control, isFieldValid } = useNodeParamsForm(transportParamsSchema, params);
     return (
         <>
             <PhotoPreview
@@ -1030,10 +1533,21 @@ export function TransportParams({
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
             />
-            <TextField
-                label="Имя"
-                value={params.name}
-                onChange={(v) => updateNodeParam(node.id, "name", v)}
+            <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                    <TextField
+                        label="Имя"
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("name", v)) updateNodeParam(node.id, "name", v);
+                        }}
+                        onBlur={field.onBlur}
+                        error={fieldState.error?.message}
+                    />
+                )}
             />
             <PhotoGallerySection
                 node={node}
@@ -1041,9 +1555,18 @@ export function TransportParams({
                 photos={params.photos || []}
                 setNodePhotos={setNodePhotos}
             />
-            <InFrameToggle
-                value={params.inFrame}
-                onChange={(v) => updateNodeParam(node.id, "inFrame", v)}
+            <Controller
+                control={control}
+                name="inFrame"
+                render={({ field }) => (
+                    <InFrameToggle
+                        value={field.value}
+                        onChange={(v) => {
+                            field.onChange(v);
+                            if (isFieldValid("inFrame", v)) updateNodeParam(node.id, "inFrame", v);
+                        }}
+                    />
+                )}
             />
         </>
     );

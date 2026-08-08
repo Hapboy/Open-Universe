@@ -1,3 +1,11 @@
 .fld {
     composes: fld from "../../../styles/shared.module.css";
 }
+
+.error {
+    composes: error from "../../../styles/shared.module.css";
+}
+
+.isInvalid {
+    composes: isInvalid from "../../../styles/shared.module.css";
+}

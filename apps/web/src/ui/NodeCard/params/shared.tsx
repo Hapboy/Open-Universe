@@ -3,6 +3,7 @@ import type { Edge } from "@xyflow/react";
 import type { NodeRef, TimelineScene } from "../../../types.ts";
 import { usePresetLibraryContext } from "../../../store/contexts/PresetLibraryContext.tsx";
 import { Switch } from "../../components/Switch/Switch.tsx";
+import { ENTITY_PARAM_SCHEMAS } from "../../../schemas/entities/schemas.ts";
 import styles from "../../../styles/shared.module.css";
 
 export interface NodeParamsProps {
@@ -131,18 +132,28 @@ function buildPresetSnapshot(params: Record<string, unknown>) {
 // to resolve into a thumbnail.
 export type PresetCardItem = { value: string; label: string; photo?: string };
 
+// Short noun labels for the "Нельзя сохранить: не заполнено — ..." join list
+// in PresetsField.tsx — kept separate from each field's own inline zod
+// message (e.g. "Укажите имя"), which reads fine next to the field itself
+// but would be redundant/verbose joined into one sentence here.
+const SAVE_FIELD_LABELS: Record<string, string> = {
+    name: "имя",
+    photos: "фото",
+    age: "возраст",
+};
+
 // Fields required before a node's current params may be saved as a preset
-// (new or overwrite). `photos`/`age` are only enforced for entity types that
-// actually carry those params (e.g. Storyboard has no photos, most types
-// have no age) — presence in `params` is what gates the check.
-function missingSaveFields(params: Record<string, unknown>): string[] {
-    const missing: string[] = [];
-    if (!(params.name as string | undefined)?.trim()) missing.push("имя");
-    if ("photos" in params && ((params.photos as string[] | undefined)?.length ?? 0) === 0) {
-        missing.push("фото");
-    }
-    if ("age" in params && !params.age) missing.push("возраст");
-    return missing;
+// (new or overwrite) — now read straight off the entity type's own zod
+// schema (see EntityParams/schemas.ts) instead of a hand-rolled check, so
+// "well-formed" and "saveable as a preset" are the same rule (name/photos/
+// age are `.min()`-required there for exactly this reason).
+function missingSaveFields(entityType: string, params: Record<string, unknown>): string[] {
+    const schema = ENTITY_PARAM_SCHEMAS[entityType as keyof typeof ENTITY_PARAM_SCHEMAS];
+    if (!schema) return [];
+    const result = schema.safeParse(params);
+    if (result.success) return [];
+    const keys = new Set(result.error.issues.map((issue) => String(issue.path[0])));
+    return [...keys].map((key) => SAVE_FIELD_LABELS[key] ?? key);
 }
 
 export function usePresetDatabase(
@@ -166,7 +177,7 @@ export function usePresetDatabase(
     const currentPresetId = params.presetId as string | undefined;
     const storedSnapshot = currentPresetId ? presets[currentPresetId] : undefined;
     const snapshot = buildPresetSnapshot(params);
-    const missingSaveFieldsList = missingSaveFields(snapshot);
+    const missingSaveFieldsList = missingSaveFields(entityType, snapshot);
     const hasUnsavedChanges =
         !storedSnapshot || JSON.stringify(snapshot) !== JSON.stringify(storedSnapshot);
 

@@ -83,6 +83,23 @@
     gap: 4px;
 }
 
+/* Same layout as .hint, red instead — a field's real-time validation error
+   (RHF Controller + zod, see useNodeParamsForm.ts), not a passive hint. */
+.error {
+    margin: 6px 0 0;
+    font-size: 11px;
+    color: var(--color-text-danger);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.fld input[type="text"].isInvalid,
+.fld input[type="number"].isInvalid,
+.fld select.isInvalid {
+    border-color: var(--color-text-danger);
+}
+
 .btn {
     display: inline-flex;
     align-items: center;

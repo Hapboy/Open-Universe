@@ -16,6 +16,7 @@ export function TextField({
     className,
     autoFocus,
     type = "text",
+    error,
 }: {
     label?: string;
     value?: string;
@@ -28,12 +29,14 @@ export function TextField({
     className?: string;
     autoFocus?: boolean;
     type?: "text" | "password";
+    error?: string;
 }) {
     return (
         <div className={cn(styles.fld, className)} title={title}>
             {label && <span>{label}</span>}
             <input
                 type={type}
+                className={cn(error && styles.isInvalid)}
                 disabled={disabled}
                 placeholder={placeholder}
                 autoFocus={autoFocus}
@@ -41,6 +44,7 @@ export function TextField({
                 onChange={onChange ? (e) => onChange(e.target.value) : undefined}
                 onBlur={onBlur ? (e) => onBlur(e.target.value) : undefined}
             />
+            {error && <p className={styles.error}>{error}</p>}
         </div>
     );
 }

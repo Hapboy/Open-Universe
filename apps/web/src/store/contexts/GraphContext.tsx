@@ -21,7 +21,8 @@ import {
     type OnEdgesChange,
     type OnNodesChange,
 } from "@xyflow/react";
-import { ENTITY_NODE_TYPES, NODE_TEMPLATES } from "../../data/nodes.ts";
+import { ENTITY_NODE_TYPES, NODE_TEMPLATES, type NodeTemplate } from "../../data/nodes.ts";
+import { ENTITY_PARAM_DEFAULTS } from "../../schemas/entities/schemas.ts";
 import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
 import type { NodeType } from "@hayverse/shared";
 import type { SceneOutput } from "../../core/graph.ts";
@@ -79,11 +80,21 @@ function loadStoredSceneGraphs(): SceneGraphs {
     );
 }
 
-// Params from the node template, deep-cloned, with overrides on top.
+// Params from the node template, deep-cloned, with overrides on top. Entity
+// types (character/location/... — see EntityParams/schemas.ts) source their
+// defaults from their zod schema's own defaults object instead of
+// NODE_TEMPLATES, which no longer carries a `params` key for them.
 function templateParams(type: string, overrides: Record<string, unknown> = {}) {
+    const entityDefaults = ENTITY_PARAM_DEFAULTS[type as NodeType];
+    if (entityDefaults) {
+        return {
+            ...(JSON.parse(JSON.stringify(entityDefaults)) as Record<string, unknown>),
+            ...(overrides || {}),
+        };
+    }
     if (!type) return overrides || {};
-    const template = NODE_TEMPLATES[type as keyof typeof NODE_TEMPLATES];
-    const base = template
+    const template: NodeTemplate | undefined = NODE_TEMPLATES[type as keyof typeof NODE_TEMPLATES];
+    const base = template?.params
         ? (JSON.parse(JSON.stringify(template.params)) as Record<string, unknown>)
         : {};
     return { ...base, ...(overrides || {}) };
@@ -571,7 +582,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
                     color: template.color,
                     inputs: template.inputs.map((inp, i) => ({ ...inp, id: `${id}_in_${i}` })),
                     outputs: template.outputs.map((out, i) => ({ ...out, id: `${id}_out_${i}` })),
-                    params: JSON.parse(JSON.stringify(template.params)) as Record<string, unknown>,
+                    params: templateParams(type),
                 },
             };
 

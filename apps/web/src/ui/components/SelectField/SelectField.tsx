@@ -10,6 +10,7 @@ export function SelectField({
     options,
     disabled,
     title,
+    error,
 }: {
     label: string;
     value?: string | null;
@@ -17,11 +18,19 @@ export function SelectField({
     options: readonly SelectOption[];
     disabled?: boolean;
     title?: string;
+    error?: string;
 }) {
     return (
         <div className={styles.fld} title={title}>
             <span>{label}</span>
-            <Select value={value} onChange={onChange} options={options} disabled={disabled} />
+            <Select
+                value={value}
+                onChange={onChange}
+                options={options}
+                disabled={disabled}
+                className={error ? styles.isInvalid : undefined}
+            />
+            {error && <p className={styles.error}>{error}</p>}
         </div>
     );
 }

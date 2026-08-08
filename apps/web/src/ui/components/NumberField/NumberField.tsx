@@ -1,3 +1,4 @@
+import cn from "classnames";
 import styles from "./NumberField.module.css";
 
 export function NumberField({
@@ -7,7 +8,9 @@ export function NumberField({
     max,
     step = 1,
     onChange,
+    onBlur,
     disabled,
+    error,
 }: {
     label: string;
     value: number;
@@ -15,20 +18,25 @@ export function NumberField({
     max?: number;
     step?: number;
     onChange: (value: number) => void;
+    onBlur?: () => void;
     disabled?: boolean;
+    error?: string;
 }) {
     return (
         <div className={styles.fld}>
             <span>{label}</span>
             <input
                 type="number"
+                className={cn(error && styles.isInvalid)}
                 min={min}
                 max={max}
                 step={step}
                 value={value}
                 disabled={disabled}
                 onChange={(e) => onChange(Number(e.target.value))}
+                onBlur={onBlur}
             />
+            {error && <p className={styles.error}>{error}</p>}
         </div>
     );
 }

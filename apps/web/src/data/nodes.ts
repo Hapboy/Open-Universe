@@ -63,7 +63,10 @@ export interface NodeTemplate {
     color: string;
     inputs: Omit<Port, "id">[];
     outputs: Omit<Port, "id">[];
-    params: Record<string, unknown>;
+    // Optional: the 11 entity types (character..transport) no longer carry
+    // their defaults here — see EntityParams/schemas.ts's per-type
+    // `*Defaults` objects, sourced by GraphContext.tsx's templateParams.
+    params?: Record<string, unknown>;
 }
 
 export const NODE_TEMPLATES = {
@@ -278,32 +281,6 @@ export const NODE_TEMPLATES = {
             { name: "Description", type: PORT_TYPES.TEXT },
             { name: "JSON", type: PORT_TYPES.TEXT },
         ],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            inFrame: true,
-            age: 0,
-            emotion: "",
-            stylist: "",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            lifetimeFrom: "",
-            lifetimeTo: "",
-            birthPlace: { lat: null, lon: null },
-            deathPlace: { lat: null, lon: null },
-            currentPosition: { lat: null, lon: null },
-            arcWho: "",
-            arcWants: "",
-            arcHow: "",
-            arcStake: "",
-            haircut: "",
-            tattoos: "",
-            accessories: "",
-            clothing: "",
-            color: "",
-            additionalDescription: "",
-        },
     },
 
     location: {
@@ -316,20 +293,6 @@ export const NODE_TEMPLATES = {
             { name: "Description", type: PORT_TYPES.TEXT },
             { name: "JSON", type: PORT_TYPES.TEXT },
         ],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            weather: "",
-            timeOfDay: "",
-            interiorExterior: "",
-            damageLevel: 0,
-            coordinates: { lat: null, lon: null },
-            radiusKm: 0,
-            additionalDescription: "",
-        },
     },
 
     mise_en_scene: {
@@ -342,16 +305,6 @@ export const NODE_TEMPLATES = {
             { name: "Description", type: PORT_TYPES.TEXT },
             { name: "JSON", type: PORT_TYPES.TEXT },
         ],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            peopleCount: 0,
-            cameraCount: 0,
-            additionalDescription: "",
-        },
     },
 
     building: {
@@ -361,15 +314,6 @@ export const NODE_TEMPLATES = {
         color: "var(--color-node-character)",
         inputs: [],
         outputs: [],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            inFrame: true,
-            floor: 0,
-        },
     },
 
     clothing: {
@@ -379,15 +323,6 @@ export const NODE_TEMPLATES = {
         color: "var(--color-node-clothing)",
         inputs: [],
         outputs: [],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            season: "",
-            wear: 0,
-        },
     },
 
     artwork: {
@@ -397,15 +332,6 @@ export const NODE_TEMPLATES = {
         color: "var(--color-node-artwork)",
         inputs: [],
         outputs: [],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            inFrame: true,
-            scale: 20, // matches the RangeField's own min in EntityParams.tsx
-        },
     },
 
     furniture: {
@@ -415,15 +341,6 @@ export const NODE_TEMPLATES = {
         color: "var(--color-node-util)",
         inputs: [],
         outputs: [],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            inFrame: true,
-            density: 1, // matches the RangeField's own min in EntityParams.tsx
-        },
     },
 
     music: {
@@ -433,14 +350,6 @@ export const NODE_TEMPLATES = {
         color: "var(--color-node-scene)",
         inputs: [],
         outputs: [{ name: "Audio Out", type: PORT_TYPES.AUDIO }],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            mood: "",
-        },
     },
 
     script: {
@@ -450,14 +359,6 @@ export const NODE_TEMPLATES = {
         color: "var(--color-node-util)",
         inputs: [],
         outputs: [{ name: "Text Out", type: PORT_TYPES.TEXT }],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            tone: "",
-        },
     },
 
     storyboard: {
@@ -467,12 +368,6 @@ export const NODE_TEMPLATES = {
         color: "var(--color-node-higgsfield)",
         inputs: [],
         outputs: [{ name: "Image Out", type: PORT_TYPES.IMAGE }],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            shots: 0,
-        },
     },
 
     transport: {
@@ -482,14 +377,6 @@ export const NODE_TEMPLATES = {
         color: "var(--color-node-character)",
         inputs: [],
         outputs: [],
-        params: {
-            presetId: "",
-            selectedItem: "",
-            name: "",
-            photos: [] as string[],
-            coverPhotoIndex: 0,
-            inFrame: false,
-        },
     },
 } satisfies Record<NodeType, NodeTemplate>;
 

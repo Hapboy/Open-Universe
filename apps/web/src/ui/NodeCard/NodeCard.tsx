@@ -14,6 +14,7 @@ import { CircleLoader } from "../components/CircleLoader/CircleLoader.tsx";
 import { TextAreaField } from "../components/TextAreaField/TextAreaField.tsx";
 import { MediaSlider } from "./MediaSlider/MediaSlider.tsx";
 import { HistoryNav } from "./HistoryNav/HistoryNav.tsx";
+import { filledEntityParams } from "../../schemas/entities/schemas.ts";
 import { NodeParamsPanel } from "./params/NodeParamsPanel.tsx";
 import { NodeMenu } from "./NodeMenu/NodeMenu.tsx";
 import styles from "./NodeCard.module.css";
@@ -161,7 +162,12 @@ export const NodeCard = memo(function NodeCard({
         ? undefined
         : RICH_ENTITY_NODE_TYPES.has(data.nodeType)
           ? JSON.stringify(
-                { id, nodeType: data.nodeType, label: data.label, ...data.params },
+                {
+                    id,
+                    nodeType: data.nodeType,
+                    label: data.label,
+                    ...filledEntityParams(data.nodeType, data.params),
+                },
                 null,
                 2,
             )

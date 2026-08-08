@@ -3,7 +3,9 @@ import cn from "classnames";
 import type { GlobeInstance } from "globe.gl";
 import * as THREE from "three";
 import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import type { CharacterNodeParams, LocationNodeParams, WGS84Coordinates } from "../../types.ts";
+import type { WGS84Coordinates } from "../../types.ts";
+import type { CharacterNodeParams } from "../../schemas/entities/character.schema.ts";
+import type { LocationNodeParams } from "../../schemas/entities/location.schema.ts";
 import styles from "./WorldMap.module.css";
 
 const EARTH_RADIUS_KM = 6371;

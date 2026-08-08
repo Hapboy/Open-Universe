@@ -24,10 +24,33 @@ import type { z } from "zod";
 //   store write — left alone rather than clobbered.
 //
 // This hook only mirrors — callers still call updateNodeParam/updateNodeParams
-// themselves to actually commit an edit to the store. The form's generic type
-// is left to be inferred from `zodResolver(schema)` (rather than explicitly
-// annotated as z.infer<Schema>) since zod v4's input/output generics don't
-// otherwise unify cleanly with an independently-computed z.infer alias.
+// themselves to actually commit an edit to the store, guarded by the
+// `isFieldValid` check this hook also returns (see below) so an invalid
+// in-progress edit is never persisted. The form's generic type is left to be
+// inferred from `zodResolver(schema)` (rather than explicitly annotated as
+// z.infer<Schema>) since zod v4's input/output generics don't otherwise
+// unify cleanly with an independently-computed z.infer alias.
+//
+// `mode: "onChange"` is what actually makes `resolver` do anything — without
+// it RHF only validates on `handleSubmit`, which nothing here ever calls
+// (every field commits straight to the store on blur/change, there's no
+// submit button anywhere this hook is used), so `formState.errors` would
+// otherwise stay empty forever regardless of the schema. `"onChange"` (not
+// `"onBlur"`) so the error/`isFieldValid` gate below reacts on every
+// keystroke, not just once the field loses focus — an invalid value should
+// never reach the store even momentarily, not just get flagged after the
+// fact.
+//
+// `defaultValues` uses `safeParse`, not `parse`: entity schemas (see
+// schemas/entities/*.schema.ts) are intentionally strict (real `.min()`
+// requirements, e.g. name/photos), so a fresh/legacy node sitting at its
+// blank default (`name: ""`) would make `schema.parse` throw and crash the
+// component on mount. Falling back to the raw store params when parsing
+// fails is safe here because they've already been through GraphContext.tsx's
+// templateParams/withTemplateDefaults, which guarantees every key is present
+// and correctly typed — the only way `safeParse` can fail at this point is a
+// business-rule violation (e.g. blank name), not a shape/type problem, and
+// RHF doesn't need `defaultValues` to be schema-valid, only present.
 export function useNodeParamsForm<Schema extends z.ZodObject<z.ZodRawShape>>(
     schema: Schema,
     storeParams: Record<string, unknown>,
@@ -35,9 +58,11 @@ export function useNodeParamsForm<Schema extends z.ZodObject<z.ZodRawShape>>(
     type Values = z.infer<Schema>;
     const keys = Object.keys(schema.shape) as (keyof Values & string)[];
 
+    const parsed = schema.safeParse(storeParams);
     const form = useForm({
         resolver: zodResolver(schema),
-        defaultValues: schema.parse(storeParams),
+        mode: "onChange",
+        defaultValues: parsed.success ? parsed.data : (storeParams as Values),
     });
 
     useEffect(() => {
@@ -64,5 +89,25 @@ export function useNodeParamsForm<Schema extends z.ZodObject<z.ZodRawShape>>(
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [storeParams]);
 
-    return form;
+    // A synchronous, single-field check independent of RHF's own (React-
+    // state-driven, one-tick-delayed) validation — callers use this right at
+    // the point they'd otherwise unconditionally call updateNodeParam, so an
+    // invalid value never reaches the store even for a single render, not
+    // just gets flagged after the fact. Most fields have no real constraint
+    // (plain z.string()/z.number()), so this is a no-op true for them —
+    // only fields with an actual `.min()`/`.max()`/enum requirement (name,
+    // photos, character age, ...) ever block a commit.
+    const isFieldValid = (key: keyof Values & string, value: unknown): boolean => {
+        // `schema.shape[key]`'s type doesn't keep its full `.safeParse` API
+        // surface through this generic, dynamic-key access (same zod v4
+        // generics friction noted above for PathValue) — narrow it back with
+        // a minimal structural cast rather than chasing zod v4's exact
+        // exported type-alias name for "any concrete schema".
+        const fieldSchema = schema.shape[key] as unknown as {
+            safeParse: (v: unknown) => { success: boolean };
+        };
+        return fieldSchema.safeParse(value).success;
+    };
+
+    return { ...form, isFieldValid };
 }

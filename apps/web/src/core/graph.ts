@@ -6,6 +6,7 @@ import { geminiApiClient, higgsfieldApiClient } from "./api/index.ts";
 import { AI_MODEL_NODE_TYPES, ENTITY_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "../data/nodes.ts";
 import { resolveMediaRef } from "./mediaRef.ts";
 import { photoPortId } from "./characterPorts.ts";
+import { filledEntityParams } from "../schemas/entities/schemas.ts";
 
 type ShowToast = (msg: string) => void;
 type Resolved = Record<string, unknown>;
@@ -207,7 +208,12 @@ async function computeRichEntityExtraOutputs(
     const jsonPort = d.outputs.find((p) => p.name === "JSON");
     if (jsonPort) {
         resolved[jsonPort.id] = JSON.stringify(
-            { id: node.id, nodeType: d.nodeType, label: d.label, ...d.params },
+            {
+                id: node.id,
+                nodeType: d.nodeType,
+                label: d.label,
+                ...filledEntityParams(d.nodeType, d.params),
+            },
             null,
             2,
         );

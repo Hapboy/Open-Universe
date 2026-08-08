@@ -18,3 +18,15 @@
 .fld textarea:focus {
     border-color: var(--color-border-active);
 }
+
+.error {
+    composes: error from "../../../styles/shared.module.css";
+}
+
+/* Not composed from shared.module.css's .isInvalid (that one only targets
+   input[type=text/number]/select) — textarea needs its own compound
+   selector, at least as specific as the base `.fld textarea` border rule
+   above so it actually overrides it. */
+.fld textarea.isInvalid {
+    border-color: var(--color-text-danger);
+}
