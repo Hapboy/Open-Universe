@@ -1,6 +1,6 @@
 import cn from "classnames";
-import { CircleLoader } from "../CircleLoader/CircleLoader.tsx";
-import styles from "./IconButton.module.css";
+import { CircleLoader } from "@/ui/components/CircleLoader/CircleLoader.tsx";
+import styles from "@/ui/components/IconButton/IconButton.module.css";
 
 // Collapses the disabled/title plumbing + "swap the icon for CircleLoader
 // while busy" pattern that used to be hand-rolled at every icon-only button

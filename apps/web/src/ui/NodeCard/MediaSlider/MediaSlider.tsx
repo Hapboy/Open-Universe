@@ -1,6 +1,6 @@
 import { useState } from "react";
 import cn from "classnames";
-import styles from "./MediaSlider.module.css";
+import styles from "@/ui/NodeCard/MediaSlider/MediaSlider.module.css";
 
 export interface MediaItem {
     url: string | undefined;

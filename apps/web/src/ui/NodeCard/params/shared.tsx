@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import type { Edge } from "@xyflow/react";
-import type { NodeRef, TimelineScene } from "../../../types.ts";
-import { usePresetLibraryContext } from "../../../store/contexts/PresetLibraryContext.tsx";
-import { Switch } from "../../components/Switch/Switch.tsx";
-import { ENTITY_PARAM_SCHEMAS } from "../../../schemas/entities/schemas.ts";
-import styles from "../../../styles/shared.module.css";
+import type { NodeRef, TimelineScene } from "@/types.ts";
+import { usePresetLibraryContext } from "@/store/contexts/PresetLibraryContext.tsx";
+import { Switch } from "@/ui/components/Switch/Switch.tsx";
+import { ENTITY_PARAM_SCHEMAS } from "@/schemas/entities/schemas.ts";
+import styles from "@/styles/shared.module.css";
 
 export interface NodeParamsProps {
     node: NodeRef;

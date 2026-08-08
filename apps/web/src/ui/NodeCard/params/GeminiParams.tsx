@@ -1,31 +1,25 @@
 import { useEffect, useState } from "react";
 import { Controller } from "react-hook-form";
-import { edgeInput } from "../../../core/graph.ts";
-import type { NodeParams } from "../../../types.ts";
-import { geminiApiClient } from "../../../core/api/index.ts";
-import type { GeminiModel } from "../../../core/api/gemini/dto.ts";
-import { WirableTextField, type EEP } from "./shared.tsx";
-import { useNodeParamsForm } from "./useNodeParamsForm.ts";
-import { geminiTextParamsSchema } from "../../../schemas/gemini/geminiText.schema.ts";
-import { geminiVisionParamsSchema } from "../../../schemas/gemini/geminiVision.schema.ts";
-import {
-    geminiImagenParamsSchema,
-    IMAGEN_MODELS,
-} from "../../../schemas/gemini/geminiImagen.schema.ts";
-import { geminiVeoParamsSchema, VEO_MODELS } from "../../../schemas/gemini/geminiVeo.schema.ts";
+import { edgeInput } from "@/core/graph.ts";
+import type { NodeParams } from "@/types.ts";
+import { geminiApiClient } from "@/core/api/index.ts";
+import type { GeminiModel } from "@/core/api/gemini/dto.ts";
+import { WirableTextField, type EEP } from "@/ui/NodeCard/params/shared.tsx";
+import { useNodeParamsForm } from "@/ui/NodeCard/params/useNodeParamsForm.ts";
+import { geminiTextParamsSchema } from "@/schemas/gemini/geminiText.schema.ts";
+import { geminiVisionParamsSchema } from "@/schemas/gemini/geminiVision.schema.ts";
+import { geminiImagenParamsSchema, IMAGEN_MODELS } from "@/schemas/gemini/geminiImagen.schema.ts";
+import { geminiVeoParamsSchema, VEO_MODELS } from "@/schemas/gemini/geminiVeo.schema.ts";
 import {
     geminiNanoBananaParamsSchema,
     NANO_BANANA_MODELS,
-} from "../../../schemas/gemini/geminiNanoBanana.schema.ts";
-import {
-    geminiLyriaParamsSchema,
-    LYRIA_MODELS,
-} from "../../../schemas/gemini/geminiLyria.schema.ts";
-import { SelectField } from "../../components/SelectField/SelectField.tsx";
-import { Select } from "../../components/Select/Select.tsx";
-import { TextField } from "../../components/TextField/TextField.tsx";
-import { Switch } from "../../components/Switch/Switch.tsx";
-import sharedStyles from "../../../styles/shared.module.css";
+} from "@/schemas/gemini/geminiNanoBanana.schema.ts";
+import { geminiLyriaParamsSchema, LYRIA_MODELS } from "@/schemas/gemini/geminiLyria.schema.ts";
+import { SelectField } from "@/ui/components/SelectField/SelectField.tsx";
+import { Select } from "@/ui/components/Select/Select.tsx";
+import { TextField } from "@/ui/components/TextField/TextField.tsx";
+import { Switch } from "@/ui/components/Switch/Switch.tsx";
+import sharedStyles from "@/styles/shared.module.css";
 
 // Shared by every Gemini component with a wirable prompt/query-style field:
 // when that pin is wired, prefer the currently-selected history entry's

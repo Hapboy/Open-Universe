@@ -1,6 +1,6 @@
 import cn from "classnames";
-import { TextField } from "../TextField/TextField.tsx";
-import styles from "./SearchField.module.css";
+import { TextField } from "@/ui/components/TextField/TextField.tsx";
+import styles from "@/ui/components/SearchField/SearchField.module.css";
 
 export function SearchField({
     value,

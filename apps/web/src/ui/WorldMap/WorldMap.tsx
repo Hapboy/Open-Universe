@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import cn from "classnames";
 import type { GlobeInstance } from "globe.gl";
 import * as THREE from "three";
-import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import type { WGS84Coordinates } from "../../types.ts";
-import type { CharacterNodeParams } from "../../schemas/entities/character.schema.ts";
-import type { LocationNodeParams } from "../../schemas/entities/location.schema.ts";
-import styles from "./WorldMap.module.css";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import type { WGS84Coordinates } from "@/types.ts";
+import type { CharacterNodeParams } from "@/schemas/entities/character.schema.ts";
+import type { LocationNodeParams } from "@/schemas/entities/location.schema.ts";
+import styles from "@/ui/WorldMap/WorldMap.module.css";
 
 const EARTH_RADIUS_KM = 6371;
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;

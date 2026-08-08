@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import cn from "classnames";
-import styles from "./RangeField.module.css";
+import styles from "@/ui/components/RangeField/RangeField.module.css";
 
 // Always controlled (unlike the old inline `defaultValue` sliders) so the
 // displayed position stays correct when the value changes from outside the

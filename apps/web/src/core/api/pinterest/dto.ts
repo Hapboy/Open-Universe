@@ -1,4 +1,4 @@
-import type { BoardItem, PinItem } from "../../../types.ts";
+import type { BoardItem, PinItem } from "@/types.ts";
 
 export interface FetchPinsRequest {
     boardId: string;

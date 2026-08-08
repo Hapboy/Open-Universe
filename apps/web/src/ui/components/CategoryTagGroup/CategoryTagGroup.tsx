@@ -1,5 +1,5 @@
 import cn from "classnames";
-import styles from "./CategoryTagGroup.module.css";
+import styles from "@/ui/components/CategoryTagGroup/CategoryTagGroup.module.css";
 
 export interface CategoryTagOption {
     key: string;

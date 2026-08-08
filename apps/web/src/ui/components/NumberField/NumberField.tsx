@@ -1,5 +1,5 @@
 import cn from "classnames";
-import styles from "./NumberField.module.css";
+import styles from "@/ui/components/NumberField/NumberField.module.css";
 
 export function NumberField({
     label,

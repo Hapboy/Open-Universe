@@ -1,11 +1,11 @@
-import { ToastProvider } from "./contexts/ToastContext.tsx";
-import { PresetLibraryProvider } from "./contexts/PresetLibraryContext.tsx";
-import { UserProvider } from "./contexts/UserContext.tsx";
-import { AuthProvider } from "./contexts/AuthContext.tsx";
-import { ModalProvider } from "./contexts/ModalContext.tsx";
-import { GraphProvider } from "./contexts/GraphContext.tsx";
-import { NarrativeProvider } from "./contexts/NarrativeContext.tsx";
-import { PlayerProvider } from "./contexts/PlayerContext.tsx";
+import { ToastProvider } from "@/store/contexts/ToastContext.tsx";
+import { PresetLibraryProvider } from "@/store/contexts/PresetLibraryContext.tsx";
+import { UserProvider } from "@/store/contexts/UserContext.tsx";
+import { AuthProvider } from "@/store/contexts/AuthContext.tsx";
+import { ModalProvider } from "@/store/contexts/ModalContext.tsx";
+import { GraphProvider } from "@/store/contexts/GraphContext.tsx";
+import { NarrativeProvider } from "@/store/contexts/NarrativeContext.tsx";
+import { PlayerProvider } from "@/store/contexts/PlayerContext.tsx";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
     return (

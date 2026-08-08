@@ -21,19 +21,19 @@ import {
     type OnEdgesChange,
     type OnNodesChange,
 } from "@xyflow/react";
-import { ENTITY_NODE_TYPES, NODE_TEMPLATES, type NodeTemplate } from "../../data/nodes.ts";
-import { ENTITY_PARAM_DEFAULTS } from "../../schemas/entities/schemas.ts";
-import { GEMINI_PARAM_DEFAULTS } from "../../schemas/gemini/schemas.ts";
-import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
+import { ENTITY_NODE_TYPES, NODE_TEMPLATES, type NodeTemplate } from "@/data/nodes.ts";
+import { ENTITY_PARAM_DEFAULTS } from "@/schemas/entities/schemas.ts";
+import { GEMINI_PARAM_DEFAULTS } from "@/schemas/gemini/schemas.ts";
+import type { NodeParams, NodeRef, Port, TimelineScene } from "@/types.ts";
 import type { NodeType } from "@hayverse/shared";
-import type { SceneOutput } from "../../core/graph.ts";
-import { useToastContext } from "./ToastContext.tsx";
-import { useUserContext } from "./UserContext.tsx";
-import { useNarrativeContext } from "./NarrativeContext.tsx";
-import { readJSON, readRaw, removeKey, writeRaw } from "../../core/browserStorage.ts";
-import { buildPhotoPorts } from "../../core/characterPorts.ts";
-import { hayverseApiClient } from "../../core/api/hayverse/client.ts";
-import { useGraphExecution } from "./graphExecution.ts";
+import type { SceneOutput } from "@/core/graph.ts";
+import { useToastContext } from "@/store/contexts/ToastContext.tsx";
+import { useUserContext } from "@/store/contexts/UserContext.tsx";
+import { useNarrativeContext } from "@/store/contexts/NarrativeContext.tsx";
+import { readJSON, readRaw, removeKey, writeRaw } from "@/core/browserStorage.ts";
+import { buildPhotoPorts } from "@/core/characterPorts.ts";
+import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
+import { useGraphExecution } from "@/store/contexts/graphExecution.ts";
 
 const SCENE_GRAPHS_KEY = "hv_scene_graphs";
 const ACTIVE_SCENE_KEY = "hv_active_scene_id";

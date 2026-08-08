@@ -1,16 +1,22 @@
 import type { z } from "zod";
 import type { NodeType } from "@hayverse/shared";
-import { characterParamsSchema, characterDefaults } from "./character.schema.ts";
-import { locationParamsSchema, locationDefaults } from "./location.schema.ts";
-import { miseEnSceneParamsSchema, miseEnSceneDefaults } from "./miseEnScene.schema.ts";
-import { buildingParamsSchema, buildingDefaults } from "./building.schema.ts";
-import { clothingParamsSchema, clothingDefaults } from "./clothing.schema.ts";
-import { artworkParamsSchema, artworkDefaults } from "./artwork.schema.ts";
-import { furnitureParamsSchema, furnitureDefaults } from "./furniture.schema.ts";
-import { musicParamsSchema, musicDefaults } from "./music.schema.ts";
-import { scriptParamsSchema, scriptDefaults } from "./script.schema.ts";
-import { storyboardParamsSchema, storyboardDefaults } from "./storyboard.schema.ts";
-import { transportParamsSchema, transportDefaults } from "./transport.schema.ts";
+import { characterParamsSchema, characterDefaults } from "@/schemas/entities/character.schema.ts";
+import { locationParamsSchema, locationDefaults } from "@/schemas/entities/location.schema.ts";
+import {
+    miseEnSceneParamsSchema,
+    miseEnSceneDefaults,
+} from "@/schemas/entities/miseEnScene.schema.ts";
+import { buildingParamsSchema, buildingDefaults } from "@/schemas/entities/building.schema.ts";
+import { clothingParamsSchema, clothingDefaults } from "@/schemas/entities/clothing.schema.ts";
+import { artworkParamsSchema, artworkDefaults } from "@/schemas/entities/artwork.schema.ts";
+import { furnitureParamsSchema, furnitureDefaults } from "@/schemas/entities/furniture.schema.ts";
+import { musicParamsSchema, musicDefaults } from "@/schemas/entities/music.schema.ts";
+import { scriptParamsSchema, scriptDefaults } from "@/schemas/entities/script.schema.ts";
+import {
+    storyboardParamsSchema,
+    storyboardDefaults,
+} from "@/schemas/entities/storyboard.schema.ts";
+import { transportParamsSchema, transportDefaults } from "@/schemas/entities/transport.schema.ts";
 
 // Single lookup covering all 11 entity node types — used by
 // GraphContext.tsx's templateParams/createNode (defaults) and by

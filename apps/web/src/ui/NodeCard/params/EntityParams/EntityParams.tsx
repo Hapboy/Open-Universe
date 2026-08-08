@@ -1,79 +1,70 @@
 import { useState } from "react";
 import cn from "classnames";
 import { Controller, useController } from "react-hook-form";
-import { InFrameToggle, usePresetDatabase } from "../shared.tsx";
-import type { EP } from "../shared.tsx";
-import { useNodeParamsForm } from "../useNodeParamsForm.ts";
+import { InFrameToggle, usePresetDatabase } from "@/ui/NodeCard/params/shared.tsx";
+import type { EP } from "@/ui/NodeCard/params/shared.tsx";
+import { useNodeParamsForm } from "@/ui/NodeCard/params/useNodeParamsForm.ts";
 import {
     characterParamsSchema,
     type CharacterNodeParams,
-} from "../../../../schemas/entities/character.schema.ts";
+} from "@/schemas/entities/character.schema.ts";
 import {
     locationParamsSchema,
     type LocationNodeParams,
-} from "../../../../schemas/entities/location.schema.ts";
+} from "@/schemas/entities/location.schema.ts";
 import {
     miseEnSceneParamsSchema,
     type MiseEnSceneNodeParams,
-} from "../../../../schemas/entities/miseEnScene.schema.ts";
+} from "@/schemas/entities/miseEnScene.schema.ts";
 import {
     buildingParamsSchema,
     type BuildingNodeParams,
-} from "../../../../schemas/entities/building.schema.ts";
+} from "@/schemas/entities/building.schema.ts";
 import {
     clothingParamsSchema,
     type ClothingNodeParams,
-} from "../../../../schemas/entities/clothing.schema.ts";
-import {
-    artworkParamsSchema,
-    type ArtworkNodeParams,
-} from "../../../../schemas/entities/artwork.schema.ts";
+} from "@/schemas/entities/clothing.schema.ts";
+import { artworkParamsSchema, type ArtworkNodeParams } from "@/schemas/entities/artwork.schema.ts";
 import {
     furnitureParamsSchema,
     type FurnitureNodeParams,
-} from "../../../../schemas/entities/furniture.schema.ts";
-import {
-    musicParamsSchema,
-    type MusicNodeParams,
-} from "../../../../schemas/entities/music.schema.ts";
-import {
-    scriptParamsSchema,
-    type ScriptNodeParams,
-} from "../../../../schemas/entities/script.schema.ts";
+} from "@/schemas/entities/furniture.schema.ts";
+import { musicParamsSchema, type MusicNodeParams } from "@/schemas/entities/music.schema.ts";
+import { scriptParamsSchema, type ScriptNodeParams } from "@/schemas/entities/script.schema.ts";
 import {
     storyboardParamsSchema,
     type StoryboardNodeParams,
-} from "../../../../schemas/entities/storyboard.schema.ts";
+} from "@/schemas/entities/storyboard.schema.ts";
 import {
     transportParamsSchema,
     type TransportNodeParams,
-} from "../../../../schemas/entities/transport.schema.ts";
-import { PresetsField } from "../PresetsField/PresetsField.tsx";
+} from "@/schemas/entities/transport.schema.ts";
+import { PresetsField } from "@/ui/NodeCard/params/PresetsField/PresetsField.tsx";
 import {
     PhotoGallerySection,
     PhotoPreview,
-} from "../../../components/PhotoGallerySection/PhotoGallerySection.tsx";
-import { useImageGeneration } from "../../../hooks/useImageGeneration.ts";
-import { resolveMediaRef } from "../../../../core/mediaRef.ts";
-import { geminiApiClient } from "../../../../core/api/index.ts";
-import { SelectField } from "../../../components/SelectField/SelectField.tsx";
-import { RangeField } from "../../../components/RangeField/RangeField.tsx";
-import { NumberField } from "../../../components/NumberField/NumberField.tsx";
-import { CoordinateField } from "../../../components/CoordinateField/CoordinateField.tsx";
-import { DateRangeField } from "../../../components/DateRangeField/DateRangeField.tsx";
-import { TextField } from "../../../components/TextField/TextField.tsx";
-import { TextAreaField } from "../../../components/TextAreaField/TextAreaField.tsx";
-import { CategoryTagGroup } from "../../../components/CategoryTagGroup/CategoryTagGroup.tsx";
-import { SearchField } from "../../../components/SearchField/SearchField.tsx";
-import { DropdownWithPreviews } from "../../../components/DropdownWithPreviews/DropdownWithPreviews.tsx";
-import { ColorField } from "../../../components/ColorField/ColorField.tsx";
+} from "@/ui/components/PhotoGallerySection/PhotoGallerySection.tsx";
+import { useImageGeneration } from "@/ui/hooks/useImageGeneration.ts";
+import { resolveMediaRef } from "@/core/mediaRef.ts";
+import { geminiApiClient } from "@/core/api/index.ts";
+import { SelectField } from "@/ui/components/SelectField/SelectField.tsx";
+import { RangeField } from "@/ui/components/RangeField/RangeField.tsx";
+import { NumberField } from "@/ui/components/NumberField/NumberField.tsx";
+import { CoordinateField } from "@/ui/components/CoordinateField/CoordinateField.tsx";
+import { DateRangeField } from "@/ui/components/DateRangeField/DateRangeField.tsx";
+import { TextField } from "@/ui/components/TextField/TextField.tsx";
+import { TextAreaField } from "@/ui/components/TextAreaField/TextAreaField.tsx";
+import { CategoryTagGroup } from "@/ui/components/CategoryTagGroup/CategoryTagGroup.tsx";
+import { SearchField } from "@/ui/components/SearchField/SearchField.tsx";
+import { DropdownWithPreviews } from "@/ui/components/DropdownWithPreviews/DropdownWithPreviews.tsx";
+import { ColorField } from "@/ui/components/ColorField/ColorField.tsx";
 import {
     haircutOptions,
     tattooOptions,
     accessoryOptions,
     clothingOptions,
-} from "./CharacterStyling.tsx";
-import { getMiseEnSceneDiagrams } from "../../../../data/miseEnSceneDiagrams.ts";
+} from "@/ui/NodeCard/params/EntityParams/CharacterStyling.tsx";
+import { getMiseEnSceneDiagrams } from "@/data/miseEnSceneDiagrams.ts";
 import {
     CHARACTER_EMOTIONS,
     CHARACTER_STYLISTS,
@@ -84,7 +75,7 @@ import {
     MUSIC_MOODS,
     SCRIPT_TONES,
 } from "@hayverse/shared";
-import styles from "./EntityParams.module.css";
+import styles from "@/ui/NodeCard/params/EntityParams/EntityParams.module.css";
 
 const CHARACTER_CATEGORIES = [
     { key: "general", label: "Общие" },

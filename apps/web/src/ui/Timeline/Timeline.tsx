@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from "react";
 import cn from "classnames";
-import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import { usePlayerContext } from "../../store/contexts/PlayerContext.tsx";
-import { formatTime } from "./timelineUtils.ts";
-import { SceneTrackView } from "./SceneTrackView/SceneTrackView.tsx";
-import { SynapsesCanvas } from "./SynapsesCanvas/SynapsesCanvas.tsx";
-import { SceneArcSettings } from "./SceneArcSettings/SceneArcSettings.tsx";
-import { DurationEditor } from "./DurationEditor/DurationEditor.tsx";
-import styles from "./Timeline.module.css";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import { usePlayerContext } from "@/store/contexts/PlayerContext.tsx";
+import { formatTime } from "@/ui/Timeline/timelineUtils.ts";
+import { SceneTrackView } from "@/ui/Timeline/SceneTrackView/SceneTrackView.tsx";
+import { SynapsesCanvas } from "@/ui/Timeline/SynapsesCanvas/SynapsesCanvas.tsx";
+import { SceneArcSettings } from "@/ui/Timeline/SceneArcSettings/SceneArcSettings.tsx";
+import { DurationEditor } from "@/ui/Timeline/DurationEditor/DurationEditor.tsx";
+import styles from "@/ui/Timeline/Timeline.module.css";
 
 export function Timeline() {
     const {

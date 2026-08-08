@@ -1,4 +1,4 @@
-import type { PinItem } from "../types.ts";
+import type { PinItem } from "@/types.ts";
 
 export const HIGGSFIELD_PRESETS: string[] = [
     "Орбита (360°)",

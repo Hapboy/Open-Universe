@@ -1,8 +1,8 @@
 import cn from "classnames";
-import type { NodeRef, PinItem, BoardItem } from "../../../../types.ts";
-import type { NodeParamsProps } from "../shared.tsx";
-import { SelectField } from "../../../components/SelectField/SelectField.tsx";
-import styles from "./PinterestParams.module.css";
+import type { NodeRef, PinItem, BoardItem } from "@/types.ts";
+import type { NodeParamsProps } from "@/ui/NodeCard/params/shared.tsx";
+import { SelectField } from "@/ui/components/SelectField/SelectField.tsx";
+import styles from "@/ui/NodeCard/params/PinterestParams/PinterestParams.module.css";
 
 export function PinterestParams({
     node,

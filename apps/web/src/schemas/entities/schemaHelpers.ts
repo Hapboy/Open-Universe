@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { WGS84Coordinates } from "../../types.ts";
+import type { WGS84Coordinates } from "@/types.ts";
 
 // A select-style field backed by one of @hayverse/shared's `as const` enum
 // arrays (e.g. LOCATION_WEATHERS). "" is a first-class member here, not a

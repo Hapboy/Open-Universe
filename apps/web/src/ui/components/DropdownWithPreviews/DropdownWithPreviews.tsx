@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import cn from "classnames";
-import styles from "./DropdownWithPreviews.module.css";
+import styles from "@/ui/components/DropdownWithPreviews/DropdownWithPreviews.module.css";
 
 // Dropdown with an SVG preview thumbnail per option — for cases where a plain
 // label isn't enough to distinguish options (e.g. haircut/tattoo/clothing

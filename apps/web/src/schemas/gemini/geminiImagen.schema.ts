@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { GeminiModel } from "../../core/api/gemini/dto.ts";
+import type { GeminiModel } from "@/core/api/gemini/dto.ts";
 
 // Single source for both the schema's model enum/default and
 // GeminiParams.tsx's model <select> options (modelOptions(IMAGEN_MODELS)) —

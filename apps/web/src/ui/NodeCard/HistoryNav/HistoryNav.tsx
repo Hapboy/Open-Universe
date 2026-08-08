@@ -1,6 +1,6 @@
 import cn from "classnames";
-import sharedStyles from "../../../styles/shared.module.css";
-import styles from "./HistoryNav.module.css";
+import sharedStyles from "@/styles/shared.module.css";
+import styles from "@/ui/NodeCard/HistoryNav/HistoryNav.module.css";
 
 // A plain-flow prev/count/next + delete toolbar, for generation-history
 // kinds MediaSlider's overlay chrome (fixed-aspect box, absolutely

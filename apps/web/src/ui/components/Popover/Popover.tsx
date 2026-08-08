@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import cn from "classnames";
-import styles from "./Popover.module.css";
+import styles from "@/ui/components/Popover/Popover.module.css";
 
 export function Popover({
     trigger,

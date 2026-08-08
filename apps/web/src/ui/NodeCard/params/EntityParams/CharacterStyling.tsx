@@ -1,4 +1,4 @@
-import type { DropdownOption } from "../../../components/DropdownWithPreviews/DropdownWithPreviews.tsx";
+import type { DropdownOption } from "@/ui/components/DropdownWithPreviews/DropdownWithPreviews.tsx";
 import type { Haircut, Tattoo, Accessory, CharacterClothingItem } from "@hayverse/shared";
 
 // Character-only option data for DropdownWithPreviews — no Tabler icon

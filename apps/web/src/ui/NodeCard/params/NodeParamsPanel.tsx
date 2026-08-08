@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
-import { useUserContext } from "../../../store/contexts/UserContext.tsx";
-import type { NodeParamsProps } from "./shared.tsx";
-import { PinterestParams } from "./PinterestParams/PinterestParams.tsx";
-import { SoulParams, CameraParams, SpeakParams } from "./HiggsFieldParams.tsx";
+import { useUserContext } from "@/store/contexts/UserContext.tsx";
+import type { NodeParamsProps } from "@/ui/NodeCard/params/shared.tsx";
+import { PinterestParams } from "@/ui/NodeCard/params/PinterestParams/PinterestParams.tsx";
+import { SoulParams, CameraParams, SpeakParams } from "@/ui/NodeCard/params/HiggsFieldParams.tsx";
 import {
     GeminiTextParams,
     GeminiVisionParams,
@@ -10,7 +10,7 @@ import {
     GeminiVeoParams,
     GeminiNanoBananaParams,
     GeminiLyriaParams,
-} from "./GeminiParams.tsx";
+} from "@/ui/NodeCard/params/GeminiParams.tsx";
 import {
     CharacterParams,
     LocationParams,
@@ -23,19 +23,19 @@ import {
     ScriptParams,
     StoryboardParams,
     TransportParams,
-} from "./EntityParams/EntityParams.tsx";
-import { OutputParams, TextParams } from "./UtilParams.tsx";
-import type { CharacterNodeParams } from "../../../schemas/entities/character.schema.ts";
-import type { LocationNodeParams } from "../../../schemas/entities/location.schema.ts";
-import type { MiseEnSceneNodeParams } from "../../../schemas/entities/miseEnScene.schema.ts";
-import type { BuildingNodeParams } from "../../../schemas/entities/building.schema.ts";
-import type { ClothingNodeParams } from "../../../schemas/entities/clothing.schema.ts";
-import type { ArtworkNodeParams } from "../../../schemas/entities/artwork.schema.ts";
-import type { FurnitureNodeParams } from "../../../schemas/entities/furniture.schema.ts";
-import type { MusicNodeParams } from "../../../schemas/entities/music.schema.ts";
-import type { ScriptNodeParams } from "../../../schemas/entities/script.schema.ts";
-import type { StoryboardNodeParams } from "../../../schemas/entities/storyboard.schema.ts";
-import type { TransportNodeParams } from "../../../schemas/entities/transport.schema.ts";
+} from "@/ui/NodeCard/params/EntityParams/EntityParams.tsx";
+import { OutputParams, TextParams } from "@/ui/NodeCard/params/UtilParams.tsx";
+import type { CharacterNodeParams } from "@/schemas/entities/character.schema.ts";
+import type { LocationNodeParams } from "@/schemas/entities/location.schema.ts";
+import type { MiseEnSceneNodeParams } from "@/schemas/entities/miseEnScene.schema.ts";
+import type { BuildingNodeParams } from "@/schemas/entities/building.schema.ts";
+import type { ClothingNodeParams } from "@/schemas/entities/clothing.schema.ts";
+import type { ArtworkNodeParams } from "@/schemas/entities/artwork.schema.ts";
+import type { FurnitureNodeParams } from "@/schemas/entities/furniture.schema.ts";
+import type { MusicNodeParams } from "@/schemas/entities/music.schema.ts";
+import type { ScriptNodeParams } from "@/schemas/entities/script.schema.ts";
+import type { StoryboardNodeParams } from "@/schemas/entities/storyboard.schema.ts";
+import type { TransportNodeParams } from "@/schemas/entities/transport.schema.ts";
 
 export function NodeParamsPanel({
     node,

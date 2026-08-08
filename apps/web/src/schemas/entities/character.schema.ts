@@ -15,7 +15,7 @@ import {
     coordinatesSchema,
     coordinatesDefault,
     optionalEnum,
-} from "./schemaHelpers.ts";
+} from "@/schemas/entities/schemaHelpers.ts";
 
 // Single source of truth for this node type's param shape, validation, and
 // defaults — replaces the former NODE_TEMPLATES.character.params (data/

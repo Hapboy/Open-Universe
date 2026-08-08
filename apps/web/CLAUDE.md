@@ -52,6 +52,9 @@ app/
 
 ## Ключевые паттерны кода
 
+- Импорты — всегда через `@/*` (→ `src/*`, `tsconfig.json`), не относительные
+  `../`/`./`; включая колокейтед `Name.module.css` (`@/ui/.../Name.module.css`,
+  не `./Name.module.css`). Кодовая база переведена на это целиком 2026-08-08.
 - Параметры ноды — `params: Record<string, unknown>` (гибко, без смены типов).
 - Обновление: `updateNodeParam(nodeId, key, value)` из `GraphContext`.
 - Стили — CSS Modules: каждый компонент импортирует свой `Name.module.css`;

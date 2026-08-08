@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import { putGeneratedBlob } from "../../core/mediaRef.ts";
-import { useToastContext } from "../../store/contexts/ToastContext.tsx";
+import { putGeneratedBlob } from "@/core/mediaRef.ts";
+import { useToastContext } from "@/store/contexts/ToastContext.tsx";
 
 type ShowToast = (msg: string) => void;
 

@@ -1,5 +1,5 @@
 import cn from "classnames";
-import styles from "./CircleLoader.module.css";
+import styles from "@/ui/components/CircleLoader/CircleLoader.module.css";
 
 export function CircleLoader({ className }: { className?: string }) {
     return (

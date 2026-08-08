@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { formatTime } from "../timelineUtils.ts";
-import styles from "./DurationEditor.module.css";
+import { formatTime } from "@/ui/Timeline/timelineUtils.ts";
+import styles from "@/ui/Timeline/DurationEditor/DurationEditor.module.css";
 
 // Click-to-edit, mirroring PresetsField's inline "add new" interaction
 // pattern (apps/web/src/ui/NodeCard/params/PresetsField/PresetsField.tsx):

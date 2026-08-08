@@ -9,8 +9,8 @@
 // local blob store (pre-backend media uploads). That path was cut - any
 // node still holding one of those refs just shows a broken image now.
 
-import { hayverseApiClient } from "./api/hayverse/client.ts";
-import { getR2PublicUrl } from "./api/env.ts";
+import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
+import { getR2PublicUrl } from "@/core/api/env.ts";
 
 const REF_PREFIX = "s3:";
 

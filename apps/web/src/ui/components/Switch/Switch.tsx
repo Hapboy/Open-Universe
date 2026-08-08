@@ -1,5 +1,5 @@
 import cn from "classnames";
-import styles from "./Switch.module.css";
+import styles from "@/ui/components/Switch/Switch.module.css";
 
 export function Switch({
     label,

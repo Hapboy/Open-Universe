@@ -1,4 +1,4 @@
-import type { Port } from "../types.ts";
+import type { Port } from "@/types.ts";
 
 // Photo output pins are identified by the photo's own blob ref (already a
 // unique id), not by array position — so deleting one photo only drops that

@@ -1,14 +1,23 @@
 import type { z } from "zod";
 import type { NodeType } from "@hayverse/shared";
-import { geminiTextParamsSchema, geminiTextDefaults } from "./geminiText.schema.ts";
-import { geminiVisionParamsSchema, geminiVisionDefaults } from "./geminiVision.schema.ts";
-import { geminiImagenParamsSchema, geminiImagenDefaults } from "./geminiImagen.schema.ts";
-import { geminiVeoParamsSchema, geminiVeoDefaults } from "./geminiVeo.schema.ts";
+import { geminiTextParamsSchema, geminiTextDefaults } from "@/schemas/gemini/geminiText.schema.ts";
+import {
+    geminiVisionParamsSchema,
+    geminiVisionDefaults,
+} from "@/schemas/gemini/geminiVision.schema.ts";
+import {
+    geminiImagenParamsSchema,
+    geminiImagenDefaults,
+} from "@/schemas/gemini/geminiImagen.schema.ts";
+import { geminiVeoParamsSchema, geminiVeoDefaults } from "@/schemas/gemini/geminiVeo.schema.ts";
 import {
     geminiNanoBananaParamsSchema,
     geminiNanoBananaDefaults,
-} from "./geminiNanoBanana.schema.ts";
-import { geminiLyriaParamsSchema, geminiLyriaDefaults } from "./geminiLyria.schema.ts";
+} from "@/schemas/gemini/geminiNanoBanana.schema.ts";
+import {
+    geminiLyriaParamsSchema,
+    geminiLyriaDefaults,
+} from "@/schemas/gemini/geminiLyria.schema.ts";
 
 // Mirrors schemas/entities/schemas.ts's ENTITY_PARAM_SCHEMAS/DEFAULTS — single
 // lookup covering all 6 Gemini node types, used by GraphContext.tsx's

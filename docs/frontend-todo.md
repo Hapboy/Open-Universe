@@ -7,13 +7,19 @@ lose track of things between sessions.
 
 ## Conventions
 
-- **`@/*` → `apps/web/src/*` path alias exists in `tsconfig.json` but is
-  unused everywhere (`grep -r 'from "@/'` → zero hits).** Surfaced
-  2026-08-08 by the deep `../../../../schemas/entities/...`-style relative
-  imports the entity-schema work produced. Decided to leave the codebase
-  as-is (all-relative) for now rather than mix import styles mid-session —
-  revisit as its own deliberate pass (either just the newest deep-relative
-  files, or a full codebase-wide switch) rather than doing it piecemeal.
+- **Done: codebase-wide switch to the `@/*` alias (2026-08-08).** Every
+  relative import/re-export/dynamic `import()` under `apps/web/src` and
+  `apps/web/app` — 342 occurrences across 93 files, including same-directory
+  `./Foo.module.css`-style ones, not just the deep `../../../../` chains —
+  now goes through `@/*` (→ `apps/web/src/*`, already declared in
+  `tsconfig.json`, previously unused). Done via a one-off codemod (resolves
+  each relative specifier against the importing file's own directory,
+  rewrites it relative to `src/`; left untouched if it ever resolved outside
+  `src/` — none did). Verified: `npm run typecheck`, `npm run lint`, and
+  `npm run build` (Turbopack) all clean, confirming Next.js's automatic
+  `tsconfig.json`-`paths` resolution actually applies at the bundler level
+  and not just for `tsc` — plus a live dev-server reload with no console
+  errors.
 
 ## Documentation
 
@@ -102,24 +108,30 @@ tls, maxRetriesPerRequest }` options object instead of a live client, so
 
 ## Components
 
-- **Shared `Button`/`IconButton` component — no such component exists today.**
-  Every callsite hand-writes a native `<button className={styles.btn}>` /
-  `.pri` / `.iconBtn}>`, e.g. `PhotoGallerySection.tsx`, `UtilParams.tsx`,
-  `PresetsField.tsx`, `Modals.tsx`, `Topbar.tsx`, the new
-  `MediaLibrary.tsx`'s `MediaPickerButton` — dozens of sites across
-  `NodeCard/params/*` alone. Visual consistency is already handled a
-  different way (`.btn`/`.pri`/`.iconBtn` defined once in
-  `styles/shared.module.css`, every component's CSS Module does
-  `composes: iconBtn from ".../shared.module.css"`), so this isn't a
-  styling-drift problem — it's repeated _behavioral_ JSX: `disabled`/`title`
-  plumbing, and the "swap the icon for `CircleLoader` while busy" pattern
-  duplicated at every icon-button-with-an-async-action (e.g.
-  `PhotoGallerySection`'s generate button, `MediaPickerButton`). A thin
-  wrapper (`<Button loading={...} icon="ti-wand">`) would collapse that
-  duplication without touching the existing CSS Module/`composes` setup.
-  Standalone cleanup, not blocking on anything — worth doing whenever, low
-  risk since it's additive (existing raw `<button>` usages don't need to
-  migrate all at once).
+- **Done: shared `Button`/`IconButton` component (2026-08-08).** New
+  `ui/components/Button/` and `ui/components/IconButton/` — thin wrappers
+  around the existing `.btn`/`.pri`/`.iconBtn` classes from
+  `shared.module.css` (no new CSS, `Button.module.css`/`IconButton.module.css`
+  just `composes` from it), collapsing the disabled/title plumbing and the
+  "swap the icon for `CircleLoader` while busy" pattern that used to be
+  hand-rolled at every callsite. Migrated the six files that already
+  composed `iconBtn`/`btn`/`pri` from shared — `PhotoGallerySection.tsx`,
+  `MediaLibrary.tsx`'s `MediaPickerButton`, `PresetsField.tsx`'s save
+  button, `UtilParams.tsx` (cover upload + "add text field"), `Modals.tsx`
+  (signup/login/Pinterest connect-disconnect) — and deleted the now-orphaned
+  `composes` blocks from each of those CSS modules. Pinterest
+  connect/disconnect in `Modals.tsx` picked up a real (not just cosmetic)
+  change along the way: `busy` now drives `loading` (spinner), not just
+  `disabled` — previously there was no visual feedback at all while the
+  request was in flight.
+    - **Deliberately not migrated**: `Topbar.tsx` (own separate hand-rolled
+      `.iconBtn`/`.tb` styles, not composed from `shared.module.css` — a
+      different visual family, not styling drift this component fixes),
+      `NodeCard.tsx`'s circular run/wide-toggle buttons (distinct shape,
+      not part of the `iconBtn` lineage), `PresetsField.tsx`'s preset-
+      selector trigger (`.trigger` composes `btn` but adds its own
+      flex/justify overrides `Button` doesn't model). Additive only —
+      no forced migration, per the original scoping above.
 
 ## Node Editor
 
@@ -307,6 +319,23 @@ EntityParams/`. Both non-UI files now import from `schemas/` instead.
       to poke `numberOfImages`/`outputCompressionQuality` on) or
       history-scrubbing specifically — worth a follow-up look next time one
       of those node types is on the canvas.
+    - **Follow-up done (2026-08-08)**: exercised the invalid-value-rejection
+      path live (added an Imagen node, switched to JPEG, typed `150` into
+      `outputCompressionQuality`) — confirmed `isFieldValid` correctly
+      blocked the store commit (reloading the page showed the persisted
+      default `75`, not `150`). That surfaced a real gap though: nothing
+      showed the rejection in the UI — the field just silently kept
+      whatever was typed with no red border/message, unlike
+      `EntityParams.tsx`'s fields. Fixed by wiring `fieldState.error` into
+      the same `TextField`'s `error` prop (identical pattern to
+      `EntityParams.tsx`) and giving the schema's `.min(0)`/`.max(100)`
+      Russian messages (`geminiImagen.schema.ts`) instead of raw zod
+      English defaults. Deliberately **not** wired onto `model`/
+      `aspectRatio`/`numberOfImages`/etc. — those are all `<select>`-backed
+      enums that can't produce an invalid value through the UI in the first
+      place (same reason `EntityParams.tsx` doesn't wire error onto its own
+      enum dropdowns), so `outputCompressionQuality` is the only Gemini
+      field where this was reachable at all.
 - **Done: react-hook-form + zod for `gemini_imagen`/`gemini_nanobanana`
   params (2026-08-07).** New `useNodeParamsForm.ts` (RHF form mirroring a
   node's store params, keyed by a zod schema — `geminiImagen.schema.ts`,

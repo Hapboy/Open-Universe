@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeType } from "@hayverse/shared";
-import type { NodeParams, NodeRef } from "../../types.ts";
-import type { SceneOutput } from "../../core/graph.ts";
-import type { SceneNarrativeSettings } from "./NarrativeContext.tsx";
-import { putGeneratedBlob } from "../../core/mediaRef.ts";
-import { edgeInput } from "../../core/graph.ts";
+import type { NodeParams, NodeRef } from "@/types.ts";
+import type { SceneOutput } from "@/core/graph.ts";
+import type { SceneNarrativeSettings } from "@/store/contexts/NarrativeContext.tsx";
+import { putGeneratedBlob } from "@/core/mediaRef.ts";
+import { edgeInput } from "@/core/graph.ts";
 
 type ShowToast = (msg: string) => void;
 
@@ -173,7 +173,7 @@ export function useGraphExecution({
     );
 
     const executeGraph = useCallback(async () => {
-        const { runGraph } = await import("../../core/graph.ts");
+        const { runGraph } = await import("@/core/graph.ts");
         const sceneId = activeSceneId;
         resolvedRef.current = {};
         const output = await runGraph(nodes, edges, resolvedRef.current, showToast, {
@@ -194,7 +194,7 @@ export function useGraphExecution({
 
     const runNode = useCallback(
         async (nodeId: string) => {
-            const { runNodeCascade } = await import("../../core/graph.ts");
+            const { runNodeCascade } = await import("@/core/graph.ts");
             const sceneId = activeSceneId;
             const output = await runNodeCascade(
                 nodeId,
@@ -238,7 +238,7 @@ export function useGraphExecution({
         if (autoResolveTimer.current) clearTimeout(autoResolveTimer.current);
         autoResolveTimer.current = setTimeout(() => {
             void (async () => {
-                const { runGraph } = await import("../../core/graph.ts");
+                const { runGraph } = await import("@/core/graph.ts");
                 const sceneId = activeSceneId;
                 const output = await runGraph(nodes, edges, resolvedRef.current, showToast, {
                     autoMode: true,
@@ -263,7 +263,7 @@ export function useGraphExecution({
 
     const loadPinterestBoards = useCallback(
         async (node: NodeRef) => {
-            const { pinterestApiClient } = await import("../../core/api/index.ts");
+            const { pinterestApiClient } = await import("@/core/api/index.ts");
             const boards = await pinterestApiClient.fetchBoards(showToast, pinterestConnected);
             setNodes((ns) =>
                 ns.map((n) => {
@@ -282,7 +282,7 @@ export function useGraphExecution({
 
     const loadPinterestPins = useCallback(
         async (node: NodeRef, boardId: string) => {
-            const { pinterestApiClient } = await import("../../core/api/index.ts");
+            const { pinterestApiClient } = await import("@/core/api/index.ts");
             const pins = await pinterestApiClient.fetchPins({ boardId });
             const selectedPin = pins.length
                 ? (pins[0] as { image: string }).image

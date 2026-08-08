@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useGraphContext } from "./GraphContext.tsx";
-import { findSceneAtTime } from "../../ui/Timeline/timelineUtils.ts";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import { findSceneAtTime } from "@/ui/Timeline/timelineUtils.ts";
 
 const SPEED_LIST = [0.5, 1.0, 1.5, 2.0];
 

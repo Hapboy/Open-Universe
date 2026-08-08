@@ -6,7 +6,7 @@ import {
     entityPhotoShape,
     entityPhotoDefaults,
     optionalEnum,
-} from "./schemaHelpers.ts";
+} from "@/schemas/entities/schemaHelpers.ts";
 
 // See character.schema.ts for the pattern this follows.
 export const musicParamsSchema = z.object({

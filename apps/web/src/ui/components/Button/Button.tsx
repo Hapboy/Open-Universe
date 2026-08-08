@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import cn from "classnames";
-import { CircleLoader } from "../CircleLoader/CircleLoader.tsx";
-import styles from "./Button.module.css";
+import { CircleLoader } from "@/ui/components/CircleLoader/CircleLoader.tsx";
+import styles from "@/ui/components/Button/Button.module.css";
 
 // Full-width text button — see IconButton for the icon-only counterpart.
 // `icon` is a Tabler Icons suffix, e.g. "plus" for `ti ti-plus`.

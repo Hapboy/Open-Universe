@@ -1,6 +1,6 @@
 "use client";
 
-import { App } from "../src/App.tsx";
+import { App } from "@/App.tsx";
 
 export default function Page() {
     return <App />;

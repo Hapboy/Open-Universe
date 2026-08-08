@@ -1,23 +1,23 @@
 import { memo, useEffect, useState } from "react";
 import cn from "classnames";
 import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/react";
-import type { NodeParams, PortType } from "../../types.ts";
+import type { NodeParams, PortType } from "@/types.ts";
 import {
     AI_MODEL_NODE_TYPES,
     HISTORY_NODE_TYPES,
     NODE_TEMPLATES,
     RICH_ENTITY_NODE_TYPES,
-} from "../../data/nodes.ts";
-import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import { useResolvedMediaUrls } from "../../core/mediaRef.ts";
-import { CircleLoader } from "../components/CircleLoader/CircleLoader.tsx";
-import { TextAreaField } from "../components/TextAreaField/TextAreaField.tsx";
-import { MediaSlider } from "./MediaSlider/MediaSlider.tsx";
-import { HistoryNav } from "./HistoryNav/HistoryNav.tsx";
-import { filledEntityParams } from "../../schemas/entities/schemas.ts";
-import { NodeParamsPanel } from "./params/NodeParamsPanel.tsx";
-import { NodeMenu } from "./NodeMenu/NodeMenu.tsx";
-import styles from "./NodeCard.module.css";
+} from "@/data/nodes.ts";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import { useResolvedMediaUrls } from "@/core/mediaRef.ts";
+import { CircleLoader } from "@/ui/components/CircleLoader/CircleLoader.tsx";
+import { TextAreaField } from "@/ui/components/TextAreaField/TextAreaField.tsx";
+import { MediaSlider } from "@/ui/NodeCard/MediaSlider/MediaSlider.tsx";
+import { HistoryNav } from "@/ui/NodeCard/HistoryNav/HistoryNav.tsx";
+import { filledEntityParams } from "@/schemas/entities/schemas.ts";
+import { NodeParamsPanel } from "@/ui/NodeCard/params/NodeParamsPanel.tsx";
+import { NodeMenu } from "@/ui/NodeCard/NodeMenu/NodeMenu.tsx";
+import styles from "@/ui/NodeCard/NodeCard.module.css";
 
 function portColor(type: PortType): string {
     if (type === "Image") return "var(--color-node-scene)";

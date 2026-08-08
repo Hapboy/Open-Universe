@@ -1,4 +1,4 @@
-import type { TimelineScene } from "../../types.ts";
+import type { TimelineScene } from "@/types.ts";
 
 export function formatTime(timeInSecs: number): string {
     const m = Math.floor(timeInSecs / 60);

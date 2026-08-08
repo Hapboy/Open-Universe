@@ -1,5 +1,5 @@
-import { Select, type SelectOption } from "../Select/Select.tsx";
-import styles from "./SelectField.module.css";
+import { Select, type SelectOption } from "@/ui/components/Select/Select.tsx";
+import styles from "@/ui/components/SelectField/SelectField.module.css";
 
 export type { SelectOption };
 

@@ -1,5 +1,5 @@
 import cn from "classnames";
-import styles from "./TextAreaField.module.css";
+import styles from "@/ui/components/TextAreaField/TextAreaField.module.css";
 
 // Mirrors TextField's controlled/deferred-commit shape for multi-line text.
 export function TextAreaField({

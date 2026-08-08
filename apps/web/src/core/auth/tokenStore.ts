@@ -2,7 +2,7 @@
 // hayverseApiClient's getAuthToken callback (see core/api/hayverse/client.ts)
 // is called at request time, not render time, and needs to read the current
 // value synchronously regardless of what's mounted.
-import { readRaw, removeKey, writeRaw } from "../browserStorage.ts";
+import { readRaw, removeKey, writeRaw } from "@/core/browserStorage.ts";
 
 const TOKEN_KEY = "hv_jwt";
 

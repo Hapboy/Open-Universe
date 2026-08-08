@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import { usePlayerContext } from "../../store/contexts/PlayerContext.tsx";
-import { useResolvedMediaUrl } from "../../core/mediaRef.ts";
-import styles from "./MontageMonitor.module.css";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import { usePlayerContext } from "@/store/contexts/PlayerContext.tsx";
+import { useResolvedMediaUrl } from "@/core/mediaRef.ts";
+import styles from "@/ui/MontageMonitor/MontageMonitor.module.css";
 
 export function MontageMonitor() {
     const { scenes, sceneOutputs, showMontageMonitor, setShowMontageMonitor } = useGraphContext();

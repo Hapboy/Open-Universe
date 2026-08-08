@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import cn from "classnames";
-import { useResolvedMediaUrls } from "../../../../core/mediaRef.ts";
-import { IconButton } from "../../../components/IconButton/IconButton.tsx";
-import type { PresetCardItem } from "../shared.tsx";
-import styles from "./PresetsField.module.css";
+import { useResolvedMediaUrls } from "@/core/mediaRef.ts";
+import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
+import type { PresetCardItem } from "@/ui/NodeCard/params/shared.tsx";
+import styles from "@/ui/NodeCard/params/PresetsField/PresetsField.module.css";
 
 // Replaces the old inline `<select>`-style dropdown: a trigger button opens
 // a modal showing every saved preset for this entity type as a photo+name

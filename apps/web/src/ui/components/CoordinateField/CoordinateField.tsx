@@ -1,4 +1,4 @@
-import styles from "./CoordinateField.module.css";
+import styles from "@/ui/components/CoordinateField/CoordinateField.module.css";
 
 export interface Coordinates {
     lat: number | null;

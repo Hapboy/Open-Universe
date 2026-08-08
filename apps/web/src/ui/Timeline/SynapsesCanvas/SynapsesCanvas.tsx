@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import cn from "classnames";
-import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
-import type { TimelineScene } from "../../../types.ts";
-import { deriveCharacterPresence, groupScenesByStart } from "./synapseData.ts";
-import styles from "../Timeline.module.css";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import type { TimelineScene } from "@/types.ts";
+import {
+    deriveCharacterPresence,
+    groupScenesByStart,
+} from "@/ui/Timeline/SynapsesCanvas/synapseData.ts";
+import styles from "@/ui/Timeline/Timeline.module.css";
 
 const PADDING_LEFT = 60;
 const PADDING_RIGHT = 60;

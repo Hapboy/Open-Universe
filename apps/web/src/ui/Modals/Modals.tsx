@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import cn from "classnames";
 import { ApiError } from "@hayverse/api-client";
-import { useUserContext } from "../../store/contexts/UserContext.tsx";
-import { useToastContext } from "../../store/contexts/ToastContext.tsx";
-import { useModalContext } from "../../store/contexts/ModalContext.tsx";
-import { hayverseApiClient } from "../../core/api/hayverse/client.ts";
-import { TextField } from "../components/TextField/TextField.tsx";
-import { Button } from "../components/Button/Button.tsx";
-import styles from "./Modals.module.css";
+import { useUserContext } from "@/store/contexts/UserContext.tsx";
+import { useToastContext } from "@/store/contexts/ToastContext.tsx";
+import { useModalContext } from "@/store/contexts/ModalContext.tsx";
+import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
+import { TextField } from "@/ui/components/TextField/TextField.tsx";
+import { Button } from "@/ui/components/Button/Button.tsx";
+import styles from "@/ui/Modals/Modals.module.css";
 
 function sideColor(side: string): string {
     if (side === "urvakan") return "var(--color-node-higgsfield)";

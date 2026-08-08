@@ -1,24 +1,24 @@
 import { useRef, useState } from "react";
 import cn from "classnames";
-import { WirableTextField, type EEP, type NodeParamsProps } from "./shared.tsx";
-import type { SceneNarrativeSettings } from "../../../store/contexts/NarrativeContext.tsx";
-import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
-import { useNarrativeContext } from "../../../store/contexts/NarrativeContext.tsx";
-import { edgeInput } from "../../../core/graph.ts";
-import { SelectField } from "../../components/SelectField/SelectField.tsx";
-import { Select } from "../../components/Select/Select.tsx";
-import { TextField } from "../../components/TextField/TextField.tsx";
-import { NumberField } from "../../components/NumberField/NumberField.tsx";
-import { RangeField } from "../../components/RangeField/RangeField.tsx";
-import { CategoryTagGroup } from "../../components/CategoryTagGroup/CategoryTagGroup.tsx";
-import { SearchField } from "../../components/SearchField/SearchField.tsx";
-import { EmotionalCurvePreview } from "../../components/EmotionalCurvePreview/EmotionalCurvePreview.tsx";
-import { StoryPhaseBeats } from "../../components/StoryPhaseBeats/StoryPhaseBeats.tsx";
-import { putBlob, useResolvedMediaUrl } from "../../../core/mediaRef.ts";
-import { MediaPickerButton } from "../../components/MediaLibrary/MediaLibrary.tsx";
-import { Button } from "../../components/Button/Button.tsx";
-import { IconButton } from "../../components/IconButton/IconButton.tsx";
-import styles from "./UtilParams.module.css";
+import { WirableTextField, type EEP, type NodeParamsProps } from "@/ui/NodeCard/params/shared.tsx";
+import type { SceneNarrativeSettings } from "@/store/contexts/NarrativeContext.tsx";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import { useNarrativeContext } from "@/store/contexts/NarrativeContext.tsx";
+import { edgeInput } from "@/core/graph.ts";
+import { SelectField } from "@/ui/components/SelectField/SelectField.tsx";
+import { Select } from "@/ui/components/Select/Select.tsx";
+import { TextField } from "@/ui/components/TextField/TextField.tsx";
+import { NumberField } from "@/ui/components/NumberField/NumberField.tsx";
+import { RangeField } from "@/ui/components/RangeField/RangeField.tsx";
+import { CategoryTagGroup } from "@/ui/components/CategoryTagGroup/CategoryTagGroup.tsx";
+import { SearchField } from "@/ui/components/SearchField/SearchField.tsx";
+import { EmotionalCurvePreview } from "@/ui/components/EmotionalCurvePreview/EmotionalCurvePreview.tsx";
+import { StoryPhaseBeats } from "@/ui/components/StoryPhaseBeats/StoryPhaseBeats.tsx";
+import { putBlob, useResolvedMediaUrl } from "@/core/mediaRef.ts";
+import { MediaPickerButton } from "@/ui/components/MediaLibrary/MediaLibrary.tsx";
+import { Button } from "@/ui/components/Button/Button.tsx";
+import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
+import styles from "@/ui/NodeCard/params/UtilParams.module.css";
 
 const OUTPUT_SCENE_CATEGORIES = [
     { key: "general", label: "Общие" },

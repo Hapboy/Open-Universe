@@ -7,10 +7,14 @@
 // fixtures - still shown whenever the real data isn't available, not just
 // when Pinterest was never wired up at all.
 import { ApiError } from "@hayverse/api-client";
-import { DEFAULT_PINS } from "../../../data/presets.ts";
-import type { BoardItem, PinItem } from "../../../types.ts";
-import { hayverseApiClient } from "../hayverse/client.ts";
-import type { FetchPinsRequest, FetchBoardsResponse, FetchPinsResponse } from "./dto.ts";
+import { DEFAULT_PINS } from "@/data/presets.ts";
+import type { BoardItem, PinItem } from "@/types.ts";
+import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
+import type {
+    FetchPinsRequest,
+    FetchBoardsResponse,
+    FetchPinsResponse,
+} from "@/core/api/pinterest/dto.ts";
 
 type ShowToast = (msg: string) => void;
 

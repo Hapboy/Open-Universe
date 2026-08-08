@@ -11,8 +11,8 @@
 // synchronously anymore — every method just attempts the real call and
 // catches ApiError to tell "not configured" apart from any other failure.
 import { ApiError } from "@hayverse/api-client";
-import { hayverseApiClient } from "../hayverse/client.ts";
-import { pollJob } from "../pollJob.ts";
+import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
+import { pollJob } from "@/core/api/pollJob.ts";
 import type {
     ListModelsResponse,
     GeminiModel,
@@ -28,7 +28,7 @@ import type {
     GenerateImageFromRefsResponse,
     GenerateAudioRequest,
     GenerateAudioResponse,
-} from "./dto.ts";
+} from "@/core/api/gemini/dto.ts";
 
 type ShowToast = (msg: string) => void;
 

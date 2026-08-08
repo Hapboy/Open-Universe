@@ -1,15 +1,15 @@
 import { useMemo, useRef } from "react";
 import cn from "classnames";
-import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
-import type { TimelineScene } from "../../../types.ts";
-import { useResolvedMediaUrls } from "../../../core/mediaRef.ts";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import type { TimelineScene } from "@/types.ts";
+import { useResolvedMediaUrls } from "@/core/mediaRef.ts";
 import {
     computeRulerTicks,
     findSceneAtTime,
     formatTime,
     getScenePosition,
-} from "../timelineUtils.ts";
-import styles from "../Timeline.module.css";
+} from "@/ui/Timeline/timelineUtils.ts";
+import styles from "@/ui/Timeline/Timeline.module.css";
 
 interface SceneTrackViewProps {
     scenes: TimelineScene[];

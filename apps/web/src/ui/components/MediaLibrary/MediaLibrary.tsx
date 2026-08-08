@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import cn from "classnames";
 import type { MediaAsset } from "@hayverse/api-client";
-import { hayverseApiClient } from "../../../core/api/hayverse/client.ts";
-import { useUserContext } from "../../../store/contexts/UserContext.tsx";
-import { CircleLoader } from "../CircleLoader/CircleLoader.tsx";
-import { IconButton } from "../IconButton/IconButton.tsx";
-import styles from "./MediaLibrary.module.css";
+import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
+import { useUserContext } from "@/store/contexts/UserContext.tsx";
+import { CircleLoader } from "@/ui/components/CircleLoader/CircleLoader.tsx";
+import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
+import styles from "@/ui/components/MediaLibrary/MediaLibrary.module.css";
 
 const LIBRARY_TABS = [
     { key: "uploaded", label: "Загруженные" },

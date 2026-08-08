@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { HiggsfieldService } from "../../../../src/core/services/higgsfield.ts";
+import { HiggsfieldService } from "@/core/services/higgsfield.ts";
 
 // Higgsfield's own job-status poll runs in here, up to 5 minutes — matters for
 // serverless deploys with shorter default function timeouts; a no-op locally.

@@ -6,9 +6,13 @@
 // values, just gated on isProviderConfigured() instead of a client-visible key
 // check, and still used as the fallback on a failed fetch, not just when
 // unconfigured. runSpeak is untouched — it was already 100% mock, no key, no route.
-import { DEFAULT_PINS } from "../../../data/presets.ts";
-import type { RunSoulRequest, RunMotionRequest, RunSpeakRequest } from "./dto.ts";
-import { isProviderConfigured } from "../env.ts";
+import { DEFAULT_PINS } from "@/data/presets.ts";
+import type {
+    RunSoulRequest,
+    RunMotionRequest,
+    RunSpeakRequest,
+} from "@/core/api/higgsfield/dto.ts";
+import { isProviderConfigured } from "@/core/api/env.ts";
 
 type ShowToast = (msg: string) => void;
 

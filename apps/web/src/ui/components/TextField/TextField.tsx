@@ -1,5 +1,5 @@
 import cn from "classnames";
-import styles from "./TextField.module.css";
+import styles from "@/ui/components/TextField/TextField.module.css";
 
 // Supports both interaction styles used across the app: fully controlled
 // (`value` + `onChange`, fires every keystroke) and deferred-commit

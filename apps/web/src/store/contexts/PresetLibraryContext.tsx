@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { Preset } from "@hayverse/api-client";
-import type { EntityPresets } from "../../types.ts";
-import { useToastContext } from "./ToastContext.tsx";
-import { removeKey } from "../../core/browserStorage.ts";
-import { hayverseApiClient } from "../../core/api/hayverse/client.ts";
+import type { EntityPresets } from "@/types.ts";
+import { useToastContext } from "@/store/contexts/ToastContext.tsx";
+import { removeKey } from "@/core/browserStorage.ts";
+import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
 
 // Pre-cutover leftover key: every entity type's preset library now lives
 // exclusively in the backend (PresetsModule) — this is only referenced once

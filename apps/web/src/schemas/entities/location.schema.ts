@@ -8,7 +8,7 @@ import {
     coordinatesSchema,
     coordinatesDefault,
     optionalEnum,
-} from "./schemaHelpers.ts";
+} from "@/schemas/entities/schemaHelpers.ts";
 
 // See character.schema.ts for the pattern this follows.
 export const locationParamsSchema = z.object({

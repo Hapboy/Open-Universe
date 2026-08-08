@@ -1,6 +1,6 @@
 import cn from "classnames";
-import { useToastContext } from "../../store/contexts/ToastContext.tsx";
-import styles from "./Toast.module.css";
+import { useToastContext } from "@/store/contexts/ToastContext.tsx";
+import styles from "@/ui/Toast/Toast.module.css";
 
 export function Toast() {
     const { toast } = useToastContext();

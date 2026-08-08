@@ -1,5 +1,5 @@
-import { Popover } from "../../components/Popover/Popover.tsx";
-import styles from "./NodeMenu.module.css";
+import { Popover } from "@/ui/components/Popover/Popover.tsx";
+import styles from "@/ui/NodeCard/NodeMenu/NodeMenu.module.css";
 
 export function NodeMenu({
     onDuplicate,

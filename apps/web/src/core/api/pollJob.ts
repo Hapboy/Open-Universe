@@ -2,7 +2,7 @@
 // only Gemini Veo enqueues through this, but the cadence mirrors
 // core/services/higgsfield.ts's own provider-side poll loop (5s) so both
 // stay consistent if Higgsfield ever moves behind this same job queue.
-import { hayverseApiClient } from "./hayverse/client.ts";
+import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
 
 const POLL_INTERVAL_MS = 5000;
 const MAX_ATTEMPTS = 60;

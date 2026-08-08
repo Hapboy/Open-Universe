@@ -1,8 +1,8 @@
 import cn from "classnames";
-import { useGraphContext } from "../../../store/contexts/GraphContext.tsx";
-import { useNarrativeContext } from "../../../store/contexts/NarrativeContext.tsx";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import { useNarrativeContext } from "@/store/contexts/NarrativeContext.tsx";
 import { CONFLICT_TARGETS } from "@hayverse/shared";
-import styles from "../Timeline.module.css";
+import styles from "@/ui/Timeline/Timeline.module.css";
 
 const loreOptions = [
     { key: "ara_past", label: "Прошлое Ары" },

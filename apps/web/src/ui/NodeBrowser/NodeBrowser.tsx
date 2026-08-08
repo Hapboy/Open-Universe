@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import cn from "classnames";
-import { NODE_TEMPLATES, NODE_BROWSER_GROUPS } from "../../data/nodes.ts";
+import { NODE_TEMPLATES, NODE_BROWSER_GROUPS } from "@/data/nodes.ts";
 import type { NodeType } from "@hayverse/shared";
-import { CategoryTagGroup } from "../components/CategoryTagGroup/CategoryTagGroup.tsx";
-import { SearchField } from "../components/SearchField/SearchField.tsx";
-import styles from "./NodeBrowser.module.css";
+import { CategoryTagGroup } from "@/ui/components/CategoryTagGroup/CategoryTagGroup.tsx";
+import { SearchField } from "@/ui/components/SearchField/SearchField.tsx";
+import styles from "@/ui/NodeBrowser/NodeBrowser.module.css";
 
 const POPUP_WIDTH = 300;
 const POPUP_MAX_HEIGHT = 420;

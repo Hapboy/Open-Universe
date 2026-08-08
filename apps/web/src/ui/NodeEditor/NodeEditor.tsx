@@ -10,13 +10,13 @@ import {
     type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import { useToastContext } from "../../store/contexts/ToastContext.tsx";
-import { NodeCard } from "../NodeCard/NodeCard.tsx";
-import { NodeBrowser } from "../NodeBrowser/NodeBrowser.tsx";
-import type { NodeParams } from "../../types.ts";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import { useToastContext } from "@/store/contexts/ToastContext.tsx";
+import { NodeCard } from "@/ui/NodeCard/NodeCard.tsx";
+import { NodeBrowser } from "@/ui/NodeBrowser/NodeBrowser.tsx";
+import type { NodeParams } from "@/types.ts";
 import type { NodeType } from "@hayverse/shared";
-import styles from "./NodeEditor.module.css";
+import styles from "@/ui/NodeEditor/NodeEditor.module.css";
 
 const nodeTypes: NodeTypes = { custom: NodeCard as unknown as NodeTypes["custom"] };
 

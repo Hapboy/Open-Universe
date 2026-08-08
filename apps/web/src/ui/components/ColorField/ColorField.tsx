@@ -1,4 +1,4 @@
-import styles from "./ColorField.module.css";
+import styles from "@/ui/components/ColorField/ColorField.module.css";
 
 export function ColorField({
     label,

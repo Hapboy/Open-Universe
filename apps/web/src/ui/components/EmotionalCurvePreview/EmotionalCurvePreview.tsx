@@ -1,5 +1,5 @@
 import { useId } from "react";
-import styles from "./EmotionalCurvePreview.module.css";
+import styles from "@/ui/components/EmotionalCurvePreview/EmotionalCurvePreview.module.css";
 
 // Rotates a line around the diagram's center by trend angle, then bends it
 // into the selected curve shape via a cubic bezier — ported from the old

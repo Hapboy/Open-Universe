@@ -1,4 +1,4 @@
-import styles from "./DateRangeField.module.css";
+import styles from "@/ui/components/DateRangeField/DateRangeField.module.css";
 
 export function DateRangeField({
     fromLabel,

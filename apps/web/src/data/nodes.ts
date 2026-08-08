@@ -1,5 +1,5 @@
-import { DEFAULT_PINS } from "./presets.ts";
-import type { Port } from "../types.ts";
+import { DEFAULT_PINS } from "@/data/presets.ts";
+import type { Port } from "@/types.ts";
 import { PORT_TYPES, type NodeType } from "@hayverse/shared";
 
 // Node types that call a paid AI generation service (GeminiService /

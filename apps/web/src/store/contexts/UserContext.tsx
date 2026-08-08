@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ApiError } from "@hayverse/api-client";
 import type { PinterestConnectionStatus } from "@hayverse/api-client";
-import type { CurrentUser, TeamMember } from "../../types.ts";
-import { hayverseApiClient } from "../../core/api/hayverse/client.ts";
-import { clearToken, getToken, setToken } from "../../core/auth/tokenStore.ts";
+import type { CurrentUser, TeamMember } from "@/types.ts";
+import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
+import { clearToken, getToken, setToken } from "@/core/auth/tokenStore.ts";
 
 const INITIAL_TEAM: TeamMember[] = [
     {

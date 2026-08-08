@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { writeJSON } from "../../core/browserStorage.ts";
+import { writeJSON } from "@/core/browserStorage.ts";
 
 const DEFAULT_DELAY_MS = 400;
 

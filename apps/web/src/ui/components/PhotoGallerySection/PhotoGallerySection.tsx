@@ -1,11 +1,11 @@
 import { useRef } from "react";
 import cn from "classnames";
-import type { NodeRef } from "../../../types.ts";
-import { putBlob, useResolvedMediaUrls } from "../../../core/mediaRef.ts";
-import { MediaSlider } from "../../NodeCard/MediaSlider/MediaSlider.tsx";
-import { IconButton } from "../IconButton/IconButton.tsx";
-import { MediaPickerButton } from "../MediaLibrary/MediaLibrary.tsx";
-import styles from "./PhotoGallerySection.module.css";
+import type { NodeRef } from "@/types.ts";
+import { putBlob, useResolvedMediaUrls } from "@/core/mediaRef.ts";
+import { MediaSlider } from "@/ui/NodeCard/MediaSlider/MediaSlider.tsx";
+import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
+import { MediaPickerButton } from "@/ui/components/MediaLibrary/MediaLibrary.tsx";
+import styles from "@/ui/components/PhotoGallerySection/PhotoGallerySection.module.css";
 
 // MediaSlider + clickable thumbnail strip for picking the cover photo, split
 // out so it can be positioned independently of the upload controls (e.g.

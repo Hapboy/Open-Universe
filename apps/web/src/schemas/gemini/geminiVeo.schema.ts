@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { GeminiModel } from "../../core/api/gemini/dto.ts";
+import type { GeminiModel } from "@/core/api/gemini/dto.ts";
 
 // See geminiImagen.schema.ts for the model-array/schema-derivation rationale.
 export const VEO_MODELS: readonly GeminiModel[] = [

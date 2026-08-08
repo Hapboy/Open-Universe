@@ -1,9 +1,9 @@
 import cn from "classnames";
-import { useGraphContext } from "../../store/contexts/GraphContext.tsx";
-import { useUserContext } from "../../store/contexts/UserContext.tsx";
-import { useModalContext } from "../../store/contexts/ModalContext.tsx";
-import { useFullscreenToggle } from "../hooks/useFullscreenToggle.ts";
-import styles from "./Topbar.module.css";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
+import { useUserContext } from "@/store/contexts/UserContext.tsx";
+import { useModalContext } from "@/store/contexts/ModalContext.tsx";
+import { useFullscreenToggle } from "@/ui/hooks/useFullscreenToggle.ts";
+import styles from "@/ui/Topbar/Topbar.module.css";
 
 export function Topbar() {
     const { executeGraph } = useGraphContext();

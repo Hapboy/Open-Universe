@@ -1,12 +1,12 @@
 import type { Edge, Node } from "@xyflow/react";
-import type { NodeParams } from "../types.ts";
+import type { NodeParams } from "@/types.ts";
 import type { SceneOutputType } from "@hayverse/shared";
-import type { SceneNarrativeSettings } from "../store/contexts/NarrativeContext.tsx";
-import { geminiApiClient, higgsfieldApiClient } from "./api/index.ts";
-import { AI_MODEL_NODE_TYPES, ENTITY_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "../data/nodes.ts";
-import { resolveMediaRef } from "./mediaRef.ts";
-import { photoPortId } from "./characterPorts.ts";
-import { filledEntityParams } from "../schemas/entities/schemas.ts";
+import type { SceneNarrativeSettings } from "@/store/contexts/NarrativeContext.tsx";
+import { geminiApiClient, higgsfieldApiClient } from "@/core/api/index.ts";
+import { AI_MODEL_NODE_TYPES, ENTITY_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "@/data/nodes.ts";
+import { resolveMediaRef } from "@/core/mediaRef.ts";
+import { photoPortId } from "@/core/characterPorts.ts";
+import { filledEntityParams } from "@/schemas/entities/schemas.ts";
 
 type ShowToast = (msg: string) => void;
 type Resolved = Record<string, unknown>;

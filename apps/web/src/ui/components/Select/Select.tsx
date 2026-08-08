@@ -1,5 +1,5 @@
 import cn from "classnames";
-import styles from "./Select.module.css";
+import styles from "@/ui/components/Select/Select.module.css";
 
 export type SelectOption = string | { value: string; label: string };
 

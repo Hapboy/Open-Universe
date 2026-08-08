@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo } from "react";
-import { useUserContext } from "./UserContext.tsx";
+import { useUserContext } from "@/store/contexts/UserContext.tsx";
 import { AUTH_ROLES, type AuthStatus } from "@hayverse/shared";
-import { getTokenIssuedAt } from "../../core/auth/tokenStore.ts";
+import { getTokenIssuedAt } from "@/core/auth/tokenStore.ts";
 
 export interface Session {
     userId: string;
