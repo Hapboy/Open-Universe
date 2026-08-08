@@ -18,9 +18,9 @@ export const AI_MODEL_NODE_TYPES: readonly NodeType[] = [
 ];
 
 // The 6 Gemini node types that keep a browsable per-node generation
-// history (generatedHistory/generatedIdx/generatedParamsHistory in
-// node.data.params, persisted via graphExecution.ts's appendGeneratedRef) —
-// the 3 Higgsfield types in AI_MODEL_NODE_TYPES above don't have this yet.
+// history (history/idx/paramsHistory in node.data.generation, persisted via
+// graphExecution.ts's appendGeneratedRef) — the 3 Higgsfield types in
+// AI_MODEL_NODE_TYPES above don't have this yet.
 export const HISTORY_NODE_TYPES: Set<NodeType> = new Set([
     "gemini_text",
     "gemini_vision",
@@ -133,7 +133,8 @@ export const NODE_TEMPLATES = {
         color: "#4285F4",
         inputs: [{ name: "Prompt", type: PORT_TYPES.TEXT }],
         outputs: [{ name: "Generated Text", type: PORT_TYPES.TEXT }],
-        params: { prompt: "", model: "gemini-flash-latest" },
+        // Defaults now come from schemas/gemini/geminiText.schema.ts's
+        // geminiTextDefaults — see GraphContext.tsx's templateParams.
     },
 
     gemini_vision: {
@@ -146,7 +147,8 @@ export const NODE_TEMPLATES = {
             { name: "Query", type: PORT_TYPES.TEXT },
         ],
         outputs: [{ name: "Description", type: PORT_TYPES.TEXT }],
-        params: { query: "Describe this scene for a film", model: "gemini-flash-latest" },
+        // Defaults now come from schemas/gemini/geminiVision.schema.ts's
+        // geminiVisionDefaults — see GraphContext.tsx's templateParams.
     },
 
     gemini_imagen: {
@@ -156,25 +158,8 @@ export const NODE_TEMPLATES = {
         color: "#4285F4",
         inputs: [{ name: "Style Prompt", type: PORT_TYPES.TEXT }],
         outputs: [{ name: "Generated Image", type: PORT_TYPES.IMAGE }],
-        params: {
-            prompt: "",
-            aspectRatio: "16:9",
-            model: "imagen-4.0-generate-001",
-            resolution: "1K",
-            numberOfImages: 1,
-            personGeneration: "ALLOW_ADULT",
-            safetyFilterLevel: "BLOCK_LOW_AND_ABOVE",
-            outputMimeType: "image/png",
-            outputCompressionQuality: 75,
-            guidanceScale: "",
-            // Vertex/Enterprise-only fields — this browser app can only reach the Gemini
-            // Developer API, which rejects these. Kept (disabled) on the node card for
-            // when a backend proxy adds Vertex support.
-            language: "auto",
-            negativePrompt: "",
-            seed: "",
-            enhancePrompt: true,
-        },
+        // Defaults now come from schemas/gemini/geminiImagen.schema.ts's
+        // geminiImagenDefaults — see GraphContext.tsx's templateParams.
     },
 
     gemini_veo: {
@@ -187,19 +172,8 @@ export const NODE_TEMPLATES = {
             { name: "Reference Image", type: PORT_TYPES.IMAGE },
         ],
         outputs: [{ name: "Generated Video", type: PORT_TYPES.VIDEO }],
-        params: {
-            prompt: "",
-            model: "veo-3.1-lite-generate-preview",
-            aspectRatio: "16:9",
-            resolution: "720p",
-            durationSeconds: 4,
-            negativePrompt: "",
-            personGeneration: "allow_adult",
-            enhancePrompt: true,
-            // Vertex/Enterprise-only — see comment on gemini_imagen above.
-            seed: "",
-            generateAudio: true,
-        },
+        // Defaults now come from schemas/gemini/geminiVeo.schema.ts's
+        // geminiVeoDefaults — see GraphContext.tsx's templateParams.
     },
 
     gemini_nanobanana: {
@@ -212,15 +186,8 @@ export const NODE_TEMPLATES = {
             { name: "Reference Image", type: PORT_TYPES.IMAGE },
         ],
         outputs: [{ name: "Generated Image", type: PORT_TYPES.IMAGE }],
-        params: {
-            prompt: "",
-            model: "gemini-3.1-flash-image",
-            aspectRatio: "16:9",
-            imageSize: "1K",
-            seed: "",
-            // Vertex/Enterprise-only — see comment on gemini_imagen above.
-            personGeneration: "ALLOW_ADULT",
-        },
+        // Defaults now come from schemas/gemini/geminiNanoBanana.schema.ts's
+        // geminiNanoBananaDefaults — see GraphContext.tsx's templateParams.
     },
 
     gemini_lyria: {
@@ -230,11 +197,8 @@ export const NODE_TEMPLATES = {
         color: "#4285F4",
         inputs: [{ name: "Prompt", type: PORT_TYPES.TEXT }],
         outputs: [{ name: "Generated Audio", type: PORT_TYPES.AUDIO }],
-        params: {
-            prompt: "",
-            model: "lyria-3-clip-preview",
-            seed: "",
-        },
+        // Defaults now come from schemas/gemini/geminiLyria.schema.ts's
+        // geminiLyriaDefaults — see GraphContext.tsx's templateParams.
     },
 
     output_scene: {

@@ -97,25 +97,12 @@ export const NodeCard = memo(function NodeCard({
         hasHistory && outputId ? (resolved[outputId] as string | undefined) : undefined;
     // Every past generation cached (R2-backed for image/video/audio kinds,
     // inline for text — see GraphContext's persistGeneratedOutputs/
-    // appendGeneratedRef), browsable via the nav below. Falls back to the
-    // legacy single `lastGeneratedRef` for nodes generated before this
-    // history array existed.
-    const generatedHistory = hasHistory
-        ? Array.isArray(data.params.generatedHistory)
-            ? (data.params.generatedHistory as string[])
-            : data.params.lastGeneratedRef
-              ? [data.params.lastGeneratedRef as string]
-              : []
-        : [];
+    // appendGeneratedRef), browsable via the nav below.
+    const generatedHistory = hasHistory ? (data.generation?.history ?? []) : [];
     const resolvedGeneratedHistory = useResolvedMediaUrls(generatedHistory);
     // Snapshot of the params that produced each history entry, keyed by ref —
-    // see GraphContext's appendGeneratedRef. Missing for entries generated
-    // before this map existed, in which case the nav just leaves current
-    // params untouched.
-    const generatedParamsHistory = (data.params.generatedParamsHistory ?? {}) as Record<
-        string,
-        Record<string, unknown>
-    >;
+    // see GraphContext's appendGeneratedRef.
+    const generatedParamsHistory = data.generation?.paramsHistory ?? {};
     // The freshly-generated output (this session, not yet round-tripped
     // through persistence) is shown in place of the newest slot immediately,
     // rather than waiting on the async blob write (or, for text, the store
@@ -131,24 +118,30 @@ export const NodeCard = memo(function NodeCard({
           : [];
     const generatedIdx = Math.max(
         0,
-        Math.min(
-            (data.params.generatedIdx as number) ?? generatedValues.length - 1,
-            generatedValues.length - 1,
-        ),
+        Math.min(data.generation?.idx ?? generatedValues.length - 1, generatedValues.length - 1),
     );
     const onHistoryIndexChange = (i: number) => {
         const snapshot = generatedParamsHistory[generatedHistory[i]];
-        updateNodeParams(id, snapshot ? { ...snapshot, generatedIdx: i } : { generatedIdx: i });
+        if (snapshot) updateNodeParams(id, snapshot);
+        setNodeField(id, {
+            generation: {
+                history: generatedHistory,
+                paramsHistory: generatedParamsHistory,
+                idx: i,
+            },
+        });
     };
     const onHistoryDelete = (i: number) => {
         const ref = generatedHistory[i];
         const nextHistory = generatedHistory.filter((_, idx) => idx !== i);
         const nextParamsHistory = { ...generatedParamsHistory };
         if (ref) delete nextParamsHistory[ref];
-        updateNodeParams(id, {
-            generatedHistory: nextHistory,
-            generatedParamsHistory: nextParamsHistory,
-            generatedIdx: Math.max(0, Math.min(generatedIdx, nextHistory.length - 1)),
+        setNodeField(id, {
+            generation: {
+                history: nextHistory,
+                paramsHistory: nextParamsHistory,
+                idx: Math.max(0, Math.min(generatedIdx, nextHistory.length - 1)),
+            },
         });
     };
     // Which node types offer the "show JSON" menu toggle: rich entities show

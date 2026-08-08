@@ -12,16 +12,6 @@ type ShowToast = (msg: string) => void;
 
 const MAX_GENERATED_HISTORY = 20; // cap per-node generated-output history
 
-// Runtime bookkeeping keys on any node type's params — never part of the
-// "params that produced this output" snapshot, since they're written by the
-// history mechanism itself, not by the user.
-const GENERATION_BOOKKEEPING_KEYS = new Set([
-    "generatedHistory",
-    "generatedIdx",
-    "generatedParamsHistory",
-    "lastGeneratedRef",
-]);
-
 // Which of the 6 HISTORY_NODE_TYPES (data/nodes.ts) need a blob upload
 // (image/video/audio, via mediaRef.ts's putGeneratedBlob) vs which can just
 // store their output string directly as the history "ref" (plain generated
@@ -47,12 +37,6 @@ const WIRABLE_FIELD: Partial<Record<NodeType, { paramKey: string; pinIndex: numb
     gemini_nanobanana: { paramKey: "prompt", pinIndex: 0 },
     gemini_lyria: { paramKey: "prompt", pinIndex: 0 },
 };
-
-function snapshotGenerationParams(params: Record<string, unknown>): Record<string, unknown> {
-    return Object.fromEntries(
-        Object.entries(params).filter(([key]) => !GENERATION_BOOKKEEPING_KEYS.has(key)),
-    );
-}
 
 interface UseGraphExecutionParams {
     nodes: Node<NodeParams>[];
@@ -111,29 +95,24 @@ export function useGraphExecution({
     }, []);
 
     // Caches a fresh generation result (R2-backed for blob kinds, inline for
-    // text) and appends its ref onto the node's `generatedHistory` (shown by
-    // NodeCard as a nav-able slider/history bar, and as a fallback for when
-    // `resolved` is empty, e.g. right after page load, before the node has
-    // been re-run this session). `resolved` itself keeps holding the raw
-    // value untouched — other nodes/edges consuming it (e.g. wiring this
-    // output into another Gemini call, or into output_scene's Visual Render
-    // pin) still get a directly usable value. `persistedOutputRef` dedups
-    // against repeated "Прогнать граф" clicks: a node whose output didn't
-    // change since the last persist is skipped.
+    // text) and appends its ref onto the node's `data.generation.history`
+    // (shown by NodeCard as a nav-able slider/history bar, and as a fallback
+    // for when `resolved` is empty, e.g. right after page load, before the
+    // node has been re-run this session). `resolved` itself keeps holding
+    // the raw value untouched — other nodes/edges consuming it (e.g. wiring
+    // this output into another Gemini call, or into output_scene's Visual
+    // Render pin) still get a directly usable value. `persistedOutputRef`
+    // dedups against repeated "Прогнать граф" clicks: a node whose output
+    // didn't change since the last persist is skipped.
     const persistedOutputRef = useRef<Map<string, string>>(new Map());
     const appendGeneratedRef = useCallback(
         (nodeId: string, ref: string, paramsSnapshot: Record<string, unknown>) => {
             setNodes((ns) =>
                 ns.map((n) => {
                     if (n.id !== nodeId) return n;
-                    const prevHistory = Array.isArray(n.data.params.generatedHistory)
-                        ? (n.data.params.generatedHistory as string[])
-                        : n.data.params.lastGeneratedRef
-                          ? [n.data.params.lastGeneratedRef as string]
-                          : [];
+                    const prevHistory = n.data.generation?.history ?? [];
                     const history = [...prevHistory, ref];
-                    const prevParamsHistory = (n.data.params.generatedParamsHistory ??
-                        {}) as Record<string, Record<string, unknown>>;
+                    const prevParamsHistory = n.data.generation?.paramsHistory ?? {};
                     const paramsHistory = { ...prevParamsHistory, [ref]: paramsSnapshot };
                     const overflow = history.length - MAX_GENERATED_HISTORY;
                     if (overflow > 0) {
@@ -144,12 +123,7 @@ export function useGraphExecution({
                         ...n,
                         data: {
                             ...n.data,
-                            params: {
-                                ...n.data.params,
-                                generatedHistory: history,
-                                generatedIdx: history.length - 1,
-                                generatedParamsHistory: paramsHistory,
-                            },
+                            generation: { history, idx: history.length - 1, paramsHistory },
                         },
                     };
                 }),
@@ -169,7 +143,10 @@ export function useGraphExecution({
                 if (kind === "text" && (typeof value !== "string" || value === "")) continue;
                 if (persistedOutputRef.current.get(node.id) === value) continue;
                 persistedOutputRef.current.set(node.id, value as string);
-                const paramsSnapshot = snapshotGenerationParams(node.data.params);
+                // No filtering needed here — generation bookkeeping lives in
+                // node.data.generation now, never in node.data.params, so
+                // every key here is a real, user-facing generation input.
+                const paramsSnapshot = { ...node.data.params };
                 // When the prompt/query pin is wired, the text actually sent
                 // to the API is the live resolved edge value (see graph.ts),
                 // never written into node.data.params — capture it here so

@@ -23,6 +23,7 @@ import {
 } from "@xyflow/react";
 import { ENTITY_NODE_TYPES, NODE_TEMPLATES, type NodeTemplate } from "../../data/nodes.ts";
 import { ENTITY_PARAM_DEFAULTS } from "../../schemas/entities/schemas.ts";
+import { GEMINI_PARAM_DEFAULTS } from "../../schemas/gemini/schemas.ts";
 import type { NodeParams, NodeRef, Port, TimelineScene } from "../../types.ts";
 import type { NodeType } from "@hayverse/shared";
 import type { SceneOutput } from "../../core/graph.ts";
@@ -81,14 +82,16 @@ function loadStoredSceneGraphs(): SceneGraphs {
 }
 
 // Params from the node template, deep-cloned, with overrides on top. Entity
-// types (character/location/... — see EntityParams/schemas.ts) source their
-// defaults from their zod schema's own defaults object instead of
-// NODE_TEMPLATES, which no longer carries a `params` key for them.
+// types (character/location/... — see EntityParams/schemas.ts) and the 6
+// Gemini types (gemini_text/.../lyria — see schemas/gemini/schemas.ts)
+// source their defaults from their zod schema's own defaults object instead
+// of NODE_TEMPLATES, which no longer carries a `params` key for either group.
 function templateParams(type: string, overrides: Record<string, unknown> = {}) {
-    const entityDefaults = ENTITY_PARAM_DEFAULTS[type as NodeType];
-    if (entityDefaults) {
+    const schemaDefaults =
+        ENTITY_PARAM_DEFAULTS[type as NodeType] ?? GEMINI_PARAM_DEFAULTS[type as NodeType];
+    if (schemaDefaults) {
         return {
-            ...(JSON.parse(JSON.stringify(entityDefaults)) as Record<string, unknown>),
+            ...(JSON.parse(JSON.stringify(schemaDefaults)) as Record<string, unknown>),
             ...(overrides || {}),
         };
     }

@@ -1,16 +1,26 @@
 import { useEffect, useState } from "react";
 import { Controller } from "react-hook-form";
 import { edgeInput } from "../../../core/graph.ts";
+import type { NodeParams } from "../../../types.ts";
 import { geminiApiClient } from "../../../core/api/index.ts";
 import type { GeminiModel } from "../../../core/api/gemini/dto.ts";
 import { WirableTextField, type EEP } from "./shared.tsx";
 import { useNodeParamsForm } from "./useNodeParamsForm.ts";
 import { geminiTextParamsSchema } from "../../../schemas/gemini/geminiText.schema.ts";
 import { geminiVisionParamsSchema } from "../../../schemas/gemini/geminiVision.schema.ts";
-import { geminiImagenParamsSchema } from "../../../schemas/gemini/geminiImagen.schema.ts";
-import { geminiVeoParamsSchema } from "../../../schemas/gemini/geminiVeo.schema.ts";
-import { geminiNanoBananaParamsSchema } from "../../../schemas/gemini/geminiNanoBanana.schema.ts";
-import { geminiLyriaParamsSchema } from "../../../schemas/gemini/geminiLyria.schema.ts";
+import {
+    geminiImagenParamsSchema,
+    IMAGEN_MODELS,
+} from "../../../schemas/gemini/geminiImagen.schema.ts";
+import { geminiVeoParamsSchema, VEO_MODELS } from "../../../schemas/gemini/geminiVeo.schema.ts";
+import {
+    geminiNanoBananaParamsSchema,
+    NANO_BANANA_MODELS,
+} from "../../../schemas/gemini/geminiNanoBanana.schema.ts";
+import {
+    geminiLyriaParamsSchema,
+    LYRIA_MODELS,
+} from "../../../schemas/gemini/geminiLyria.schema.ts";
 import { SelectField } from "../../components/SelectField/SelectField.tsx";
 import { Select } from "../../components/Select/Select.tsx";
 import { TextField } from "../../components/TextField/TextField.tsx";
@@ -27,30 +37,22 @@ import sharedStyles from "../../../styles/shared.module.css";
 // prefer — live value is correct. `fieldKey` is "prompt" everywhere except
 // GeminiVisionParams, whose wirable field is "query".
 function wiredFieldDisplayValue(
-    params: Record<string, unknown>,
+    generation: NodeParams["generation"],
     liveValue: unknown,
     fieldKey: string,
 ): unknown {
-    const generatedHistory = (params.generatedHistory as string[] | undefined) ?? [];
-    const generatedIdx = params.generatedIdx as number | undefined;
-    const generatedParamsHistory =
-        (params.generatedParamsHistory as Record<string, Record<string, unknown>> | undefined) ??
-        {};
-    const isViewingHistory =
-        generatedIdx !== undefined && generatedIdx < generatedHistory.length - 1;
+    const { history = [], idx, paramsHistory = {} } = generation ?? {};
+    const isViewingHistory = idx !== undefined && idx < history.length - 1;
     if (!isViewingHistory) return liveValue;
-    const historicalValue = generatedParamsHistory[generatedHistory[generatedIdx]]?.[fieldKey];
+    const historicalValue = paramsHistory[history[idx]]?.[fieldKey];
     return historicalValue !== undefined ? historicalValue : liveValue;
 }
 
-const FALLBACK_MODELS: GeminiModel[] = [
-    { id: "gemini-flash-latest", displayName: "Gemini Flash (latest)" },
-    { id: "gemini-2.5-flash", displayName: "Gemini 2.5 Flash" },
-    { id: "gemini-2.5-pro", displayName: "Gemini 2.5 Pro" },
-];
-
+// No fixed list at schema-definition time (see geminiText.schema.ts) — the
+// real list is fetched below and the select stays empty/loading until it
+// resolves, rather than showing a static fake one first.
 function useGeminiModels(currentModel: string): GeminiModel[] {
-    const [models, setModels] = useState<GeminiModel[]>(FALLBACK_MODELS);
+    const [models, setModels] = useState<GeminiModel[]>([]);
 
     useEffect(() => {
         let cancelled = false;
@@ -68,14 +70,14 @@ function useGeminiModels(currentModel: string): GeminiModel[] {
     return models;
 }
 
-function modelOptions(models: GeminiModel[]) {
+function modelOptions(models: readonly GeminiModel[]) {
     return models.map((m) => ({ value: m.id, label: m.displayName ?? m.id }));
 }
 
 export function GeminiTextParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
     const MODELS = useGeminiModels(params.model as string);
     const prompt = edgeInput(node.data, edges, resolved, 0);
-    const { control } = useNodeParamsForm(geminiTextParamsSchema, params);
+    const { control, isFieldValid } = useNodeParamsForm(geminiTextParamsSchema, params);
     return (
         <>
             <Controller
@@ -88,7 +90,11 @@ export function GeminiTextParams({ node, params, edges, resolved, updateNodePara
                         paramKey="prompt"
                         params={params}
                         wired={prompt.wired}
-                        liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
+                        liveValue={wiredFieldDisplayValue(
+                            node.data.generation,
+                            prompt.value,
+                            "prompt",
+                        )}
                         updateNodeParam={updateNodeParam}
                         value={field.value}
                         onChange={field.onChange}
@@ -104,7 +110,7 @@ export function GeminiTextParams({ node, params, edges, resolved, updateNodePara
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "model", v);
+                            if (isFieldValid("model", v)) updateNodeParam(node.id, "model", v);
                         }}
                         options={modelOptions(MODELS)}
                     />
@@ -117,7 +123,7 @@ export function GeminiTextParams({ node, params, edges, resolved, updateNodePara
 export function GeminiVisionParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
     const MODELS = useGeminiModels(params.model as string);
     const query = edgeInput(node.data, edges, resolved, 1);
-    const { control } = useNodeParamsForm(geminiVisionParamsSchema, params);
+    const { control, isFieldValid } = useNodeParamsForm(geminiVisionParamsSchema, params);
     return (
         <>
             <Controller
@@ -130,7 +136,11 @@ export function GeminiVisionParams({ node, params, edges, resolved, updateNodePa
                         paramKey="query"
                         params={params}
                         wired={query.wired}
-                        liveValue={wiredFieldDisplayValue(params, query.value, "query")}
+                        liveValue={wiredFieldDisplayValue(
+                            node.data.generation,
+                            query.value,
+                            "query",
+                        )}
                         updateNodeParam={updateNodeParam}
                         value={field.value}
                         onChange={field.onChange}
@@ -146,7 +156,7 @@ export function GeminiVisionParams({ node, params, edges, resolved, updateNodePa
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "model", v);
+                            if (isFieldValid("model", v)) updateNodeParam(node.id, "model", v);
                         }}
                         options={modelOptions(MODELS)}
                     />
@@ -155,12 +165,6 @@ export function GeminiVisionParams({ node, params, edges, resolved, updateNodePa
         </>
     );
 }
-
-const IMAGEN_MODELS: GeminiModel[] = [
-    { id: "imagen-4.0-generate-001", displayName: "Imagen 4" },
-    { id: "imagen-4.0-ultra-generate-001", displayName: "Imagen 4 Ultra" },
-    { id: "imagen-4.0-fast-generate-001", displayName: "Imagen 4 Fast" },
-];
 
 const PERSON_GENERATION_OPTIONS = [
     { value: "DONT_ALLOW", label: "Запрещено" },
@@ -207,7 +211,7 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
     const prompt = edgeInput(node.data, edges, resolved, 0);
     const isJpeg = params.outputMimeType === "image/jpeg";
     const isFastModel = params.model === "imagen-4.0-fast-generate-001";
-    const { control } = useNodeParamsForm(geminiImagenParamsSchema, params);
+    const { control, isFieldValid } = useNodeParamsForm(geminiImagenParamsSchema, params);
     return (
         <>
             <Controller
@@ -220,7 +224,11 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         paramKey="prompt"
                         params={params}
                         wired={prompt.wired}
-                        liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
+                        liveValue={wiredFieldDisplayValue(
+                            node.data.generation,
+                            prompt.value,
+                            "prompt",
+                        )}
                         updateNodeParam={updateNodeParam}
                         value={field.value}
                         onChange={field.onChange}
@@ -236,7 +244,7 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "model", v);
+                            if (isFieldValid("model", v)) updateNodeParam(node.id, "model", v);
                         }}
                         options={modelOptions(IMAGEN_MODELS)}
                     />
@@ -251,7 +259,8 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "aspectRatio", v);
+                            if (isFieldValid("aspectRatio", v))
+                                updateNodeParam(node.id, "aspectRatio", v);
                         }}
                         options={RATIOS}
                     />
@@ -266,7 +275,8 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "resolution", v);
+                            if (isFieldValid("resolution", v))
+                                updateNodeParam(node.id, "resolution", v);
                         }}
                         options={RESOLUTIONS}
                         disabled={isFastModel}
@@ -297,7 +307,8 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         onChange={(v) => {
                             const n = Number(v);
                             field.onChange(n);
-                            updateNodeParam(node.id, "numberOfImages", n);
+                            if (isFieldValid("numberOfImages", n))
+                                updateNodeParam(node.id, "numberOfImages", n);
                         }}
                         options={["1", "2", "3", "4"]}
                     />
@@ -328,7 +339,8 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         onChange={field.onChange}
                         onBlur={(v) => {
                             field.onBlur();
-                            updateNodeParam(node.id, "guidanceScale", v);
+                            if (isFieldValid("guidanceScale", v))
+                                updateNodeParam(node.id, "guidanceScale", v);
                         }}
                     />
                 )}
@@ -342,7 +354,8 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "personGeneration", v);
+                            if (isFieldValid("personGeneration", v))
+                                updateNodeParam(node.id, "personGeneration", v);
                         }}
                         options={PERSON_GENERATION_OPTIONS}
                     />
@@ -357,7 +370,8 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "safetyFilterLevel", v);
+                            if (isFieldValid("safetyFilterLevel", v))
+                                updateNodeParam(node.id, "safetyFilterLevel", v);
                         }}
                         options={SAFETY_FILTER_OPTIONS}
                     />
@@ -372,7 +386,8 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "outputMimeType", v);
+                            if (isFieldValid("outputMimeType", v))
+                                updateNodeParam(node.id, "outputMimeType", v);
                         }}
                         options={OUTPUT_MIME_OPTIONS}
                     />
@@ -389,7 +404,8 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                             onChange={(v) => field.onChange(Number(v))}
                             onBlur={(v) => {
                                 field.onBlur();
-                                updateNodeParam(node.id, "outputCompressionQuality", Number(v));
+                                if (isFieldValid("outputCompressionQuality", Number(v)))
+                                    updateNodeParam(node.id, "outputCompressionQuality", Number(v));
                             }}
                         />
                     )}
@@ -426,12 +442,6 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
     );
 }
 
-const VEO_MODELS: GeminiModel[] = [
-    { id: "veo-3.1-generate-preview", displayName: "Veo 3.1" },
-    { id: "veo-3.1-fast-generate-preview", displayName: "Veo 3.1 Fast" },
-    { id: "veo-3.1-lite-generate-preview", displayName: "Veo 3.1 Lite" },
-];
-
 // Veo's personGeneration is a plain lowercase string, no 'allow_all' option (unlike Imagen).
 const VEO_PERSON_GENERATION_OPTIONS = [
     { value: "dont_allow", label: "Запрещено" },
@@ -443,7 +453,7 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
     const RESOLUTIONS = ["720p", "1080p"];
     const prompt = edgeInput(node.data, edges, resolved, 0);
     const requiresFullDuration = params.resolution !== "720p";
-    const { control } = useNodeParamsForm(geminiVeoParamsSchema, params);
+    const { control, isFieldValid } = useNodeParamsForm(geminiVeoParamsSchema, params);
     return (
         <>
             <Controller
@@ -456,7 +466,11 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                         paramKey="prompt"
                         params={params}
                         wired={prompt.wired}
-                        liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
+                        liveValue={wiredFieldDisplayValue(
+                            node.data.generation,
+                            prompt.value,
+                            "prompt",
+                        )}
                         updateNodeParam={updateNodeParam}
                         value={field.value}
                         onChange={field.onChange}
@@ -472,7 +486,7 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "model", v);
+                            if (isFieldValid("model", v)) updateNodeParam(node.id, "model", v);
                         }}
                         options={modelOptions(VEO_MODELS)}
                     />
@@ -487,7 +501,8 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "aspectRatio", v);
+                            if (isFieldValid("aspectRatio", v))
+                                updateNodeParam(node.id, "aspectRatio", v);
                         }}
                         options={RATIOS}
                     />
@@ -502,7 +517,8 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "resolution", v);
+                            if (isFieldValid("resolution", v))
+                                updateNodeParam(node.id, "resolution", v);
                         }}
                         options={RESOLUTIONS}
                     />
@@ -520,7 +536,8 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                         onChange={(v) => field.onChange(Number(v))}
                         onBlur={(v) => {
                             field.onBlur();
-                            updateNodeParam(node.id, "durationSeconds", Number(v));
+                            if (isFieldValid("durationSeconds", Number(v)))
+                                updateNodeParam(node.id, "durationSeconds", Number(v));
                         }}
                     />
                 )}
@@ -535,7 +552,8 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                         onChange={field.onChange}
                         onBlur={(v) => {
                             field.onBlur();
-                            updateNodeParam(node.id, "negativePrompt", v);
+                            if (isFieldValid("negativePrompt", v))
+                                updateNodeParam(node.id, "negativePrompt", v);
                         }}
                     />
                 )}
@@ -598,12 +616,6 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
     );
 }
 
-const NANO_BANANA_MODELS: GeminiModel[] = [
-    { id: "gemini-3.1-flash-image", displayName: "Nano Banana 2" },
-    { id: "gemini-3-pro-image", displayName: "Nano Banana Pro" },
-    { id: "gemini-2.5-flash-image", displayName: "Gemini 2.5 Flash Image" },
-];
-
 // Nano Banana's own personGeneration enum (ALLOW_ALL/ALLOW_ADULT/ALLOW_NONE, per the
 // SDK's ImageConfig doc comment) — distinct from Imagen's DONT_ALLOW/ALLOW_ADULT/ALLOW_ALL
 // and Veo's lowercase dont_allow/allow_adult pair. Confirmed live: this field is
@@ -631,7 +643,7 @@ export function GeminiNanoBananaParams({
     const prompt = edgeInput(node.data, edges, resolved, 0);
     const imageCount = node.data.inputs.length - 1;
     const atLimit = imageCount >= MAX_NANO_BANANA_REFERENCE_IMAGES;
-    const { control } = useNodeParamsForm(geminiNanoBananaParamsSchema, params);
+    const { control, isFieldValid } = useNodeParamsForm(geminiNanoBananaParamsSchema, params);
     return (
         <>
             <Controller
@@ -644,7 +656,11 @@ export function GeminiNanoBananaParams({
                         paramKey="prompt"
                         params={params}
                         wired={prompt.wired}
-                        liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
+                        liveValue={wiredFieldDisplayValue(
+                            node.data.generation,
+                            prompt.value,
+                            "prompt",
+                        )}
                         updateNodeParam={updateNodeParam}
                         value={field.value}
                         onChange={field.onChange}
@@ -663,7 +679,8 @@ export function GeminiNanoBananaParams({
                                 value={field.value}
                                 onChange={(v) => {
                                     field.onChange(v);
-                                    updateNodeParam(node.id, "model", v);
+                                    if (isFieldValid("model", v))
+                                        updateNodeParam(node.id, "model", v);
                                 }}
                                 options={modelOptions(NANO_BANANA_MODELS)}
                             />
@@ -691,7 +708,8 @@ export function GeminiNanoBananaParams({
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "aspectRatio", v);
+                            if (isFieldValid("aspectRatio", v))
+                                updateNodeParam(node.id, "aspectRatio", v);
                         }}
                         options={RATIOS}
                     />
@@ -706,7 +724,8 @@ export function GeminiNanoBananaParams({
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "imageSize", v);
+                            if (isFieldValid("imageSize", v))
+                                updateNodeParam(node.id, "imageSize", v);
                         }}
                         options={SIZES}
                     />
@@ -723,7 +742,7 @@ export function GeminiNanoBananaParams({
                         onChange={field.onChange}
                         onBlur={(v) => {
                             field.onBlur();
-                            updateNodeParam(node.id, "seed", v);
+                            if (isFieldValid("seed", v)) updateNodeParam(node.id, "seed", v);
                         }}
                     />
                 )}
@@ -746,14 +765,9 @@ export function GeminiNanoBananaParams({
     );
 }
 
-const LYRIA_MODELS: GeminiModel[] = [
-    { id: "lyria-3-clip-preview", displayName: "Lyria 3 Clip" },
-    { id: "lyria-3-pro-preview", displayName: "Lyria 3 Pro" },
-];
-
 export function GeminiLyriaParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
     const prompt = edgeInput(node.data, edges, resolved, 0);
-    const { control } = useNodeParamsForm(geminiLyriaParamsSchema, params);
+    const { control, isFieldValid } = useNodeParamsForm(geminiLyriaParamsSchema, params);
     return (
         <>
             <Controller
@@ -766,7 +780,11 @@ export function GeminiLyriaParams({ node, params, edges, resolved, updateNodePar
                         paramKey="prompt"
                         params={params}
                         wired={prompt.wired}
-                        liveValue={wiredFieldDisplayValue(params, prompt.value, "prompt")}
+                        liveValue={wiredFieldDisplayValue(
+                            node.data.generation,
+                            prompt.value,
+                            "prompt",
+                        )}
                         updateNodeParam={updateNodeParam}
                         value={field.value}
                         onChange={field.onChange}
@@ -782,7 +800,7 @@ export function GeminiLyriaParams({ node, params, edges, resolved, updateNodePar
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            updateNodeParam(node.id, "model", v);
+                            if (isFieldValid("model", v)) updateNodeParam(node.id, "model", v);
                         }}
                         options={modelOptions(LYRIA_MODELS)}
                     />
@@ -799,7 +817,7 @@ export function GeminiLyriaParams({ node, params, edges, resolved, updateNodePar
                         onChange={field.onChange}
                         onBlur={(v) => {
                             field.onBlur();
-                            updateNodeParam(node.id, "seed", v);
+                            if (isFieldValid("seed", v)) updateNodeParam(node.id, "seed", v);
                         }}
                     />
                 )}

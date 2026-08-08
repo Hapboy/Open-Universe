@@ -1,10 +1,14 @@
 import { z } from "zod";
 
-// Mirrors NODE_TEMPLATES.gemini_vision.params (data/nodes.ts) — see
-// geminiImagen.schema.ts for the `.catch()` rationale.
+// See geminiText.schema.ts — `model` is fetched live, no fixed enum here.
 export const geminiVisionParamsSchema = z.object({
-    query: z.string().catch("Describe this scene for a film"),
-    model: z.string().catch("gemini-flash-latest"),
+    query: z.string(),
+    model: z.string(),
 });
 
 export type GeminiVisionFormValues = z.infer<typeof geminiVisionParamsSchema>;
+
+export const geminiVisionDefaults: GeminiVisionFormValues = {
+    query: "Describe this scene for a film",
+    model: "gemini-flash-latest",
+};

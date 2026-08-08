@@ -191,18 +191,6 @@ tls, maxRetriesPerRequest }` options object instead of a live client, so
       error styling — none of their fields currently have a constraint that
       can fail (coordinates/color/haircut-etc. are unconstrained or
       union-with-`""`), so there was nothing to surface yet.
-    - Follow-up, not done here: the same `.catch()`-defaults-can-never-error
-      issue applies to `gemini_imagen`/`veo`/`nanobanana`/`lyria`'s schemas
-      (their `model` default also duplicates a literal from
-      `GeminiParams.tsx`'s `IMAGEN_MODELS`/etc. arrays instead of deriving
-      from them — the same drift risk this pass avoided for entity types).
-      Revisit both once real Gemini-side validation is wanted; `gemini_text`/
-      `gemini_vision`'s `model` field can't take the strict-enum approach at
-      all since their model list is fetched at runtime
-      (`GeminiParams.tsx`'s `useGeminiModels`), not a fixed set — that hook's
-      `FALLBACK_MODELS` should also just go away in favor of leaving the
-      select empty/loading until `listModels()` resolves, rather than
-      showing a fake static list first.
     - **Done, same day:** moved all schema files (entity + the 6
       already-shipped Gemini ones) out of `ui/NodeCard/params/` into a new
       top-level `schemas/entities/` and `schemas/gemini/` — fixes a real
@@ -231,83 +219,94 @@ EntityParams/`. Both non-UI files now import from `schemas/` instead.
       them); revisit together with the Gemini strict-schema fast-follow
       already noted above.
 
-- **Follow-up: clean up `shared.tsx`'s `BOOKKEEPING_KEYS` legacy fields
-  (`_presets`, `photoIdx`) once confirmed unused.** `usePresetDatabase`'s
-  `buildPresetSnapshot` strips these from every preset snapshot: `_presets`
-  is a stray leftover key from graphs saved before presets became a shared
-  library (`PresetLibraryContext.tsx`), `photoIdx` is a dead field name from
-  a since-fixed backend migration (`FixPresetPhotoIdxKey`) — every entity
-  type uses `coverPhotoIndex` now. Both are genuine one-time migration debt
-  (unlike the entity-schema defaulting above, which is ordinary ongoing
-  schema-evolution handling, not legacy cruft) — worth actually deleting the
-  stripping logic once it's confirmed no real saved scene in the backend
-  still carries either key. **Confirmed still live** while testing the
-  above: a real character node's own params still carry `"photoIdx": 3`
-  today. Needs its own check against real data before removing the strip.
+- **Done: `_presets`/`photoIdx` legacy-key cleanup (2026-08-08).** Both were
+  genuine one-time migration debt (unlike the entity-schema defaulting
+  above, which is ordinary ongoing schema-evolution) — `_presets` a stray
+  leftover from graphs saved before presets became a shared library
+  (`PresetLibraryContext.tsx`), `photoIdx` a dead field name from before
+  `FixPresetPhotoIdxKey1785575290163` (which only ever fixed `presets`.
+  `snapshot` rows, not scene graph node params — a second, separate copy of
+  the same data). Fixed for real this time with a DB migration instead of
+  waiting on "confirmed unused": `apps/api/src/database/migrations/
+1786204681898-StripLegacyPresetKeys.ts` strips both keys from every node's
+  `params` in every scene's `graph` jsonb, and (defensively — already clean
+  per the prior migration) from every `presets.snapshot`. Ran against the
+  live DB: 2 scenes, 2 affected nodes (the character node that still showed
+  `"photoIdx": 3` live, confirmed while testing the entity-schema pass
+  above, and one `location` node), 0 presets affected. `shared.tsx`'s
+  `BOOKKEEPING_KEYS` is now just `["selectedItem"]` — `usePresetDatabase`'s
+  `buildPresetSnapshot` no longer strips the other two, since post-migration
+  there's nothing left to strip (no code writes either key anymore).
 
 ## Generative Node Params
 
-- **Next up: apply the same entity-schema pattern to the 6 Gemini types
-  (`gemini_text`/`vision`/`imagen`/`veo`/`nanobanana`/`lyria`).** Direct
-  continuation of the 2026-08-08 entity-params work below — same fix, same
-  reasoning, just applied to the group that was explicitly left out of that
-  pass. Use `schemas/entities/*.schema.ts` (e.g. `character.schema.ts`) as
-  the template; the 6 files to change are `schemas/gemini/*.schema.ts` +
-  `ui/NodeCard/params/GeminiParams.tsx`. Concretely:
-    1. **Split each Gemini schema into strict + defaults**, same as entities.
-       Every field in every Gemini schema is currently `.catch(default)` —
-       which means `zodResolver` can _never_ produce an error for any of
-       them, ever, regardless of `mode` (`.catch()` swallows the failure
-       before it reaches the resolver — this is the exact bug already
-       logged under "Entity Node Params" below). Fix: make the schema
-       strict (real `.min()`/`.max()`/enum constraints where they make
-       sense — most Gemini fields probably don't need any, same as most
-       entity fields didn't), and export a separate plain `*Defaults`
-       object for `useNodeParamsForm`'s `defaultValues` fallback and for
-       `GraphContext.tsx`'s `templateParams`/`createNode` (mirroring
-       `ENTITY_PARAM_DEFAULTS`/`ENTITY_PARAM_SCHEMAS` in
-       `schemas/entities/schemas.ts` — add a `GEMINI_PARAM_SCHEMAS`/
-       `GEMINI_PARAM_DEFAULTS` registry alongside it, or a sibling
-       `schemas/gemini/schemas.ts`).
-    2. **Drop `NODE_TEMPLATES.gemini_*.params`** once the schema owns
-       defaults, same as the 11 entity types — `NodeTemplate.params` is
-       already optional, this is just removing 6 more literal blocks from
-       `data/nodes.ts` and pointing `templateParams()` at the new Gemini
-       registry the same way it already checks `ENTITY_PARAM_DEFAULTS`.
-    3. **Wire the `isFieldValid` autosave gate into `GeminiParams.tsx`**,
-       same as every field in `EntityParams.tsx` now does:
-       `field.onChange(v); if (isFieldValid("key", v)) updateNodeParam(...)`.
-       Currently skipped there on purpose since it'd have been a no-op
-       against the old `.catch()`-everywhere schemas — step 1 above is what
-       makes this meaningful. `useNodeParamsForm.ts` itself needs no
-       changes (`mode: "onChange"` and `isFieldValid` are already generic).
-    4. **Fix the Gemini model-default drift** flagged below: each
-       `.catch("some-model-id")` currently re-types a literal that already
-       exists once in `GeminiParams.tsx`'s `IMAGEN_MODELS`/`VEO_MODELS`/
-       `NANO_BANANA_MODELS`/`LYRIA_MODELS` arrays — same "don't duplicate a
-       known constant" principle applied to the entity enum fields
-       (`optionalEnum` off `@hayverse/shared`'s `as const` arrays). Derive
-       the default from the array instead of retyping it.
-    5. **`gemini_text`/`gemini_vision`'s `model` field is different** — no
-       fixed list exists at schema-definition time, it's fetched live via
-       `useGeminiModels`/`geminiApiClient.listModels()`. Can't use a strict
-       `z.enum()` there; leave `model: z.string()` (unconstrained) for
-       those two. Also drop `FALLBACK_MODELS`
-       (`GeminiParams.tsx:46-50`) per the earlier note — leave the select
-       empty/loading until the real list resolves instead of showing a
-       static fake one first.
-    6. Verify the same way the entity pass was verified: `npm run
-typecheck`, live in the dev server — confirm a fresh Gemini node's
-       defaults are unchanged, clear a field with a real constraint (if any
-       get added) and confirm the store keeps the last valid value while
-       the input shows the invalid one, confirm history-scrubbing
-       (`generatedHistory`/`generatedParamsHistory`) still works since that
-       depends on `graphExecution.ts` reading the same params shape.
-    - Related, can fold in or do separately: "snapshotting can switch from
-      denylisting `GENERATION_BOOKKEEPING_KEYS` to picking only each
-      schema's known keys" (already noted further down) becomes trivial
-      once every Gemini type has a real schema to read keys from.
+- **`gemini_vision`'s model dropdown shows every Gemini model, not just
+  vision-capable ones — no API to filter by modality.** Checked
+  2026-08-08: `GeminiVisionParams` uses the same `useGeminiModels`/
+  `geminiApiClient.listModels()` as `GeminiTextParams` (shared module-level
+  cache in `client.ts`), and the backend's `listModels`
+  (`apps/api/src/ai-gateway/gemini/gemini.service.ts:67-78`) calls Google's
+  `models.list()` — confirmed via the `@google/genai` SDK's `Model` type
+  (`node_modules/@google/genai/dist/genai.d.ts:9895`) that the response has
+  no modality field at all (no `supportsVision`/`inputModalities`), only
+  `supportedActions` (action verbs like `generateContent`, already filtered
+  on). So there's no server-side way to ask Google for "vision-only" models
+  — it's one undifferentiated list for the whole API, same as what Google's
+  own AI Studio model picker shows. A user can currently pick a text-only
+  model in the Vision node and only find out it doesn't work when
+  `generateVision` errors at runtime. Two options if this is worth fixing:
+  a hardcoded allowlist/exclusion pattern (cheap, but a hand-maintained list
+  that drifts as Google ships new models), or leave as-is and accept the
+  runtime-error UX. Not acted on yet — no clear preference expressed either
+  way.
 
+- **Done: applied the same entity-schema pattern to the 6 Gemini types
+  (2026-08-08).** `gemini_text`/`vision`/`imagen`/`veo`/`nanobanana`/`lyria`
+  each get a schema at `schemas/gemini/<type>.schema.ts` — strict types +
+  a separate plain `*Defaults` export, same split as the 11 entity types.
+  Every field used to be `.catch(default)`, which swallows validation
+  failures by design (`zodResolver` could never produce an error for any of
+  them, regardless of `mode`); now plain `z.string()`/`z.number()`/
+  `z.boolean()` with a real constraint only where the UI itself already
+  implies one — `numberOfImages` (Imagen's select is "1"-"4"),
+  `outputCompressionQuality` (0-100, per its own label), and `model`
+  (`z.enum()` off each type's own model-id array). Left everything else
+  unconstrained rather than inventing bounds the product doesn't actually
+  have (most Gemini fields don't need any, same as most entity fields
+  didn't) — `aspectRatio`/`resolution`/`personGeneration`/
+  `safetyFilterLevel`/`outputMimeType`/`language`/seed/prompt fields stay
+  plain strings, not `z.enum()`, unlike entity select fields' `optionalEnum`.
+  New `schemas/gemini/schemas.ts` (`GEMINI_PARAM_SCHEMAS`/
+  `GEMINI_PARAM_DEFAULTS`) mirrors `schemas/entities/schemas.ts`;
+  `GraphContext.tsx`'s `templateParams` now checks both registries.
+  `NODE_TEMPLATES.gemini_*.params` dropped from `data/nodes.ts` (6 fewer
+  literal blocks). `GeminiParams.tsx`'s every field-commit now gates on
+  `isFieldValid` same as `EntityParams.tsx`.
+    - **Model-default drift fixed**: `IMAGEN_MODELS`/`VEO_MODELS`/
+      `NANO_BANANA_MODELS`/`LYRIA_MODELS` moved from `GeminiParams.tsx`
+      into their respective schema files (schema derives its `z.enum()` and
+      default from the same array; `GeminiParams.tsx` now imports the array
+      back for its `<select>` options) — one array instead of two,
+      import direction stays schemas ← ui like the entity pass established.
+    - **`gemini_text`/`gemini_vision`'s `model` stays `z.string()`**
+      (unconstrained) — no fixed list at schema-definition time, it's
+      fetched live via `useGeminiModels`/`geminiApiClient.listModels()`.
+      `FALLBACK_MODELS` dropped; `useGeminiModels` now starts from `[]` and
+      shows only the node's own stored model (via the existing
+      inject-if-missing logic) until the real list resolves. Confirmed live:
+      a fresh Gemini Text node showed the correct default
+      ("Gemini Flash Latest") immediately, then the full live-fetched model
+      list populated around it with no console errors.
+    - Verified: `npm run typecheck` and `npm run lint` clean; live in the
+      dev server — a Nano Banana node's model `<select>` (`z.enum()`, a real
+      constraint) committed a change and survived a re-render (round-tripped
+      through the store correctly), a plain `seed` text field still commits
+      on blur, no regressions to the existing character/location nodes on
+      the same canvas. Didn't get to exercise the invalid-value-rejection
+      path itself (nothing in the currently-open scene has a Imagen/Veo node
+      to poke `numberOfImages`/`outputCompressionQuality` on) or
+      history-scrubbing specifically — worth a follow-up look next time one
+      of those node types is on the canvas.
 - **Done: react-hook-form + zod for `gemini_imagen`/`gemini_nanobanana`
   params (2026-08-07).** New `useNodeParamsForm.ts` (RHF form mirroring a
   node's store params, keyed by a zod schema — `geminiImagen.schema.ts`,
@@ -358,11 +357,6 @@ typecheck`, live in the dev server — confirm a fresh Gemini node's
   — deliberate consistency fix, not incidental.
     - The RHF/zod/`Controller` wiring itself for these 4 components' param
       fields is now done too — see the bullet below.
-    - Still open: snapshotting can switch from denylisting the 4 bookkeeping
-      keys (`GENERATION_BOOKKEEPING_KEYS` in `graphExecution.ts`) to picking
-      only each schema's known keys — self-maintaining, since a schema
-      change automatically changes what gets snapshotted without a second
-      list to keep in sync.
 
 - **Done: react-hook-form + zod for `gemini_text`/`gemini_vision`/
   `gemini_veo`/`gemini_lyria` params (2026-08-07).** Same
@@ -382,24 +376,34 @@ typecheck`, live in the dev server — confirm a fresh Gemini node's
   same visual behavior, no change to the underlying (pre-existing, out of
   scope here) quirk where the stored value isn't itself forced to 8.
 
-- **Move generation bookkeeping out of `params` into a sibling field
-  (after the above).** `generatedHistory`/`generatedIdx`/
-  `generatedParamsHistory`/`lastGeneratedRef` currently live inside
-  `node.data.params` alongside real generation inputs, only kept apart by
-  the denylist/allowlist filter above — do this once the RHF/zod +
-  schema-driven pick work has landed, not before, since at that point the
-  "what counts as a real param" boundary is already schema-defined and the
-  move is mostly relocation rather than also inventing the boundary.
-  Restructure to `node.data.generation: { history, idx, paramsHistory }`
-  (sibling to `params`, not nested in it) so `params` is _only_ ever
-  user-facing generation inputs — no filtering needed to snapshot it, no
-  risk of a future bookkeeping field leaking in by accident. Worth doing
-  now-ish rather than deferring further: more bookkeeping is likely
-  coming (video/audio history per the note above, possibly undo/redo
-  state, possibly job-status tracking for async Veo jobs), and each one
-  added under the current scheme is one more key someone has to remember
-  to keep out of snapshots/JSON export. Needs a read-time migration path
-  for scenes already saved with history nested in `params` (backend graph
-  JSON has no schema migration story today — see `docs/backend-bootstrap.md`
-  — so plan for a fallback read of the legacy location rather than a
-  one-time data migration).
+- **Done: moved generation bookkeeping out of `params` into a sibling
+  `node.data.generation` field (2026-08-08).** `generatedHistory`/
+  `generatedIdx`/`generatedParamsHistory`/`lastGeneratedRef` used to live
+  inside `node.data.params` alongside real generation inputs, kept apart
+  only by `graphExecution.ts`'s `GENERATION_BOOKKEEPING_KEYS` denylist
+  filter — now `node.data.generation: { history, idx, paramsHistory }`
+  (sibling to `params`, added to the `NodeParams` type alongside the
+  existing UI-only flags like `showJsonPreview`), so `params` is _only_
+  ever user-facing generation inputs. `GENERATION_BOOKKEEPING_KEYS`/
+  `snapshotGenerationParams` deleted outright — `persistGeneratedOutputs`
+  just spreads `node.data.params` directly now, nothing to filter.
+  `NodeCard.tsx`'s history nav (`onHistoryIndexChange`/`onHistoryDelete`)
+  writes the generation object via `setNodeField` (the same generic
+  sibling-field setter already used for `showJsonPreview` etc.) instead of
+  `updateNodeParams`; the actual snapshot-restore-into-`params` on scrub
+  still goes through `updateNodeParams`, since that part is genuinely
+  restoring real param values. `GeminiParams.tsx`'s `wiredFieldDisplayValue`
+  now takes the node's `generation` object instead of `params`.
+    - **No read-time fallback for the old shape** — deliberately, per
+      explicit instruction: old scenes are allowed to break, a one-time DB
+      migration handles existing data instead of permanent legacy-read
+      code. `apps/api/src/database/migrations/
+1786204681897-MoveGenerationBookkeepingToSiblingField.ts` moves the 4
+      keys out of every history node's `params` into `data.generation` for
+      every row in `scenes`. Ran against the live DB: 2 scenes, 1 node
+      affected (a `gemini_nanobanana` node with 2 real history entries).
+      Verified after running: 0 nodes left with the old keys in `params`, 1
+      node with the new `generation` field: exactly as expected. Confirmed
+      live in the dev server post-migration — history nav prev/next both
+      work, scrubbing correctly restores the historical `prompt` into the
+      live params field, index persists back to the DB correctly.

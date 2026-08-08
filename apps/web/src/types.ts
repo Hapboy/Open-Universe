@@ -28,6 +28,17 @@ export interface NodeParams {
     showJsonPreview?: boolean;
     pinLabelsWide?: boolean;
     promptPanelOpen?: boolean;
+    // Runtime bookkeeping for HISTORY_NODE_TYPES (data/nodes.ts) — written by
+    // graphExecution.ts's appendGeneratedRef, read by NodeCard.tsx's history
+    // nav and GeminiParams.tsx's wiredFieldDisplayValue. Sibling to `params`
+    // for the same reason as the UI flags above: it's never something the
+    // user typed, so it must never leak into a JSON output pin or a preset
+    // snapshot. Absent until a node's first generation.
+    generation?: {
+        history: string[];
+        idx: number;
+        paramsHistory: Record<string, Record<string, unknown>>;
+    };
     // Deliberately loose (defeats excess-property checking): `params` is a
     // polymorphic bag shaped per `nodeType`, with no per-type schema yet —
     // revisit once real backend param schemas exist.
@@ -99,8 +110,8 @@ export interface Palette {
 }
 
 // An entity node's saved presets: key -> a snapshot of that entity's own
-// params (everything except selectedItem/_presets), loaded onto the node
-// when it's selected again. Keyed by the preset's stable `presetId`, not its
+// params (everything except selectedItem), loaded onto the node when it's
+// selected again. Keyed by the preset's stable `presetId`, not its
 // (possibly non-unique, renameable) display `name`.
 export type EntityPresets = Record<string, Record<string, unknown>>;
 

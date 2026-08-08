@@ -1,11 +1,23 @@
 import { z } from "zod";
+import type { GeminiModel } from "../../core/api/gemini/dto.ts";
 
-// Mirrors NODE_TEMPLATES.gemini_lyria.params (data/nodes.ts) — see
-// geminiImagen.schema.ts for the `.catch()` rationale.
+// See geminiImagen.schema.ts for the model-array/schema-derivation rationale.
+export const LYRIA_MODELS: readonly GeminiModel[] = [
+    { id: "lyria-3-clip-preview", displayName: "Lyria 3 Clip" },
+    { id: "lyria-3-pro-preview", displayName: "Lyria 3 Pro" },
+];
+const LYRIA_MODEL_IDS = LYRIA_MODELS.map((m) => m.id) as [string, ...string[]];
+
 export const geminiLyriaParamsSchema = z.object({
-    prompt: z.string().catch(""),
-    model: z.string().catch("lyria-3-clip-preview"),
-    seed: z.string().catch(""),
+    prompt: z.string(),
+    model: z.enum(LYRIA_MODEL_IDS),
+    seed: z.string(),
 });
 
 export type GeminiLyriaFormValues = z.infer<typeof geminiLyriaParamsSchema>;
+
+export const geminiLyriaDefaults: GeminiLyriaFormValues = {
+    prompt: "",
+    model: LYRIA_MODELS[0].id,
+    seed: "",
+};
