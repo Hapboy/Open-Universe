@@ -2,14 +2,6 @@
     composes: fld from "../../../../styles/shared.module.css";
 }
 
-.pri {
-    composes: pri from "../../../../styles/shared.module.css";
-}
-
-.iconBtn {
-    composes: iconBtn from "../../../../styles/shared.module.css";
-}
-
 .modal {
     composes: modal from "../../../../styles/shared.module.css";
 }

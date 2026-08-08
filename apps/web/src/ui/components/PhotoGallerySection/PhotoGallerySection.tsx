@@ -3,7 +3,7 @@ import cn from "classnames";
 import type { NodeRef } from "../../../types.ts";
 import { putBlob, useResolvedMediaUrls } from "../../../core/mediaRef.ts";
 import { MediaSlider } from "../../NodeCard/MediaSlider/MediaSlider.tsx";
-import { CircleLoader } from "../CircleLoader/CircleLoader.tsx";
+import { IconButton } from "../IconButton/IconButton.tsx";
 import { MediaPickerButton } from "../MediaLibrary/MediaLibrary.tsx";
 import styles from "./PhotoGallerySection.module.css";
 
@@ -114,26 +114,25 @@ export function PhotoGallerySection({
                     style={{ display: "none" }}
                     onChange={handleUpload}
                 />
-                <button
-                    className={styles.iconBtn}
+                <IconButton
+                    icon="upload"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={photos.length >= maxPhotos}
-                    title="Загрузить фото">
-                    <i className="ti ti-upload" />
-                </button>
+                    title="Загрузить фото"
+                />
                 <MediaPickerButton
                     onPick={handlePick}
                     disabled={photos.length >= maxPhotos}
                     title="Выбрать из медиатеки"
                 />
                 {onGenerate && (
-                    <button
-                        className={styles.iconBtn}
+                    <IconButton
+                        icon="wand"
                         onClick={onGenerate}
-                        disabled={isGenerating || photos.length >= maxPhotos}
-                        title="Сгенерировать фото">
-                        {isGenerating ? <CircleLoader /> : <i className="ti ti-wand" />}
-                    </button>
+                        loading={isGenerating}
+                        disabled={photos.length >= maxPhotos}
+                        title="Сгенерировать фото"
+                    />
                 )}
             </div>
         </div>

@@ -6,6 +6,7 @@ import { useToastContext } from "../../store/contexts/ToastContext.tsx";
 import { useModalContext } from "../../store/contexts/ModalContext.tsx";
 import { hayverseApiClient } from "../../core/api/hayverse/client.ts";
 import { TextField } from "../components/TextField/TextField.tsx";
+import { Button } from "../components/Button/Button.tsx";
 import styles from "./Modals.module.css";
 
 function sideColor(side: string): string {
@@ -95,11 +96,9 @@ function SignupModal({
                         placeholder="Ваша фамилия..."
                     />
                     <br />
-                    <button
-                        className={cn(styles.btn, styles.pri)}
-                        onClick={() => void handleSignUp()}>
+                    <Button variant="primary" onClick={() => void handleSignUp()}>
                         Зарегистрироваться
-                    </button>
+                    </Button>
                     <button className={styles.switchLink} onClick={onSwitchToLogin}>
                         Уже есть аккаунт? Войти
                     </button>
@@ -152,11 +151,9 @@ function LoginModal({
                         placeholder="Введите пароль..."
                     />
                     <br />
-                    <button
-                        className={cn(styles.btn, styles.pri)}
-                        onClick={() => void handleLogIn()}>
+                    <Button variant="primary" onClick={() => void handleLogIn()}>
                         Войти
-                    </button>
+                    </Button>
                     <button className={styles.switchLink} onClick={onSwitchToSignup}>
                         Нет аккаунта? Зарегистрироваться
                     </button>
@@ -328,20 +325,17 @@ function IntegrationsTab() {
                         <span>Pinterest</span>
                         <strong>{pinterestStatus.pinterestUsername ?? "Подключено"}</strong>
                     </div>
-                    <button
-                        className={cn(styles.btn, styles.pri)}
+                    <Button
+                        variant="primary"
                         onClick={() => void handleDisconnect()}
-                        disabled={busy}>
+                        loading={busy}>
                         Отключить
-                    </button>
+                    </Button>
                 </>
             ) : (
-                <button
-                    className={cn(styles.btn, styles.pri)}
-                    onClick={() => void handleConnect()}
-                    disabled={busy}>
+                <Button variant="primary" onClick={() => void handleConnect()} loading={busy}>
                     Подключить Pinterest
-                </button>
+                </Button>
             )}
         </div>
     );

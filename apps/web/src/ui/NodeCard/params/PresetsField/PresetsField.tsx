@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import cn from "classnames";
 import { useResolvedMediaUrls } from "../../../../core/mediaRef.ts";
+import { IconButton } from "../../../components/IconButton/IconButton.tsx";
 import type { PresetCardItem } from "../shared.tsx";
 import styles from "./PresetsField.module.css";
 
@@ -59,9 +60,9 @@ export function PresetsField({
                     )}
                     <i className={cn("ti ti-chevron-right", styles.triggerChevron)} />
                 </button>
-                <button
-                    type="button"
-                    className={cn(styles.iconBtn, hasUnsavedChanges && styles.pri)}
+                <IconButton
+                    icon="device-floppy"
+                    variant={hasUnsavedChanges ? "primary" : "default"}
                     disabled={!hasUnsavedChanges || !canSave}
                     onClick={onSave}
                     title={
@@ -72,9 +73,8 @@ export function PresetsField({
                                   ? "Сохранить изменения в пресет"
                                   : "Сохранить как новый пресет"
                               : "Нет изменений для сохранения"
-                    }>
-                    <i className="ti ti-device-floppy" />
-                </button>
+                    }
+                />
             </div>
             {open &&
                 createPortal(

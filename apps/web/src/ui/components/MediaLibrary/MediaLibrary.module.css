@@ -1,7 +1,3 @@
-.iconBtn {
-    composes: iconBtn from "../../../styles/shared.module.css";
-}
-
 .modal {
     composes: modal from "../../../styles/shared.module.css";
 }

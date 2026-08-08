@@ -2,10 +2,6 @@
     composes: fld from "../../../styles/shared.module.css";
 }
 
-.btn {
-    composes: btn from "../../../styles/shared.module.css";
-}
-
 .segBtn {
     composes: segBtn from "../../../styles/shared.module.css";
 }
@@ -20,10 +16,6 @@
 
 .presetSelect {
     composes: presetSelect from "../../../styles/shared.module.css";
-}
-
-.iconBtn {
-    composes: iconBtn from "../../../styles/shared.module.css";
 }
 
 /* Mirrors EntityParams.module.css's search+tags header — not composed

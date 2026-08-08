@@ -1,0 +1,7 @@
+.btn {
+    composes: btn from "../../../styles/shared.module.css";
+}
+
+.pri {
+    composes: pri from "../../../styles/shared.module.css";
+}

@@ -16,6 +16,8 @@ import { EmotionalCurvePreview } from "../../components/EmotionalCurvePreview/Em
 import { StoryPhaseBeats } from "../../components/StoryPhaseBeats/StoryPhaseBeats.tsx";
 import { putBlob, useResolvedMediaUrl } from "../../../core/mediaRef.ts";
 import { MediaPickerButton } from "../../components/MediaLibrary/MediaLibrary.tsx";
+import { Button } from "../../components/Button/Button.tsx";
+import { IconButton } from "../../components/IconButton/IconButton.tsx";
 import styles from "./UtilParams.module.css";
 
 const OUTPUT_SCENE_CATEGORIES = [
@@ -239,12 +241,11 @@ export function OutputParams({
                         )}
                         {shouldShow("general", "Обложка сцены") && (
                             <>
-                                <button
-                                    className={styles.iconBtn}
+                                <IconButton
+                                    icon="upload"
                                     onClick={() => fileInputRef.current?.click()}
-                                    title="Загрузить обложку">
-                                    <i className="ti ti-upload" />
-                                </button>
+                                    title="Загрузить обложку"
+                                />
                                 <MediaPickerButton
                                     onPick={handleCoverPick}
                                     title="Выбрать обложку из медиатеки"
@@ -384,8 +385,8 @@ export function TextParams({
                     />
                 );
             })}
-            <button
-                className={styles.btn}
+            <Button
+                icon="plus"
                 disabled={atLimit}
                 onClick={() => addTextInput(node.id)}
                 title={
@@ -393,9 +394,8 @@ export function TextParams({
                         ? `Достигнут лимит — ${MAX_TEXT_INPUTS} полей`
                         : "Добавить текстовое поле"
                 }>
-                <i className="ti ti-plus" />
-                <span>Добавить текстовое поле</span>
-            </button>
+                Добавить текстовое поле
+            </Button>
         </>
     );
 }

@@ -1,0 +1,7 @@
+.iconBtn {
+    composes: iconBtn from "../../../styles/shared.module.css";
+}
+
+.pri {
+    composes: pri from "../../../styles/shared.module.css";
+}

@@ -2,10 +2,6 @@
     composes: fld from "../../../styles/shared.module.css";
 }
 
-.iconBtn {
-    composes: iconBtn from "../../../styles/shared.module.css";
-}
-
 .photoActions {
     display: flex;
     gap: 6px;

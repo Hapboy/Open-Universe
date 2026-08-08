@@ -5,6 +5,7 @@ import type { MediaAsset } from "@hayverse/api-client";
 import { hayverseApiClient } from "../../../core/api/hayverse/client.ts";
 import { useUserContext } from "../../../store/contexts/UserContext.tsx";
 import { CircleLoader } from "../CircleLoader/CircleLoader.tsx";
+import { IconButton } from "../IconButton/IconButton.tsx";
 import styles from "./MediaLibrary.module.css";
 
 const LIBRARY_TABS = [
@@ -147,14 +148,12 @@ export function MediaPickerButton({
 
     return (
         <>
-            <button
-                type="button"
-                className={styles.iconBtn}
+            <IconButton
+                icon="photo-plus"
                 onClick={() => setOpen(true)}
                 disabled={disabled || !currentUser}
-                title={!currentUser ? "Войдите, чтобы открыть медиатеку" : title}>
-                <i className="ti ti-photo-plus" />
-            </button>
+                title={!currentUser ? "Войдите, чтобы открыть медиатеку" : title}
+            />
             {open &&
                 createPortal(
                     <MediaLibraryModalShell
