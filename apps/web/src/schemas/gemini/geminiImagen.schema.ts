@@ -28,7 +28,7 @@ export const geminiImagenParamsSchema = z.object({
     personGeneration: z.string(),
     safetyFilterLevel: z.string(),
     outputMimeType: z.string(),
-    outputCompressionQuality: z.number().min(0).max(100),
+    outputCompressionQuality: z.number().min(0, "Минимум 0").max(100, "Максимум 100"),
     guidanceScale: z.string(),
     // Vertex/Enterprise-only fields — see comment on GeminiImagenParams in
     // GeminiParams.tsx. Left unconstrained/disabled until a backend proxy

@@ -397,7 +397,7 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                 <Controller
                     control={control}
                     name="outputCompressionQuality"
-                    render={({ field }) => (
+                    render={({ field, fieldState }) => (
                         <TextField
                             label="Качество JPEG (0-100)"
                             value={String(field.value ?? "")}
@@ -407,6 +407,7 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                                 if (isFieldValid("outputCompressionQuality", Number(v)))
                                     updateNodeParam(node.id, "outputCompressionQuality", Number(v));
                             }}
+                            error={fieldState.error?.message}
                         />
                     )}
                 />
