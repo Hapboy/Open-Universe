@@ -23,30 +23,31 @@ lose track of things between sessions.
 
 ## Documentation
 
-- **Add a living, user-facing feature guide — doesn't exist yet.** Everything
-  in `docs/` today is dev-facing: `DESIGN.md` is concept + a forward-looking
-  node catalog (its "Каталог нод" section is a planned A/B/C classification,
-  not a "here's what's actually shipped" reference — don't conflate the
-  two), `DECISIONS.md` is an ADR-lite why-log, `backend-bootstrap.md`/
-  `frontend-todo.md`/`api-testing-guide.md` are all build-status/planning
-  docs for whoever's coding, not for someone just trying to use the app.
-  Requested 2026-08-08: a doc (e.g. `docs/features.md` or
-  `docs/user-guide.md`) explaining what the shipped app actually does and
-  how, from a user's perspective — e.g. generative nodes (`gemini_*`) keep a
-  browsable per-node generation history/slider; which node output pins can
-  wire into which input pins (port types — Image/Video/Audio/Text — and any
-  node-specific wiring rules like `gemini_vision`'s image-pin-plus-query-pin
-  shape); the preset system (save an entity node's params as a reusable
-  preset, select it back later); the photo-gallery/cover-photo mechanics;
-  Timeline/Scenes vs the node graph; anything else a new user would need
-  explained to use the app, not to build it.
-    - **Must be kept continuously up to date** — not a one-time write. The
-      practical way to make that actually happen across sessions rather than
-      rotting like a stale README: add a line to `apps/web/CLAUDE.md`
-      instructing that shipping or changing a user-facing feature means
-      updating this doc in the same pass, the same way `backend-bootstrap.md`
-      is already treated as a must-check/must-update status doc rather than
-      a write-once one.
+- **Done: living, user-facing feature guide (2026-08-09).** New
+  `docs/features.md` (Russian, matching every other `docs/*.md` and the
+  app's own UI language) — covers canvas basics (add/connect/duplicate/
+  delete nodes, port types Image/Video/Audio/Text and the strict
+  same-type-only connection rule), the full shipped node catalog by
+  category, node-specific wiring shapes (`gemini_vision`'s image+query
+  pins, Nano Banana's up-to-14 reference images, `text_prompt`'s
+  growable pins, per-photo output pins on entities), the preset system
+  (save/select, required-fields gating, shared-per-type not per-scene),
+  photo gallery + cover-photo mechanics, the Media Library and its
+  login gate, Gemini generation history/scrubbing (including that
+  scrubbing restores the params that produced that result, and that
+  saving history requires login), Timeline's three tabs (Сцены/Сеть
+  судеб/Scene Arc) and how a "scene" is really just its `output_scene`
+  node, World Map, and what does/doesn't require an account. Built from
+  a full codebase research pass (node.ts, graph.ts, GraphContext.tsx,
+  PresetsField/PhotoGallerySection/MediaLibrary/NodeCard/Timeline/
+  Modals) rather than guessing from memory — deliberately excludes
+  implementation details (file paths, library names, backend guard
+  internals) since it's written for someone using the app, not building
+  it.
+    - **Kept up to date via `apps/web/CLAUDE.md`**: added a note there
+      (mirroring the existing `backend-bootstrap.md` must-update
+      convention) that any PR shipping or changing a user-facing feature
+      must update `docs/features.md` in the same pass.
 
 ## Media
 
