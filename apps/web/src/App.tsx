@@ -18,7 +18,7 @@ const WorldMap = dynamic(() => import("@/ui/WorldMap/WorldMap.tsx").then((mod) =
 });
 
 function AppShell() {
-    const { showWorldMap, worldMapFullscreen } = useGraphContext();
+    const { showWorldMap, worldMapFullscreen, showTimeline } = useGraphContext();
     return (
         <div id="app" data-theme="dark">
             <Topbar />
@@ -37,7 +37,15 @@ function AppShell() {
                     <WorldMap />
                 </main>
             </div>
-            <Timeline />
+            <div
+                className={cn(
+                    styles.timelineCollapse,
+                    !showTimeline && styles.timelineCollapseHidden,
+                )}>
+                <div className={styles.timelineCollapseInner}>
+                    <Timeline />
+                </div>
+            </div>
             <footer className={styles.statusbar}>
                 <StatusBar />
             </footer>

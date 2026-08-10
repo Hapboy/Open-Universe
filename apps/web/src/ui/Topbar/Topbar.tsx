@@ -6,7 +6,7 @@ import { useFullscreenToggle } from "@/ui/hooks/useFullscreenToggle.ts";
 import styles from "@/ui/Topbar/Topbar.module.css";
 
 export function Topbar() {
-    const { executeGraph } = useGraphContext();
+    const { executeGraph, showTimeline, setShowTimeline } = useGraphContext();
     const { openModal } = useModalContext();
     const toggleFullscreen = useFullscreenToggle(() => document.getElementById("app"));
 
@@ -25,6 +25,19 @@ export function Topbar() {
                     onClick={toggleFullscreen}
                     title="Полноэкранный режим">
                     <i className="ti ti-arrows-maximize" />
+                </button>
+                <button
+                    className={cn(styles.iconBtn, !showTimeline && styles.iconBtnActive)}
+                    onClick={() => setShowTimeline(!showTimeline)}
+                    aria-pressed={!showTimeline}
+                    title={showTimeline ? "Скрыть таймлайн" : "Показать таймлайн"}>
+                    <i
+                        className={
+                            showTimeline
+                                ? "ti ti-layout-bottombar-collapse"
+                                : "ti ti-layout-bottombar-expand"
+                        }
+                    />
                 </button>
             </div>
 

@@ -314,6 +314,9 @@ interface GraphCtx {
     worldMapFullscreen: boolean;
     setWorldMapFullscreen: (v: boolean) => void;
 
+    showTimeline: boolean;
+    setShowTimeline: (v: boolean) => void;
+
     totalDuration: number;
     setTotalDuration: (seconds: number) => void;
 }
@@ -347,6 +350,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false);
     const [showWorldMap, setShowWorldMap] = useState<boolean>(false);
     const [worldMapFullscreen, setWorldMapFullscreen] = useState<boolean>(false);
+    const [showTimeline, setShowTimeline] = useState<boolean>(true);
 
     const [totalDuration, setTotalDurationState] = useState<number>(DEFAULT_TOTAL_DURATION);
     const setTotalDuration = useCallback(
@@ -906,6 +910,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         setShowWorldMap,
         worldMapFullscreen,
         setWorldMapFullscreen,
+        showTimeline,
+        setShowTimeline,
         totalDuration,
         setTotalDuration,
     };

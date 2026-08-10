@@ -37,34 +37,6 @@ lose track of things between sessions.
   that feature. Fix: drop the clamp — `Math.max(0, x)`/`Math.max(0, y)` →
   plain `x`/`y`.
 
-## Timeline
-
-- **Ability to collapse/hide the Timeline panel.** Requested 2026-08-10 — it
-  eats a fixed chunk of vertical space (`Timeline.module.css`'s
-  `.timelineContainer` has no explicit height, but its content adds up to
-  roughly 200px: `.mainTimelineArea`'s 116px scene-track view + header +
-  controls bar + padding/gaps — around 20% of a typical viewport) with no
-  way to reclaim it, unlike the graph canvas below it (`App.tsx`'s `.stage`
-  is `flex: 1`, so it already grows/shrinks to fill whatever's left).
-  `GraphContext.tsx` already has this exact pattern for three other panels —
-  `showMiniMap`/`showMontageMonitor`/`showWorldMap` (booleans + setters,
-  ~line 285 onward) — so a `showTimeline`/`setShowTimeline` pair following
-  the same shape is the natural fit; `App.tsx`'s `<Timeline />` (line 40)
-  would render conditionally on it, same as `WorldMap`/`MontageMonitor`
-  already do.
-    - **One real wrinkle**: unlike those three, whose toggle buttons live
-      _inside_ `Timeline.tsx`'s own `controlsBar` (lines 322-343) — safe,
-      since Timeline itself is never the thing being hidden — a
-      "hide Timeline" toggle can't live inside Timeline, or hiding it would
-      hide the only way to bring it back. Needs a home somewhere that stays
-      visible regardless, e.g. `Topbar.tsx` (currently has no view-toggle
-      buttons of this kind at all — would be the first).
-    - Not scoped further yet: whether collapsing should hide the whole panel
-      outright or leave a thin always-visible strip (mirroring
-      `editorPaneCollapsed`'s `width: 0%` pattern used for `WorldMap`'s
-      split view, `App.module.css` line 30) is an open call — full hide is
-      simpler and matches the other three toggles' all-or-nothing behavior.
-
 ## Generative Node Params
 
 - **Nano Banana can return multiple images per request, but the backend only
