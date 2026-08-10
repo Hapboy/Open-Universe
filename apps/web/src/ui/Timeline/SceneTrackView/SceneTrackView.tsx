@@ -134,19 +134,17 @@ export function SceneTrackView({
     );
 
     return (
-        <>
-            <div className={styles.rulerContainer} onMouseDown={handleScrubStart}>
-                {renderRulerTicks()}
-            </div>
+        <div className={styles.timelineTrackArea} ref={containerRef} onMouseDown={handleScrubStart}>
+            <div className={styles.rulerContainer}>{renderRulerTicks()}</div>
 
-            <div className={styles.tracksWrapper} ref={containerRef} onMouseDown={handleScrubStart}>
-                <div className={styles.playhead} style={{ left: `${scrubberPercent}%` }}>
-                    <div className={styles.playheadHandle} />
-                </div>
-
+            <div className={styles.tracksWrapper}>
                 {renderTrack(scenes.filter((s) => s.track === 1))}
                 {renderTrack(scenes.filter((s) => s.track === 2))}
             </div>
-        </>
+
+            <div className={styles.playhead} style={{ left: `${scrubberPercent}%` }}>
+                <div className={styles.playheadHandle} />
+            </div>
+        </div>
     );
 }

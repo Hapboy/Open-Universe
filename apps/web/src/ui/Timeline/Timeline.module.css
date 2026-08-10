@@ -95,7 +95,7 @@
     top: 6px;
     bottom: 0;
     width: 1px;
-    background: rgba(241, 239, 232, 0.15);
+    background: rgba(241, 239, 232, 0.4);
 }
 
 .rulerTickMinor {
@@ -103,7 +103,7 @@
     top: 11px;
     bottom: 0;
     width: 1px;
-    background: rgba(241, 239, 232, 0.07);
+    background: rgba(241, 239, 232, 0.2);
 }
 
 .tickLabel {
@@ -210,6 +210,12 @@
 }
 
 /* Scrubber and Track Area */
+.timelineTrackArea {
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
 .tracksWrapper {
     position: relative;
     background: rgba(20, 19, 16, 0.6);
@@ -220,8 +226,6 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    cursor: pointer;
-    user-select: none;
     overflow: hidden;
 }
 
@@ -329,12 +333,19 @@
     position: absolute;
     top: 0;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 8px;
-    height: 8px;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 14px;
     background: var(--color-bg-accent);
-    border-radius: 50%;
+    clip-path: polygon(0% 0%, 100% 0%, 100% 55%, 50% 100%, 0% 55%);
+    pointer-events: auto;
+    cursor: ew-resize;
     box-shadow: 0 0 6px var(--color-bg-accent);
+    transition: transform 0.15s ease;
+}
+
+.playheadHandle:hover {
+    transform: translateX(-50%) scale(1.15);
 }
 
 /* Tab 2: Synapses interactive network canvas styling */
