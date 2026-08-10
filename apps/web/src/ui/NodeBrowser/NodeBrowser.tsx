@@ -11,10 +11,12 @@ const POPUP_MAX_HEIGHT = 420;
 
 export function NodeBrowser({
     screenPos,
+    maxY,
     onSelect,
     onClose,
 }: {
     screenPos: { x: number; y: number };
+    maxY: number;
     onSelect: (type: NodeType) => void;
     onClose: () => void;
 }) {
@@ -80,7 +82,7 @@ export function NodeBrowser({
     }, [items, highlight, onSelect, onClose]);
 
     const left = Math.min(screenPos.x, window.innerWidth - POPUP_WIDTH - 12);
-    const top = Math.min(screenPos.y, window.innerHeight - POPUP_MAX_HEIGHT - 12);
+    const top = Math.min(screenPos.y, maxY - POPUP_MAX_HEIGHT - 12);
 
     return (
         <div

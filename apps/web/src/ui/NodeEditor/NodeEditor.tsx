@@ -45,6 +45,7 @@ function NodeEditorCanvas() {
     const [browserAt, setBrowserAt] = useState<{
         screen: { x: number; y: number };
         flow: { x: number; y: number };
+        maxY: number;
     } | null>(null);
 
     useEffect(() => {
@@ -89,7 +90,11 @@ function NodeEditorCanvas() {
             if (!(e.target as HTMLElement).classList.contains("react-flow__pane")) return;
 
             const flow = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-            setBrowserAt({ screen: { x: e.clientX, y: e.clientY }, flow });
+            // Clamp the popup to the canvas's own bottom edge, not the full
+            // window — the canvas visually ends where the Timeline panel
+            // begins, but window.innerHeight includes that reserved space too.
+            const canvasBottom = e.currentTarget.getBoundingClientRect().bottom;
+            setBrowserAt({ screen: { x: e.clientX, y: e.clientY }, flow, maxY: canvasBottom });
         },
         [screenToFlowPosition],
     );
@@ -151,6 +156,7 @@ function NodeEditorCanvas() {
             {browserAt && (
                 <NodeBrowser
                     screenPos={browserAt.screen}
+                    maxY={browserAt.maxY}
                     onSelect={onBrowserSelect}
                     onClose={() => setBrowserAt(null)}
                 />
