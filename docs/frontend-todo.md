@@ -136,16 +136,77 @@ tls, maxRetriesPerRequest }` options object instead of a live client, so
 
 ## Node Editor
 
-- **Undo/redo for the graph editor.** No history support today — GraphContext
-  has no `undo`/`redo`, so a mistake (wrong preset click, deleted node,
-  overwritten params) is unrecoverable without a manual fix. React Flow's own
-  docs cover the standard approach: keep a history stack of past
-  `nodes`/`edges` snapshots (or patches) in GraphContext, push on every
-  committed change, wire Ctrl+Z/Ctrl+Shift+Z. Worth scoping carefully —
-  GraphContext mutates `nodes`/`edges` from a lot of call sites
-  (updateNodeParam, setNodePhotos, duplicateNode, connect/disconnect, etc.),
-  so the snapshot point needs to be chosen to avoid either missing changes or
-  spamming the history with every keystroke.
+- **Done: undo/redo for the graph editor (2026-08-10).** New
+  `store/contexts/graphHistory.ts` (`useGraphHistory`, instantiated inside
+  `GraphProvider`) keeps a per-scene `{past, future}` stack of
+  `{nodes, edges, selectedNodeId}` snapshots in a `useRef` — kept out of
+  React state entirely since there's no toolbar UI to disable/enable off
+  `canUndo`/`canRedo` (keyboard-only: Ctrl+Z/Ctrl+Shift+Z, wired in
+  `NodeEditor.tsx`'s existing Ctrl+C/Ctrl+V keydown effect). Snapshots are
+  references, not deep clones — every mutator already produces new
+  array/object references per change and never mutates in place, so a
+  snapshot is O(1) extra memory with full structural sharing against
+  whatever nodes/edges didn't change.
+    - **The actual hard part** (per the original framing below): a single
+      `record(key: string | null)` primitive added as one line to every
+      mutator in `GraphContext.tsx`. `key !== null` bursts (e.g.
+      `` `param:${nodeId}:${key}` `` for `updateNodeParam`, a shared
+      `"drag"` for `onNodesChange` position changes) collapse repeated calls
+      with the same key into one history entry via a 600ms idle-debounce,
+      so typing a field for a few seconds or dragging a node is one undo
+      step, not one per keystroke/mousemove. `key === null` (discrete
+      actions — delete, duplicate, preset apply, connect, add/remove pin)
+      flush on the next microtask instead, which merges every `record(null)`
+      call made within the same synchronous handler — this is what makes
+      React Flow's `deleteKeyCode="Delete"` path (fires `onNodesChange` then
+      `onEdgesChange` back-to-back) collapse into one step with no special
+      casing. Drag-end (`dragging: false`) and scene switches
+      (`loadSceneIntoState`) flush immediately rather than waiting out the
+      debounce. History capped at 50 entries/scene; any new committed entry
+      clears `future` (standard branching semantics).
+    - **Deliberately not recorded**: `appendGeneratedRef`/Pinterest cache
+      loads (`graphExecution.ts`) — automatic/async writes, not in-the-moment
+      user edits, excluded by construction since they call `setNodes`
+      directly outside the wrapped mutators. Pure UI toggles routed through
+      `setNodeField` (`showJsonPreview`/`pinLabelsWide`/`promptPanelOpen`) —
+      no content/semantic meaning, so `setNodeField` only records when a
+      patch touches a key outside that set (the `generation` sibling-field
+      writes from history-nav scrub/delete still count as real content).
+      `usePresetDatabase`'s mount-time auto-`presetId`-assignment
+      (`shared.tsx`) also skipped — `updateNodeParams` gained an optional
+      third arg, `{ skipHistory?: boolean }`, used only at that one call
+      site, so a fresh node's first render doesn't create a spurious undo
+      entry.
+    - **Client-side only, not persisted**: the stacks live in memory for the
+      current tab and are never sent to the backend or written into the
+      `scenes.graph` jsonb — the existing 400ms autosave still only persists
+      live `nodes`/`edges`, exactly as before. Undo history doesn't survive
+      a page refresh; a session-scoped safety net, not a version-history
+      feature.
+    - **Known v1 limitation**: deleting a scene's `output_scene` node
+      cascades to deleting the whole scene (existing behavior) — by the time
+      Ctrl+Z could fire, `activeSceneId` already points elsewhere, so scene
+      deletion itself isn't undoable. The orphaned scene's stack is garbage-
+      collected (`history.garbageCollectScene`) from the same cascade-delete
+      effect.
+    - Original framing, for context: GraphContext had no `undo`/`redo`, so a
+      mistake (wrong preset click, deleted node, overwritten params) was
+      unrecoverable without a manual fix. The hard part was exactly what's
+      addressed above — GraphContext mutates `nodes`/`edges` from a lot of
+      call sites, several very high-frequency, so the snapshot point had to
+      avoid either missing changes or spamming history with every keystroke.
+
+- **Edge selection sometimes deletes the connected node too, not just the
+  edge.** Found while discussing the undo/redo work above (2026-08-10), not
+  yet fixed. Root cause: `NodeEditor.tsx`'s `styledNodes` (~line 104) forces
+  every node's `selected` flag from `selectedNodeId` on _every_ render, but
+  there's no `onEdgeClick` handler on `<ReactFlow>` to clear `selectedNodeId`
+  when the user clicks an edge instead of a node. So a previously-selected
+  node stays selected (both visually and as far as React Flow's internal
+  state is concerned) even after clicking an edge, and `deleteKeyCode`
+  deletes everything currently marked selected — both the edge just clicked
+  and the stale-selected node. Fix: add an `onEdgeClick` that calls
+  `selectNode(null)`, mirroring what `onPaneClick` already does.
 
 ## Entity Node Params
 

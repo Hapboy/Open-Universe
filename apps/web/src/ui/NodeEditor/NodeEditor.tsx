@@ -32,6 +32,8 @@ function NodeEditorCanvas() {
         selectedNodeId,
         createNode,
         duplicateNode,
+        undo,
+        redo,
         showMiniMap,
     } = useGraphContext();
     const { showToast } = useToastContext();
@@ -59,11 +61,17 @@ function NodeEditorCanvas() {
                     e.preventDefault();
                     duplicateNode(id);
                 }
+            } else if ((e.key === "z" || e.key === "Z") && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if ((e.key === "z" || e.key === "Z") && e.shiftKey) {
+                e.preventDefault();
+                redo();
             }
         };
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
-    }, [selectedNodeId, nodes, duplicateNode]);
+    }, [selectedNodeId, nodes, duplicateNode, undo, redo]);
 
     const onNodeClick = useCallback(
         (_: React.MouseEvent, node: Node) => {

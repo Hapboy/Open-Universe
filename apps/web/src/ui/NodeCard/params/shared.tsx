@@ -12,7 +12,11 @@ export interface NodeParamsProps {
     resolved: Record<string, unknown>;
     scenes: TimelineScene[];
     updateNodeParam: (id: string, key: string, value: unknown) => void;
-    updateNodeParams: (id: string, patch: Record<string, unknown>) => void;
+    updateNodeParams: (
+        id: string,
+        patch: Record<string, unknown>,
+        opts?: { skipHistory?: boolean },
+    ) => void;
     setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
     addImageInput: (id: string) => void;
     addTextInput: (id: string) => void;
@@ -192,7 +196,11 @@ export function usePresetDatabase(
         const matched = selectedName
             ? Object.entries(rawPresets ?? {}).find(([, s]) => s.name === selectedName)
             : undefined;
-        updateNodeParams(node.id, { presetId: matched ? matched[0] : crypto.randomUUID() });
+        updateNodeParams(
+            node.id,
+            { presetId: matched ? matched[0] : crypto.randomUUID() },
+            { skipHistory: true },
+        );
     }, [node.id, params.presetId, params.selectedItem, rawPresets, updateNodeParams]);
 
     const onSelect = (id: string) => {

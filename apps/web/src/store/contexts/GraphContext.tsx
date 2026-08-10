@@ -34,6 +34,7 @@ import { readJSON, readRaw, removeKey, writeRaw } from "@/core/browserStorage.ts
 import { buildPhotoPorts } from "@/core/characterPorts.ts";
 import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
 import { useGraphExecution } from "@/store/contexts/graphExecution.ts";
+import { useGraphHistory } from "@/store/contexts/graphHistory.ts";
 
 const SCENE_GRAPHS_KEY = "hv_scene_graphs";
 const ACTIVE_SCENE_KEY = "hv_active_scene_id";
@@ -42,6 +43,13 @@ const DEFAULT_TOTAL_DURATION = 60; // 01:00 in seconds
 const MAX_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
 const MAX_TEXT_INPUTS = 8; // text_prompt's own dynamic-field cap
 const MAX_ENTITY_PHOTOS = 10;
+// Pure view-state data flags (setNodeField) — no content/semantic meaning,
+// so they're excluded from undo history (see graphHistory.ts usage below).
+const UI_ONLY_FIELD_KEYS = new Set<keyof NodeParams>([
+    "showJsonPreview",
+    "pinLabelsWide",
+    "promptPanelOpen",
+]);
 
 function withPhotoOutputs(nodeId: string, outputs: Port[], photos: string[]): Port[] {
     const photoPrefix = `${nodeId}_photo_`;
@@ -271,11 +279,17 @@ interface GraphCtx {
     renameNode: (nodeId: string, label: string) => void;
     setNodeField: (nodeId: string, patch: Partial<NodeParams>) => void;
     updateNodeParam: (nodeId: string, key: string, value: unknown) => void;
-    updateNodeParams: (nodeId: string, patch: Record<string, unknown>) => void;
+    updateNodeParams: (
+        nodeId: string,
+        patch: Record<string, unknown>,
+        opts?: { skipHistory?: boolean },
+    ) => void;
     setNodePhotos: (nodeId: string, photos: string[], coverPhotoIndex: number) => void;
     addImageInput: (nodeId: string) => void;
     addTextInput: (nodeId: string) => void;
     removePinInput: (nodeId: string, portId: string) => void;
+    undo: () => void;
+    redo: () => void;
     executeGraph: () => Promise<void>;
     runNode: (nodeId: string) => Promise<void>;
     runningNodeIds: Set<string>;
@@ -320,6 +334,15 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     const [nodes, setNodes] = useState<Node<NodeParams>[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+    const history = useGraphHistory({
+        nodes,
+        edges,
+        selectedNodeId,
+        activeSceneId,
+        setNodes,
+        setEdges,
+        setSelectedNodeId,
+    });
     const [showMiniMap, setShowMiniMap] = useState<boolean>(true);
     const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false);
     const [showWorldMap, setShowWorldMap] = useState<boolean>(false);
@@ -383,20 +406,24 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
     // Loads a scene's graph into the live editor state (or clears the canvas
     // when `nextId` is null, i.e. no scenes remain).
-    const loadSceneIntoState = useCallback((nextId: string | null, graphs: SceneGraphs) => {
-        if (nextId) {
-            const nextGraph = graphs[nextId] || createEmptySceneGraph();
-            setNodes(withTemplateDefaults(nextGraph.nodes));
-            setEdges(nextGraph.edges);
-            writeRaw(ACTIVE_SCENE_KEY, nextId);
-        } else {
-            setNodes([]);
-            setEdges([]);
-            removeKey(ACTIVE_SCENE_KEY);
-        }
-        setSelectedNodeId(null);
-        setActiveSceneIdState(nextId);
-    }, []);
+    const loadSceneIntoState = useCallback(
+        (nextId: string | null, graphs: SceneGraphs) => {
+            history.flush();
+            if (nextId) {
+                const nextGraph = graphs[nextId] || createEmptySceneGraph();
+                setNodes(withTemplateDefaults(nextGraph.nodes));
+                setEdges(nextGraph.edges);
+                writeRaw(ACTIVE_SCENE_KEY, nextId);
+            } else {
+                setNodes([]);
+                setEdges([]);
+                removeKey(ACTIVE_SCENE_KEY);
+            }
+            setSelectedNodeId(null);
+            setActiveSceneIdState(nextId);
+        },
+        [history],
+    );
 
     const setActiveSceneId = useCallback(
         (nextId: string) => {
@@ -422,19 +449,41 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
 
     // ── React Flow handlers ─────────────────────────────────────────────────────
 
-    const onNodesChange: OnNodesChange = useCallback((changes: NodeChange[]) => {
-        setNodes((ns) => applyNodeChanges(changes, ns) as Node<NodeParams>[]);
-    }, []);
+    const onNodesChange: OnNodesChange = useCallback(
+        (changes: NodeChange[]) => {
+            // "select"/"dimensions" are pure React-Flow-internal bookkeeping
+            // (styledNodes in NodeEditor.tsx already re-derives `.selected`
+            // from selectedNodeId every render, so a stale value in a stored
+            // snapshot is inert) — ignored so a plain click never creates a
+            // history entry.
+            const relevant = changes.filter((c) => c.type !== "select" && c.type !== "dimensions");
+            if (relevant.length > 0) {
+                const isRemove = relevant.some((c) => c.type === "remove");
+                const isDragMove = !isRemove && relevant.some((c) => c.type === "position");
+                history.record(isDragMove ? "drag" : null);
+            }
+            setNodes((ns) => applyNodeChanges(changes, ns) as Node<NodeParams>[]);
+            if (relevant.some((c) => c.type === "position" && c.dragging === false)) {
+                history.flush();
+            }
+        },
+        [history],
+    );
 
-    const onEdgesChange: OnEdgesChange = useCallback((changes: EdgeChange[]) => {
-        setEdges((es) => applyEdgeChanges(changes, es));
-    }, []);
+    const onEdgesChange: OnEdgesChange = useCallback(
+        (changes: EdgeChange[]) => {
+            if (changes.some((c) => c.type !== "select")) history.record(null);
+            setEdges((es) => applyEdgeChanges(changes, es));
+        },
+        [history],
+    );
 
     // Input pins accept a single edge by default (see Port.allowMultiple) —
     // wiring a new connection into an already-occupied one replaces it
     // instead of stacking a second edge onto the same handle.
     const onConnect: OnConnect = useCallback(
         (conn: Connection) => {
+            history.record(null);
             const targetPort = findPort(nodes, conn.target, conn.targetHandle, "target");
             setEdges((es) => {
                 const withoutStale = targetPort?.allowMultiple
@@ -446,7 +495,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
                 return addEdge(conn, withoutStale);
             });
         },
-        [nodes],
+        [nodes, history],
     );
 
     const isValidConnection: IsValidConnection = useCallback(
@@ -522,6 +571,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
             const updated = { ...sceneGraphs };
             delete updated[deletedId];
             setSceneGraphs(updated);
+            history.garbageCollectScene(deletedId);
             hayverseApiClient.scenes
                 .remove(deletedId)
                 .catch(() => showToast("Не удалось удалить сцену на сервере"));
@@ -529,7 +579,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
             loadSceneIntoState(remaining[0]?.id ?? null, updated);
         }
         prevHadOutputRef.current = hasOutputNow;
-    }, [nodes, activeSceneId, sceneGraphs, showToast, loadSceneIntoState]);
+    }, [nodes, activeSceneId, sceneGraphs, showToast, loadSceneIntoState, history]);
 
     const createScene = useCallback(() => {
         // New scenes always default to track 1 — chain after track 1's last scene
@@ -573,6 +623,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
             const template = NODE_TEMPLATES[type as keyof typeof NODE_TEMPLATES];
             if (!template) return null;
 
+            history.record(null);
             const id = crypto.randomUUID();
             const newNode: Node<NodeParams> = {
                 id,
@@ -592,70 +643,95 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
             setNodes((ns) => [...ns, newNode]);
             return newNode;
         },
-        [],
+        [history],
     );
 
-    const duplicateNode = useCallback((id: string) => {
-        setNodes((ns) => {
-            const source = ns.find((n) => n.id === id);
-            if (!source) return ns;
+    const duplicateNode = useCallback(
+        (id: string) => {
+            history.record(null);
+            setNodes((ns) => {
+                const source = ns.find((n) => n.id === id);
+                if (!source) return ns;
 
-            const newId = crypto.randomUUID();
-            const clonedData = structuredClone(source.data);
-            const outputs = ENTITY_NODE_TYPES.has(source.data.nodeType)
-                ? withPhotoOutputs(
-                      newId,
-                      clonedData.outputs.map((out, i) => ({ ...out, id: `${newId}_out_${i}` })),
-                      (clonedData.params.photos as string[] | undefined) ?? [],
-                  )
-                : clonedData.outputs.map((out, i) => ({ ...out, id: `${newId}_out_${i}` }));
-            const duplicated: Node<NodeParams> = {
-                ...source,
-                id: newId,
-                position: { x: source.position.x + 40, y: source.position.y + 40 },
-                data: {
-                    ...clonedData,
-                    inputs: source.data.inputs.map((inp, i) => ({
-                        ...inp,
-                        id: `${newId}_in_${i}`,
-                    })),
-                    outputs,
-                },
-                selected: false,
-            };
+                const newId = crypto.randomUUID();
+                const clonedData = structuredClone(source.data);
+                const outputs = ENTITY_NODE_TYPES.has(source.data.nodeType)
+                    ? withPhotoOutputs(
+                          newId,
+                          clonedData.outputs.map((out, i) => ({ ...out, id: `${newId}_out_${i}` })),
+                          (clonedData.params.photos as string[] | undefined) ?? [],
+                      )
+                    : clonedData.outputs.map((out, i) => ({ ...out, id: `${newId}_out_${i}` }));
+                const duplicated: Node<NodeParams> = {
+                    ...source,
+                    id: newId,
+                    position: { x: source.position.x + 40, y: source.position.y + 40 },
+                    data: {
+                        ...clonedData,
+                        inputs: source.data.inputs.map((inp, i) => ({
+                            ...inp,
+                            id: `${newId}_in_${i}`,
+                        })),
+                        outputs,
+                    },
+                    selected: false,
+                };
 
-            setSelectedNodeId(newId);
-            return [...ns, duplicated];
-        });
-    }, []);
+                setSelectedNodeId(newId);
+                return [...ns, duplicated];
+            });
+        },
+        [history],
+    );
 
-    const deleteNode = useCallback((id: string) => {
-        setNodes((ns) => ns.filter((n) => n.id !== id));
-        setEdges((es) => es.filter((e) => e.source !== id && e.target !== id));
-        setSelectedNodeId(null);
-    }, []);
+    const deleteNode = useCallback(
+        (id: string) => {
+            history.record(null);
+            setNodes((ns) => ns.filter((n) => n.id !== id));
+            setEdges((es) => es.filter((e) => e.source !== id && e.target !== id));
+            setSelectedNodeId(null);
+        },
+        [history],
+    );
 
-    const renameNode = useCallback((nodeId: string, label: string) => {
-        setNodes((ns) =>
-            ns.map((n) => (n.id !== nodeId ? n : { ...n, data: { ...n.data, label } })),
-        );
-    }, []);
+    const renameNode = useCallback(
+        (nodeId: string, label: string) => {
+            history.record(null);
+            setNodes((ns) =>
+                ns.map((n) => (n.id !== nodeId ? n : { ...n, data: { ...n.data, label } })),
+            );
+        },
+        [history],
+    );
 
-    const setNodeField = useCallback((nodeId: string, patch: Partial<NodeParams>) => {
-        setNodes((ns) =>
-            ns.map((n) => (n.id !== nodeId ? n : { ...n, data: { ...n.data, ...patch } })),
-        );
-    }, []);
+    const setNodeField = useCallback(
+        (nodeId: string, patch: Partial<NodeParams>) => {
+            // Pure UI toggles (showJsonPreview etc.) don't count as
+            // undoable content — only record if the patch touches something
+            // else (e.g. the `generation` sibling field on history scrub).
+            if (Object.keys(patch).some((k) => !UI_ONLY_FIELD_KEYS.has(k as keyof NodeParams))) {
+                history.record(null);
+            }
+            setNodes((ns) =>
+                ns.map((n) => (n.id !== nodeId ? n : { ...n, data: { ...n.data, ...patch } })),
+            );
+        },
+        [history],
+    );
 
-    const updateNodeParam = useCallback((nodeId: string, key: string, value: unknown) => {
-        setNodes((ns) =>
-            ns.map((n) =>
-                n.id !== nodeId
-                    ? n
-                    : { ...n, data: { ...n.data, params: { ...n.data.params, [key]: value } } },
-            ),
-        );
-    }, []);
+    const updateNodeParam = useCallback(
+        (nodeId: string, key: string, value: unknown) => {
+            history.record(`param:${nodeId}:${key}`);
+            setNodes((ns) =>
+                ns.map((n) =>
+                    n.id !== nodeId
+                        ? n
+                        : { ...n, data: { ...n.data, params: { ...n.data.params, [key]: value } } },
+                ),
+            );
+        },
+        [history],
+    );
 
     // Appends a new "Reference Image N" input pin to a node (used by nodes
     // like Nano Banana that accept a variable number of reference images).
@@ -664,21 +740,25 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     // collide with a surviving pin's id after a mid-array removal (see
     // removePinInput), and React Flow requires unique handle ids per node —
     // a collision silently breaks connections to one of the duplicate pins.
-    const addImageInput = useCallback((nodeId: string) => {
-        setNodes((ns) =>
-            ns.map((n) => {
-                if (n.id !== nodeId) return n;
-                const imageCount = n.data.inputs.length - 1;
-                if (imageCount >= MAX_REFERENCE_IMAGES) return n;
-                const newPort: Port = {
-                    id: `${nodeId}_in_${crypto.randomUUID()}`,
-                    name: `Reference Image ${n.data.inputs.length}`,
-                    type: "Image",
-                };
-                return { ...n, data: { ...n.data, inputs: [...n.data.inputs, newPort] } };
-            }),
-        );
-    }, []);
+    const addImageInput = useCallback(
+        (nodeId: string) => {
+            history.record(null);
+            setNodes((ns) =>
+                ns.map((n) => {
+                    if (n.id !== nodeId) return n;
+                    const imageCount = n.data.inputs.length - 1;
+                    if (imageCount >= MAX_REFERENCE_IMAGES) return n;
+                    const newPort: Port = {
+                        id: `${nodeId}_in_${crypto.randomUUID()}`,
+                        name: `Reference Image ${n.data.inputs.length}`,
+                        type: "Image",
+                    };
+                    return { ...n, data: { ...n.data, inputs: [...n.data.inputs, newPort] } };
+                }),
+            );
+        },
+        [history],
+    );
 
     // Appends a new "Text N" input pin to a node (used by text_prompt, which
     // pairs each pin with its own wirable field — see WirableTextField usage
@@ -687,51 +767,67 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
     // colliding id after a mid-array removal would also alias a surviving
     // pin's stored text. Capped like addImageInput's imageCount — excluding
     // the node's own fixed "Text" pin (index 0).
-    const addTextInput = useCallback((nodeId: string) => {
-        setNodes((ns) =>
-            ns.map((n) => {
-                if (n.id !== nodeId) return n;
-                const extraCount = n.data.inputs.length - 1;
-                if (extraCount >= MAX_TEXT_INPUTS) return n;
-                const newPort: Port = {
-                    id: `${nodeId}_in_${crypto.randomUUID()}`,
-                    name: `Text ${n.data.inputs.length + 1}`,
-                    type: "Text",
-                };
-                return { ...n, data: { ...n.data, inputs: [...n.data.inputs, newPort] } };
-            }),
-        );
-    }, []);
+    const addTextInput = useCallback(
+        (nodeId: string) => {
+            history.record(null);
+            setNodes((ns) =>
+                ns.map((n) => {
+                    if (n.id !== nodeId) return n;
+                    const extraCount = n.data.inputs.length - 1;
+                    if (extraCount >= MAX_TEXT_INPUTS) return n;
+                    const newPort: Port = {
+                        id: `${nodeId}_in_${crypto.randomUUID()}`,
+                        name: `Text ${n.data.inputs.length + 1}`,
+                        type: "Text",
+                    };
+                    return { ...n, data: { ...n.data, inputs: [...n.data.inputs, newPort] } };
+                }),
+            );
+        },
+        [history],
+    );
 
-    const removePinInput = useCallback((nodeId: string, portId: string) => {
-        setNodes((ns) =>
-            ns.map((n) =>
-                n.id !== nodeId
-                    ? n
-                    : {
-                          ...n,
-                          data: { ...n.data, inputs: n.data.inputs.filter((p) => p.id !== portId) },
-                      },
-            ),
-        );
-        setEdges((es) => es.filter((e) => e.targetHandle !== portId));
-    }, []);
+    const removePinInput = useCallback(
+        (nodeId: string, portId: string) => {
+            history.record(null);
+            setNodes((ns) =>
+                ns.map((n) =>
+                    n.id !== nodeId
+                        ? n
+                        : {
+                              ...n,
+                              data: {
+                                  ...n.data,
+                                  inputs: n.data.inputs.filter((p) => p.id !== portId),
+                              },
+                          },
+                ),
+            );
+            setEdges((es) => es.filter((e) => e.targetHandle !== portId));
+        },
+        [history],
+    );
 
-    const updateNodeParams = useCallback((nodeId: string, patch: Record<string, unknown>) => {
-        setNodes((ns) =>
-            ns.map((n) =>
-                n.id !== nodeId
-                    ? n
-                    : { ...n, data: { ...n.data, params: { ...n.data.params, ...patch } } },
-            ),
-        );
-    }, []);
+    const updateNodeParams = useCallback(
+        (nodeId: string, patch: Record<string, unknown>, opts?: { skipHistory?: boolean }) => {
+            if (!opts?.skipHistory) history.record(null);
+            setNodes((ns) =>
+                ns.map((n) =>
+                    n.id !== nodeId
+                        ? n
+                        : { ...n, data: { ...n.data, params: { ...n.data.params, ...patch } } },
+                ),
+            );
+        },
+        [history],
+    );
 
     // Single place that mutates a rich entity node's photos — keeps its
     // per-photo output pins (one per photo, id'd by blob ref) in sync with
     // the array, and prunes edges wired to any pin that no longer exists.
     const setNodePhotos = useCallback(
         (nodeId: string, photos: string[], coverPhotoIndex: number) => {
+            history.record(null);
             const capped = photos.slice(0, MAX_ENTITY_PHOTOS);
             setNodes((ns) =>
                 ns.map((n) =>
@@ -758,7 +854,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
                 ),
             );
         },
-        [],
+        [history],
     );
 
     const graphExecution = useGraphExecution({
@@ -796,6 +892,8 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         addImageInput,
         addTextInput,
         removePinInput,
+        undo: history.undo,
+        redo: history.redo,
         showMiniMap,
         setShowMiniMap,
         activeSceneId,
