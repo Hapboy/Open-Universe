@@ -407,7 +407,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         setEdges,
         setSelectedNodeId,
     });
-    const [showMiniMap, setShowMiniMap] = useState<boolean>(true);
+    const [showMiniMap, setShowMiniMap] = useState<boolean>(false);
     const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false);
     const [showWorldMap, setShowWorldMap] = useState<boolean>(false);
     const [worldMapFullscreen, setWorldMapFullscreen] = useState<boolean>(false);
