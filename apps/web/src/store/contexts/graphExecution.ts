@@ -2,15 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeType } from "@hayverse/shared";
-import type { NodeParams, NodeRef } from "@/types.ts";
+import type { GenerationHistoryState, NodeParams, NodeRef } from "@/types.ts";
 import type { SceneOutput } from "@/core/graph.ts";
-import type { SceneNarrativeSettings } from "@/store/contexts/NarrativeContext.tsx";
 import { putGeneratedBlob } from "@/core/mediaRef.ts";
 import { edgeInput } from "@/core/graph.ts";
+import { appendGenerationHistory } from "@/core/generationHistory.ts";
 
 type ShowToast = (msg: string) => void;
-
-const MAX_GENERATED_HISTORY = 20; // cap per-node generated-output history
 
 // Which of the 6 HISTORY_NODE_TYPES (data/nodes.ts) need a blob upload
 // (image/video/audio, via mediaRef.ts's putGeneratedBlob) vs which can just
@@ -44,8 +42,6 @@ interface UseGraphExecutionParams {
     setNodes: Dispatch<SetStateAction<Node<NodeParams>[]>>;
     activeSceneId: string | null;
     showToast: ShowToast;
-    narrativeSettings: Record<string, SceneNarrativeSettings>;
-    getSceneNarrativeSettings: (sceneId: string) => SceneNarrativeSettings;
     // From UserContext's pinterestStatus - see pinterestApiClient.fetchBoards.
     pinterestConnected: boolean;
 }
@@ -55,7 +51,7 @@ interface UseGraphExecutionResult {
     sceneOutputs: Record<string, SceneOutput>;
     runningNodeIds: Set<string>;
     executeGraph: () => Promise<void>;
-    runNode: (nodeId: string) => Promise<void>;
+    runNode: (nodeId: string, paramOverrides?: Record<string, unknown>) => Promise<void>;
     loadPinterestBoards: (node: NodeRef) => Promise<void>;
     loadPinterestPins: (node: NodeRef, boardId: string) => Promise<void>;
 }
@@ -72,8 +68,6 @@ export function useGraphExecution({
     setNodes,
     activeSceneId,
     showToast,
-    narrativeSettings,
-    getSceneNarrativeSettings,
     pinterestConnected,
 }: UseGraphExecutionParams): UseGraphExecutionResult {
     const resolvedRef = useRef<Record<string, unknown>>({});
@@ -110,20 +104,15 @@ export function useGraphExecution({
             setNodes((ns) =>
                 ns.map((n) => {
                     if (n.id !== nodeId) return n;
-                    const prevHistory = n.data.generation?.history ?? [];
-                    const history = [...prevHistory, ref];
-                    const prevParamsHistory = n.data.generation?.paramsHistory ?? {};
-                    const paramsHistory = { ...prevParamsHistory, [ref]: paramsSnapshot };
-                    const overflow = history.length - MAX_GENERATED_HISTORY;
-                    if (overflow > 0) {
-                        const dropped = history.splice(0, overflow);
-                        for (const droppedRef of dropped) delete paramsHistory[droppedRef];
-                    }
                     return {
                         ...n,
                         data: {
                             ...n.data,
-                            generation: { history, idx: history.length - 1, paramsHistory },
+                            generation: appendGenerationHistory(
+                                n.data.generation as GenerationHistoryState | undefined,
+                                ref,
+                                paramsSnapshot,
+                            ),
                         },
                     };
                 }),
@@ -174,13 +163,14 @@ export function useGraphExecution({
 
     const executeGraph = useCallback(async () => {
         const { runGraph } = await import("@/core/graph.ts");
+        const { withEnsuredSeeds } = await import("@/core/seed.ts");
         const sceneId = activeSceneId;
+        const seededNodes = withEnsuredSeeds(nodes);
+        if (seededNodes !== nodes) setNodes(seededNodes);
         resolvedRef.current = {};
-        const output = await runGraph(nodes, edges, resolvedRef.current, showToast, {
-            narrativeSettings: sceneId ? getSceneNarrativeSettings(sceneId) : undefined,
-        });
+        const output = await runGraph(seededNodes, edges, resolvedRef.current, showToast);
         setResolved({ ...resolvedRef.current });
-        persistGeneratedOutputs(nodes, resolvedRef.current);
+        persistGeneratedOutputs(seededNodes, resolvedRef.current);
         cacheSceneOutput(sceneId, output);
     }, [
         nodes,
@@ -189,20 +179,26 @@ export function useGraphExecution({
         activeSceneId,
         cacheSceneOutput,
         persistGeneratedOutputs,
-        getSceneNarrativeSettings,
+        setNodes,
     ]);
 
+    // `paramOverrides` lets a caller (e.g. a seed field's reroll button)
+    // atomically patch this node's params right before it runs — see
+    // core/seed.ts's withNodeOverrides doc comment for why this can't just
+    // be a separate updateNodeParam call followed by runNode(nodeId).
     const runNode = useCallback(
-        async (nodeId: string) => {
+        async (nodeId: string, paramOverrides?: Record<string, unknown>) => {
             const { runNodeCascade } = await import("@/core/graph.ts");
+            const { withNodeOverrides } = await import("@/core/seed.ts");
             const sceneId = activeSceneId;
+            const runNodes = withNodeOverrides(nodes, nodeId, paramOverrides);
+            if (runNodes !== nodes) setNodes(runNodes);
             const output = await runNodeCascade(
                 nodeId,
-                nodes,
+                runNodes,
                 edges,
                 resolvedRef.current,
                 showToast,
-                sceneId ? getSceneNarrativeSettings(sceneId) : undefined,
                 (id) => setRunningNodeIds((s) => new Set(s).add(id)),
                 (id) => {
                     setRunningNodeIds((s) => {
@@ -211,7 +207,7 @@ export function useGraphExecution({
                         return next;
                     });
                     setResolved({ ...resolvedRef.current });
-                    persistGeneratedOutputs(nodes, resolvedRef.current);
+                    persistGeneratedOutputs(runNodes, resolvedRef.current);
                 },
             );
             cacheSceneOutput(sceneId, output);
@@ -223,16 +219,15 @@ export function useGraphExecution({
             activeSceneId,
             cacheSceneOutput,
             persistGeneratedOutputs,
-            getSceneNarrativeSettings,
+            setNodes,
         ],
     );
 
     // Reactively keeps free/non-AI nodes (Pinterest pin, text passthrough,
-    // entity selectors, output_scene's Arc JSON, ...) resolved without a
-    // manual "Прогнать граф" click — debounced so rapid edits don't thrash.
-    // AI-model nodes are skipped entirely (see runGraph's autoMode) and only
-    // ever resolve from an explicit manual action (the Topbar button or a
-    // node's own ▶ button).
+    // entity selectors, ...) resolved without a manual "Прогнать граф" click
+    // — debounced so rapid edits don't thrash. AI-model nodes are skipped
+    // entirely (see runGraph's autoMode) and only ever resolve from an
+    // explicit manual action (the Topbar button or a node's own ▶ button).
     const autoResolveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
         if (autoResolveTimer.current) clearTimeout(autoResolveTimer.current);
@@ -242,7 +237,6 @@ export function useGraphExecution({
                 const sceneId = activeSceneId;
                 const output = await runGraph(nodes, edges, resolvedRef.current, showToast, {
                     autoMode: true,
-                    narrativeSettings: sceneId ? getSceneNarrativeSettings(sceneId) : undefined,
                 });
                 setResolved({ ...resolvedRef.current });
                 cacheSceneOutput(sceneId, output);
@@ -251,15 +245,7 @@ export function useGraphExecution({
         return () => {
             if (autoResolveTimer.current) clearTimeout(autoResolveTimer.current);
         };
-    }, [
-        nodes,
-        edges,
-        activeSceneId,
-        showToast,
-        cacheSceneOutput,
-        narrativeSettings,
-        getSceneNarrativeSettings,
-    ]);
+    }, [nodes, edges, activeSceneId, showToast, cacheSceneOutput]);
 
     const loadPinterestBoards = useCallback(
         async (node: NodeRef) => {

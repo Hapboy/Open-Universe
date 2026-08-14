@@ -29,7 +29,6 @@ import type { NodeType } from "@hayverse/shared";
 import type { SceneOutput } from "@/core/graph.ts";
 import { useToastContext } from "@/store/contexts/ToastContext.tsx";
 import { useUserContext } from "@/store/contexts/UserContext.tsx";
-import { useNarrativeContext } from "@/store/contexts/NarrativeContext.tsx";
 import { readJSON, readRaw, removeKey, writeRaw } from "@/core/browserStorage.ts";
 import { buildPhotoPorts } from "@/core/characterPorts.ts";
 import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
@@ -43,12 +42,14 @@ const DEFAULT_TOTAL_DURATION = 60; // 01:00 in seconds
 const MAX_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
 const MAX_TEXT_INPUTS = 8; // text_prompt's own dynamic-field cap
 const MAX_ENTITY_PHOTOS = 10;
+const MAX_ENTITY_INPUTS = 20; // output_scene's own dynamic entity-pin cap, across all kinds
 // Pure view-state data flags (setNodeField) — no content/semantic meaning,
 // so they're excluded from undo history (see graphHistory.ts usage below).
 const UI_ONLY_FIELD_KEYS = new Set<keyof NodeParams>([
     "showJsonPreview",
     "pinLabelsWide",
     "promptPanelOpen",
+    "outputSceneStage",
 ]);
 
 function withPhotoOutputs(nodeId: string, outputs: Port[], photos: string[]): Port[] {
@@ -113,7 +114,15 @@ function templateParams(type: string, overrides: Record<string, unknown> = {}) {
 
 // Stored graphs may predate params added to templates later (e.g. character
 // coordinates) — merge template defaults under stored params so param editors
-// never receive undefined and a missing field can't crash the tree.
+// never receive undefined and a missing field can't crash the tree. Also
+// strips output_scene's old "Arc JSON" output port — it was removed from the
+// template once arc/narrative settings became a prompt-composition input
+// instead of an output pin, but nodes saved before that change still carry
+// it verbatim in their own persisted `outputs` array (nothing else
+// retroactively syncs a node's ports to its template). output_scene never
+// gets dynamic output pins (unlike entity nodes' Description/JSON), so
+// forcing it back to the template's `outputs: []` is always correct, not
+// just a one-time migration.
 function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
     if (!Array.isArray(nodes)) return [];
     return nodes.map((n) => ({
@@ -121,6 +130,7 @@ function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
         data: {
             ...n.data,
             params: templateParams(n?.data?.nodeType, n?.data?.params),
+            outputs: n?.data?.nodeType === "output_scene" ? [] : n.data.outputs,
         },
     }));
 }
@@ -151,7 +161,7 @@ function createEmptySceneGraph(overrides: { title?: string; start?: number } = {
                     { id: `${outId}_in_0`, name: "Visual Render", type: "Image" },
                     { id: `${outId}_in_1`, name: "Motion Render", type: "Video" },
                 ],
-                outputs: [{ id: `${outId}_out_0`, name: "Arc JSON", type: "Text" }],
+                outputs: [],
                 params: templateParams("output_scene", overrides),
             },
         },
@@ -287,11 +297,12 @@ interface GraphCtx {
     setNodePhotos: (nodeId: string, photos: string[], coverPhotoIndex: number) => void;
     addImageInput: (nodeId: string) => void;
     addTextInput: (nodeId: string) => void;
+    addEntityInput: (nodeId: string, entityType: NodeType, entityLabel: string) => void;
     removePinInput: (nodeId: string, portId: string) => void;
     undo: () => void;
     redo: () => void;
     executeGraph: () => Promise<void>;
-    runNode: (nodeId: string) => Promise<void>;
+    runNode: (nodeId: string, paramOverrides?: Record<string, unknown>) => Promise<void>;
     runningNodeIds: Set<string>;
     loadPinterestBoards: (node: NodeRef) => Promise<void>;
     loadPinterestPins: (node: NodeRef, boardId: string) => Promise<void>;
@@ -327,7 +338,6 @@ export const useGraphContext = () => useContext(Ctx);
 export function GraphProvider({ children }: { children: React.ReactNode }) {
     const { showToast } = useToastContext();
     const { pinterestStatus } = useUserContext();
-    const { narrativeSettings, getSceneNarrativeSettings } = useNarrativeContext();
 
     // SSR-safe default: identical on the server and the client's first paint
     // (no localStorage/URL access), matching the "no scenes yet" state the app
@@ -507,7 +517,16 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
             const sourcePort = findPort(nodes, conn.source, conn.sourceHandle, "source");
             const targetPort = findPort(nodes, conn.target, conn.targetHandle, "target");
             if (!sourcePort || !targetPort) return false;
-            return sourcePort.type === targetPort.type;
+            if (sourcePort.type !== targetPort.type) return false;
+            // Every entity kind's JSON output is typed as plain "Text" (see
+            // Port's own doc comment), so the type check above alone would
+            // let e.g. a Location's JSON be wired into a "Character 1" pin —
+            // entityKind narrows an output_scene entity pin to its own kind.
+            if (targetPort.entityKind) {
+                const sourceNode = nodes.find((n) => n.id === conn.source);
+                if (sourceNode?.data.nodeType !== targetPort.entityKind) return false;
+            }
+            return true;
         },
         [nodes],
     );
@@ -791,6 +810,40 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         [history],
     );
 
+    // Appends a new typed entity-input pin to output_scene (e.g. "+ Character"
+    // → "Character 1", a second click → "Character 2"), one such group per
+    // entity kind (see OutputParams's "Сущности" tab). Numbered per-kind by
+    // counting existing pins whose name already starts with that label, so
+    // removing/adding one kind's pins never renumbers another kind's. Fixed
+    // pins (Visual Render/Motion Render) don't carry a kind prefix so they're
+    // naturally excluded from both the count and the cap below. Same
+    // random-suffix id scheme as addImageInput/addTextInput.
+    const addEntityInput = useCallback(
+        (nodeId: string, entityType: NodeType, entityLabel: string) => {
+            history.record(null);
+            setNodes((ns) =>
+                ns.map((n) => {
+                    if (n.id !== nodeId) return n;
+                    const fixedPinCount = NODE_TEMPLATES.output_scene.inputs.length;
+                    const entityPinCount = n.data.inputs.length - fixedPinCount;
+                    if (entityPinCount >= MAX_ENTITY_INPUTS) return n;
+                    const prefix = `${entityLabel} `;
+                    const existingOfKind = n.data.inputs.filter((p) =>
+                        p.name.startsWith(prefix),
+                    ).length;
+                    const newPort: Port = {
+                        id: `${nodeId}_in_${crypto.randomUUID()}`,
+                        name: `${entityLabel} ${existingOfKind + 1}`,
+                        type: "Text",
+                        entityKind: entityType,
+                    };
+                    return { ...n, data: { ...n.data, inputs: [...n.data.inputs, newPort] } };
+                }),
+            );
+        },
+        [history],
+    );
+
     const removePinInput = useCallback(
         (nodeId: string, portId: string) => {
             history.record(null);
@@ -867,8 +920,6 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         setNodes,
         activeSceneId,
         showToast,
-        narrativeSettings,
-        getSceneNarrativeSettings,
         pinterestConnected: pinterestStatus?.connected ?? false,
     });
 
@@ -895,6 +946,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         setNodePhotos,
         addImageInput,
         addTextInput,
+        addEntityInput,
         removePinInput,
         undo: history.undo,
         redo: history.redo,

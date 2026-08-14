@@ -1,12 +1,12 @@
 import type { Edge, Node } from "@xyflow/react";
-import type { NodeParams } from "@/types.ts";
+import type { GenerationHistoryState, NodeParams } from "@/types.ts";
 import type { SceneOutputType } from "@hayverse/shared";
-import type { SceneNarrativeSettings } from "@/store/contexts/NarrativeContext.tsx";
 import { geminiApiClient, higgsfieldApiClient } from "@/core/api/index.ts";
-import { AI_MODEL_NODE_TYPES, ENTITY_NODE_TYPES, RICH_ENTITY_NODE_TYPES } from "@/data/nodes.ts";
+import { AI_MODEL_NODE_TYPES, ENTITY_NODE_TYPES } from "@/data/nodes.ts";
 import { resolveMediaRef } from "@/core/mediaRef.ts";
 import { photoPortId } from "@/core/characterPorts.ts";
 import { filledEntityParams } from "@/schemas/entities/schemas.ts";
+import { currentHistoryRef } from "@/core/generationHistory.ts";
 
 type ShowToast = (msg: string) => void;
 type Resolved = Record<string, unknown>;
@@ -32,12 +32,13 @@ export function edgeInput(
 // type produces nothing yet (unmet dependency, or the underlying service call
 // yielded no result) — callers should leave `resolved` untouched in that case.
 //
-// Deliberately not a switch/exhaustive over NodeType: most entity types
-// (building, clothing, artwork, furniture, storyboard, transport, ...) have
-// no AI computation and are meant to fall through to `return undefined` —
-// that's correct behavior, not a missing case. The `ENTITY_NODE_TYPES &&
-// !RICH_ENTITY_NODE_TYPES` guard is also interleaved between literal
-// branches by priority, which a switch can't express as cleanly.
+// Deliberately not a switch/exhaustive over NodeType: entity types
+// (character, building, clothing, ...) have no AI computation of their own
+// and are meant to fall through to `return undefined` — their real payload
+// (Description/JSON, one per photo) is filled separately by
+// computeRichEntityExtraOutputs below, keyed by port name rather than by
+// `outputs[0]`, so it's unaffected by this function returning nothing for
+// them. That's correct behavior, not a missing case.
 async function computeNodeOutput(
     node: Node<NodeParams>,
     edges: Edge[],
@@ -78,8 +79,6 @@ async function computeNodeOutput(
             { frameUrl: val, preset: d.params.motionPreset as string },
             showToast,
         );
-    } else if (ENTITY_NODE_TYPES.has(d.nodeType) && !RICH_ENTITY_NODE_TYPES.has(d.nodeType)) {
-        return d.params.selectedItem;
     } else if (d.nodeType === "gemini_text") {
         const prompt = edgeInput(d, edges, resolved, 0);
         const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string;
@@ -220,22 +219,6 @@ async function computeRichEntityExtraOutputs(
     }
 }
 
-// Fills the output_scene node's "Arc JSON" pin with the active scene's
-// narrative-arc settings — a pure derivation independent of edges/resolution
-// order, same shape as computeRichEntityExtraOutputs above. The settings
-// themselves live in NarrativeContext (keyed by scene id), not in this
-// node's own `params`, so the caller has to hand them in explicitly.
-function computeOutputSceneExtraOutputs(
-    node: Node<NodeParams>,
-    resolved: Resolved,
-    narrativeSettings: SceneNarrativeSettings | undefined,
-): void {
-    const d = node.data;
-    if (d.nodeType !== "output_scene" || !narrativeSettings) return;
-    const jsonPort = d.outputs.find((p) => p.name === "Arc JSON");
-    if (jsonPort) resolved[jsonPort.id] = JSON.stringify(narrativeSettings, null, 2);
-}
-
 export interface SceneOutput {
     url: string;
     type: SceneOutputType;
@@ -244,7 +227,13 @@ export interface SceneOutput {
 // The scene's actual output: whatever is wired into the `output_scene`
 // node's Visual Render (Image) / Motion Render (Video) input pins, picking
 // whichever the node's own `activeOutput` toggle prefers and falling back to
-// the other pin if the preferred one isn't wired/resolved yet.
+// the other pin if the preferred one isn't wired/resolved yet. A wired pin
+// always wins (manual override); when unwired, falls back to each stage's
+// own generation history (`data.generation.image`/`.video` — see types.ts's
+// `generation` doc comment), via the shared `currentHistoryRef`, resolved
+// from a media ref to a real URL. No separate "confirmed pick" field:
+// picking a slider position (via a new generation or the media picker — see
+// UtilParams.tsx's OutputParams) is the pick.
 function resolveSceneOutput(
     nodes: Node<NodeParams>[],
     edges: Edge[],
@@ -254,8 +243,20 @@ function resolveSceneOutput(
     if (!outNode) return null;
     const vEdge = edges.find((e) => e.targetHandle === outNode.data.inputs[0]?.id);
     const mEdge = edges.find((e) => e.targetHandle === outNode.data.inputs[1]?.id);
-    const imageUrl = vEdge ? resolved[vEdge.sourceHandle ?? ""] : undefined;
-    const videoUrl = mEdge ? resolved[mEdge.sourceHandle ?? ""] : undefined;
+    const stageGeneration = outNode.data.generation as
+        Partial<Record<"image" | "video", GenerationHistoryState>> | undefined;
+    const imageSelectedRef = currentHistoryRef(stageGeneration?.image);
+    const videoSelectedRef = currentHistoryRef(stageGeneration?.video);
+    const imageUrl = vEdge
+        ? resolved[vEdge.sourceHandle ?? ""]
+        : imageSelectedRef
+          ? resolveMediaRef(imageSelectedRef)
+          : undefined;
+    const videoUrl = mEdge
+        ? resolved[mEdge.sourceHandle ?? ""]
+        : videoSelectedRef
+          ? resolveMediaRef(videoSelectedRef)
+          : undefined;
     const wantsVideo = (outNode.data.params.activeOutput ?? "video") === "video";
     const primary: SceneOutput = wantsVideo
         ? { url: videoUrl as string, type: "video" }
@@ -285,7 +286,7 @@ export async function runGraph(
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
-    opts?: { autoMode?: boolean; narrativeSettings?: SceneNarrativeSettings },
+    opts?: { autoMode?: boolean },
 ): Promise<SceneOutput | null> {
     for (let pass = 0; pass < nodes.length; pass++) {
         for (const node of nodes) {
@@ -294,7 +295,6 @@ export async function runGraph(
             if (opts?.autoMode && AI_MODEL_NODE_TYPES.includes(d.nodeType)) continue;
 
             await computeRichEntityExtraOutputs(node, resolved);
-            computeOutputSceneExtraOutputs(node, resolved, opts?.narrativeSettings);
 
             // Skip nodes whose output is already resolved from a previous pass
             const alreadyResolved = d.outputs[0]?.id && resolved[d.outputs[0].id] !== undefined;
@@ -317,7 +317,6 @@ async function resolveNode(
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
-    narrativeSettings: SceneNarrativeSettings | undefined,
     onNodeStart: ((nodeId: string) => void) | undefined,
     onNodeDone: ((nodeId: string) => void) | undefined,
     inFlight: Set<string>,
@@ -338,7 +337,6 @@ async function resolveNode(
             edges,
             resolved,
             showToast,
-            narrativeSettings,
             onNodeStart,
             onNodeDone,
             inFlight,
@@ -354,7 +352,6 @@ async function resolveNode(
             else delete resolved[outputId];
         }
         await computeRichEntityExtraOutputs(node, resolved);
-        computeOutputSceneExtraOutputs(node, resolved, narrativeSettings);
     } finally {
         onNodeDone?.(id);
     }
@@ -369,7 +366,6 @@ export async function runNodeCascade(
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
-    narrativeSettings: SceneNarrativeSettings | undefined,
     onNodeStart?: (nodeId: string) => void,
     onNodeDone?: (nodeId: string) => void,
 ): Promise<SceneOutput | null> {
@@ -387,7 +383,6 @@ export async function runNodeCascade(
             edges,
             resolved,
             showToast,
-            narrativeSettings,
             onNodeStart,
             onNodeDone,
             new Set(),

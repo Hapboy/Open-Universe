@@ -1,0 +1,115 @@
+import type { Edge } from "@xyflow/react";
+import type { NodeParams } from "@/types.ts";
+import type { SceneNarrativeSettings } from "@/store/contexts/NarrativeContext.tsx";
+import { geminiApiClient } from "@/core/api/index.ts";
+import { edgeInput } from "@/core/graph.ts";
+import { resolveMediaRef } from "@/core/mediaRef.ts";
+
+type ShowToast = (msg: string) => void;
+
+// output_scene's first two input pins are the fixed Visual Render/Motion
+// Render override pins (see data/nodes.ts) — everything after them is a
+// dynamic entity pin added via addEntityInput (GraphContext.tsx).
+const FIXED_PIN_COUNT = 2;
+
+export interface ConnectedEntity {
+    // The pin's own label (e.g. "Character 2") — doubles as a stand-in for
+    // the entity's kind when its JSON didn't parse.
+    pinLabel: string;
+    // Parsed JSON output of whatever's wired into this pin (see
+    // core/graph.ts's computeRichEntityExtraOutputs) — null if unwired,
+    // not yet resolved, or not valid JSON.
+    data: Record<string, unknown> | null;
+    // This entity's own reference photos, resolved from `s3:<uuid>` refs to
+    // real URLs — pulled from `data.photos` (see filledEntityParams),
+    // ready to hand straight to generateImageFromRefs.
+    photoUrls: string[];
+}
+
+// Walks output_scene's entity input pins and resolves whatever's wired into
+// each of them. Pure read of `resolved`/`edges` — doesn't itself trigger any
+// graph computation. Takes the node's `data` directly (not a full react-flow
+// `Node`), matching edgeInput's own convention and what NodeRef callers
+// (e.g. OutputParams) actually have on hand.
+export function collectConnectedEntities(
+    nodeData: NodeParams,
+    edges: Edge[],
+    resolved: Record<string, unknown>,
+): ConnectedEntity[] {
+    const entityPins = nodeData.inputs.slice(FIXED_PIN_COUNT);
+    const entities: ConnectedEntity[] = [];
+    entityPins.forEach((pin, i) => {
+        const input = edgeInput(nodeData, edges, resolved, i + FIXED_PIN_COUNT);
+        if (!input.wired || typeof input.value !== "string") return;
+        let data: Record<string, unknown> | null;
+        try {
+            data = JSON.parse(input.value) as Record<string, unknown>;
+        } catch {
+            data = null;
+        }
+        const photos = (data?.photos as string[] | undefined) ?? [];
+        entities.push({ pinLabel: pin.name, data, photoUrls: photos.map(resolveMediaRef) });
+    });
+    return entities;
+}
+
+// Every connected entity's own reference photos, flattened into one list —
+// what Nano Banana's `imageUrls` gets fed for the Картинка stage.
+export function collectReferenceImageUrls(entities: ConnectedEntity[]): string[] {
+    return entities.flatMap((e) => e.photoUrls);
+}
+
+// The "raw" prompt-composition path: serializes the connected entities' own
+// JSON plus the scene's arc settings straight through, no model call. Cheap
+// and pure — safe to recompute on every keystroke if ever needed, unlike
+// composeLlmPrompt below.
+export function composeRawPrompt(
+    entities: ConnectedEntity[],
+    arcSettings: SceneNarrativeSettings | undefined,
+): string {
+    return JSON.stringify(
+        {
+            entities: entities.map((e) => ({ pin: e.pinLabel, ...e.data })),
+            arc: arcSettings ?? null,
+        },
+        null,
+        2,
+    );
+}
+
+// The "llm" prompt-composition path: one text-model call turning the same
+// structured data into a natural-language image-generation prompt — image
+// models read like descriptive prose, not JSON (see buildCharacterPrompt in
+// EntityParams.tsx for the single-entity precedent this generalizes).
+// Falls back to the raw JSON if the call fails, same as every other
+// generation call in this app degrading to `null`/showing a toast rather
+// than throwing.
+export async function composeLlmPrompt(
+    entities: ConnectedEntity[],
+    arcSettings: SceneNarrativeSettings | undefined,
+    showToast: ShowToast,
+): Promise<string> {
+    const structured = composeRawPrompt(entities, arcSettings);
+    const instruction =
+        "Ты — сценарист, составляющий промпт для генерации кадра сцены по " +
+        "структурированным данным её персонажей, локации и обстановки. На " +
+        "основе следующих данных в формате JSON напиши один связный, живой " +
+        "промпт на естественном языке для модели генерации изображения — " +
+        "опиши персонажей, локацию, атмосферу и настроение сцены. Не " +
+        "включай JSON или разметку в ответ, только готовый текст промпта.\n\n" +
+        structured;
+    const result = await geminiApiClient.generateText({ prompt: instruction }, showToast);
+    return result ?? structured;
+}
+
+// Single entry point for either path — reads `params.promptComposition`
+// ("llm" | "raw", default "llm") so callers don't have to branch themselves.
+export async function composeScenePrompt(
+    promptComposition: unknown,
+    entities: ConnectedEntity[],
+    arcSettings: SceneNarrativeSettings | undefined,
+    showToast: ShowToast,
+): Promise<string> {
+    if (promptComposition === "raw") return composeRawPrompt(entities, arcSettings);
+    return composeLlmPrompt(entities, arcSettings, showToast);
+}

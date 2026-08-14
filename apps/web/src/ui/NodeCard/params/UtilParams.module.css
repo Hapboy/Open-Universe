@@ -18,34 +18,55 @@
     composes: presetSelect from "../../../styles/shared.module.css";
 }
 
-/* Mirrors EntityParams.module.css's search+tags header — not composed
-   cross-directory due to a vite/postcss-modules resolver bug on this setup
-   ("fileResolve path must be absolute") when composing from a sibling
-   folder's CSS module. */
 .searchContainer {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 6px;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 10px;
+    composes: searchContainer from "./EntityParams/EntityParams.module.css";
 }
 
 .row2 {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
+    composes: row2 from "../../../styles/shared.module.css";
 }
 
-.row2 > * {
-    flex: 1;
-    min-width: 0;
+.divider {
+    composes: divider from "../../../styles/shared.module.css";
 }
 
-/* Mirrors EntityParams.module.css's cover preview box — not composed
+.hint {
+    composes: hint from "../../../styles/shared.module.css";
+}
+
+.generateRow {
+    composes: presetRow from "../../../styles/shared.module.css";
+    margin-bottom: 10px;
+}
+
+.previewWrap {
+    margin-bottom: 10px;
+}
+
+/* Mirrors CategoryTagGroup.module.css's chip button — not composed
    cross-directory due to a vite/postcss-modules resolver bug on this setup
    ("fileResolve path must be absolute") when composing from a sibling
-   folder's CSS module. */
+   folder's CSS module. Reused for both the "add entity" chips and the
+   connected-pins chips below them, so the Сущности tab reads as one compact
+   wrapping row per group instead of a stack of full-width buttons/rows. */
+.entityChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.entityChip {
+    composes: tagBtn from "../../components/CategoryTagGroup/CategoryTagGroup.module.css";
+}
+
+.entityChip i {
+    font-size: 12px;
+}
+
+/* output_scene's single-cover preview box (params.coverUrl) — no shared
+   twin to compose from; EntityParams' PhotoPreview component is built
+   around a photos[]/coverPhotoIndex gallery shape, not a single ref. */
 .coverPreviewWrapper {
     width: 100%;
     height: 120px;

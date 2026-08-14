@@ -2,6 +2,15 @@ import type { NodeType, PortType, TeamSide, TeamRole, TimelineTrack } from "@hay
 
 export type { PortType };
 
+// One node's (or, for output_scene, one stage's) generation history — see
+// core/generationHistory.ts for the pure functions that operate on this
+// shape, shared between the standalone Gemini nodes and output_scene.
+export interface GenerationHistoryState {
+    history: string[];
+    idx: number;
+    paramsHistory: Record<string, Record<string, unknown>>;
+}
+
 export interface Port {
     id: string;
     name: string;
@@ -11,6 +20,13 @@ export interface Port {
     // input pin out of that. Meaningless on output pins, which always allow
     // fanning out to multiple targets.
     allowMultiple?: boolean;
+    // Set only on output_scene's dynamic entity pins (addEntityInput,
+    // GraphContext.tsx) — every entity kind's JSON output is typed as plain
+    // "Text" (see PortType), so without this, isValidConnection's
+    // type-equality check alone would let e.g. a Location's JSON be wired
+    // into a "Character 1" pin. When set, isValidConnection additionally
+    // requires the source node's own nodeType to match.
+    entityKind?: NodeType;
 }
 
 // Shape stored in React Flow node `data` field
@@ -28,17 +44,36 @@ export interface NodeParams {
     showJsonPreview?: boolean;
     pinLabelsWide?: boolean;
     promptPanelOpen?: boolean;
+    // Which of output_scene's Картинка/Видео stages is currently shown —
+    // drives both which stage's fields/Generate button are visible in
+    // OutputParams and which stage's composed prompt the prompt side-panel
+    // (see promptPanelOpen above) displays. Meaningless on any other node
+    // type. Defaults to "image" when absent.
+    outputSceneStage?: "image" | "video";
     // Runtime bookkeeping for HISTORY_NODE_TYPES (data/nodes.ts) — written by
     // graphExecution.ts's appendGeneratedRef, read by NodeCard.tsx's history
     // nav and GeminiParams.tsx's wiredFieldDisplayValue. Sibling to `params`
     // for the same reason as the UI flags above: it's never something the
     // user typed, so it must never leak into a JSON output pin or a preset
     // snapshot. Absent until a node's first generation.
-    generation?: {
-        history: string[];
-        idx: number;
-        paramsHistory: Record<string, Record<string, unknown>>;
-    };
+    //
+    // Shape depends on nodeType, same way `params` itself does: every
+    // HISTORY_NODE_TYPES node (one output, one generation stream) stores a
+    // flat GenerationHistoryState directly here. output_scene has two
+    // independent streams (Картинка/Видео — see UtilParams.tsx's
+    // OutputParams), so it stores `{ image, video }` instead, each carrying
+    // its own `lastComposedPrompt` alongside the shared history fields (see
+    // core/generationHistory.ts) — output_scene's prompt is always composed,
+    // never user-typed, so it belongs here rather than in `params`, same
+    // reasoning as a standalone node's wired-prompt capture.
+    generation?:
+        | GenerationHistoryState
+        | Partial<
+              Record<
+                  "image" | "video",
+                  Partial<GenerationHistoryState> & { lastComposedPrompt?: string }
+              >
+          >;
     // Deliberately loose (defeats excess-property checking): `params` is a
     // polymorphic bag shaped per `nodeType`, with no per-type schema yet —
     // revisit once real backend param schemas exist.

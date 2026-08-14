@@ -38,7 +38,8 @@
 .fld input[type="text"],
 .fld input[type="number"],
 .fld input[type="datetime-local"],
-.fld select {
+.fld select,
+.fld textarea {
     width: 100%;
     padding: 8px 12px;
     background-color: var(--color-bg-primary);
@@ -48,6 +49,12 @@
     font-family: inherit;
     font-size: 13px;
     outline: none;
+}
+
+.fld textarea {
+    height: 128px;
+    resize: none;
+    overflow-y: auto;
 }
 
 .fld select {
@@ -62,14 +69,16 @@
 .fld input[type="text"]:focus,
 .fld input[type="number"]:focus,
 .fld input[type="datetime-local"]:focus,
-.fld select:focus {
+.fld select:focus,
+.fld textarea:focus {
     border-color: var(--color-border-active);
 }
 
 .fld input[type="text"]:disabled,
 .fld input[type="number"]:disabled,
 .fld input[type="datetime-local"]:disabled,
-.fld select:disabled {
+.fld select:disabled,
+.fld textarea:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
@@ -132,6 +141,16 @@
     opacity: 0.95;
 }
 
+/* Matches the input/select/segBtn disabled convention above — .btn/.iconBtn
+   never had one, so a disabled Button looked fully active (only the click
+   was actually blocked). Same specificity as .pri:hover above and declared
+   after it, so this wins the cascade on a disabled+hovered primary button
+   too. */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .iconBtn {
     composes: btn;
     width: 36px;
@@ -179,6 +198,23 @@
 .segBtn button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.row2 {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.row2 > * {
+    flex: 1;
+    min-width: 0;
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 10px 0;
 }
 
 .modal {

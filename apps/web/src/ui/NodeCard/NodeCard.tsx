@@ -1,7 +1,7 @@
 import { memo, useEffect, useState } from "react";
 import cn from "classnames";
 import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/react";
-import type { NodeParams, PortType } from "@/types.ts";
+import type { GenerationHistoryState, NodeParams, PortType } from "@/types.ts";
 import {
     AI_MODEL_NODE_TYPES,
     HISTORY_NODE_TYPES,
@@ -9,7 +9,9 @@ import {
     RICH_ENTITY_NODE_TYPES,
 } from "@/data/nodes.ts";
 import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
-import { useResolvedMediaUrls } from "@/core/mediaRef.ts";
+import { useNarrativeContext } from "@/store/contexts/NarrativeContext.tsx";
+import { useGenerationHistory } from "@/ui/hooks/useGenerationHistory.ts";
+import { collectConnectedEntities, composeRawPrompt } from "@/core/scenePrompt.ts";
 import { CircleLoader } from "@/ui/components/CircleLoader/CircleLoader.tsx";
 import { TextAreaField } from "@/ui/components/TextAreaField/TextAreaField.tsx";
 import { MediaSlider } from "@/ui/NodeCard/MediaSlider/MediaSlider.tsx";
@@ -39,11 +41,13 @@ export const NodeCard = memo(function NodeCard({
         edges,
         resolved,
         scenes,
+        activeSceneId,
         updateNodeParam,
         updateNodeParams,
         setNodePhotos,
         addImageInput,
         addTextInput,
+        addEntityInput,
         removePinInput,
         loadPinterestBoards,
         loadPinterestPins,
@@ -56,6 +60,7 @@ export const NodeCard = memo(function NodeCard({
         setNodeField,
         selectNode,
     } = useGraphContext();
+    const { getSceneNarrativeSettings } = useNarrativeContext();
 
     const [editingLabel, setEditingLabel] = useState(false);
     const [hoveredInputId, setHoveredInputId] = useState<string | null>(null);
@@ -95,14 +100,32 @@ export const NodeCard = memo(function NodeCard({
     const hasHistory = HISTORY_NODE_TYPES.has(data.nodeType);
     const liveOutput =
         hasHistory && outputId ? (resolved[outputId] as string | undefined) : undefined;
+    // Flat GenerationHistoryState — only standalone HISTORY_NODE_TYPES nodes
+    // reach this cast (output_scene stores its own {image,video} shape
+    // instead, read separately by UtilParams.tsx's OutputParams).
+    const generation = hasHistory
+        ? (data.generation as GenerationHistoryState | undefined)
+        : undefined;
     // Every past generation cached (R2-backed for image/video/audio kinds,
     // inline for text — see GraphContext's persistGeneratedOutputs/
-    // appendGeneratedRef), browsable via the nav below.
-    const generatedHistory = hasHistory ? (data.generation?.history ?? []) : [];
-    const resolvedGeneratedHistory = useResolvedMediaUrls(generatedHistory);
-    // Snapshot of the params that produced each history entry, keyed by ref —
-    // see GraphContext's appendGeneratedRef.
-    const generatedParamsHistory = data.generation?.paramsHistory ?? {};
+    // appendGeneratedRef), browsable via the nav below. A scrubbed-to
+    // snapshot restores straight into `params` (the sibling field it was
+    // captured from) — no extra generation-side patch needed, unlike
+    // output_scene's stages (see UtilParams.tsx's OutputParams).
+    const {
+        history: generatedHistory,
+        idx: generatedIdx,
+        resolvedUrls: resolvedGeneratedHistory,
+        onIndexChange: onHistoryIndexChange,
+        onDelete: onHistoryDelete,
+    } = useGenerationHistory(
+        generation,
+        (patch) =>
+            setNodeField(id, {
+                generation: { ...generation, ...patch } as GenerationHistoryState,
+            }),
+        (snapshot) => updateNodeParams(id, snapshot),
+    );
     // The freshly-generated output (this session, not yet round-tripped
     // through persistence) is shown in place of the newest slot immediately,
     // rather than waiting on the async blob write (or, for text, the store
@@ -116,41 +139,11 @@ export const NodeCard = memo(function NodeCard({
         : liveOutput
           ? [liveOutput]
           : [];
-    const generatedIdx = Math.max(
-        0,
-        Math.min(data.generation?.idx ?? generatedValues.length - 1, generatedValues.length - 1),
-    );
-    const onHistoryIndexChange = (i: number) => {
-        const snapshot = generatedParamsHistory[generatedHistory[i]];
-        if (snapshot) updateNodeParams(id, snapshot);
-        setNodeField(id, {
-            generation: {
-                history: generatedHistory,
-                paramsHistory: generatedParamsHistory,
-                idx: i,
-            },
-        });
-    };
-    const onHistoryDelete = (i: number) => {
-        const ref = generatedHistory[i];
-        const nextHistory = generatedHistory.filter((_, idx) => idx !== i);
-        const nextParamsHistory = { ...generatedParamsHistory };
-        if (ref) delete nextParamsHistory[ref];
-        setNodeField(id, {
-            generation: {
-                history: nextHistory,
-                paramsHistory: nextParamsHistory,
-                idx: Math.max(0, Math.min(generatedIdx, nextHistory.length - 1)),
-            },
-        });
-    };
     // Which node types offer the "show JSON" menu toggle: rich entities show
     // their own params (computed inline below, for instant live-typing
-    // feedback); output_scene instead mirrors its "Arc JSON" output pin
-    // as-is (that value comes from NarrativeContext, not this node's own
-    // `params`, so it's read from `resolved` rather than recomputed here).
-    const hasJsonPreview =
-        RICH_ENTITY_NODE_TYPES.has(data.nodeType) || data.nodeType === "output_scene";
+    // feedback). output_scene no longer has one — its own "inspect internal
+    // state" affordance is the prompt side-panel below (promptPanelOpen).
+    const hasJsonPreview = RICH_ENTITY_NODE_TYPES.has(data.nodeType);
     const jsonPreview = !data.showJsonPreview
         ? undefined
         : RICH_ENTITY_NODE_TYPES.has(data.nodeType)
@@ -164,9 +157,30 @@ export const NodeCard = memo(function NodeCard({
                 null,
                 2,
             )
-          : data.nodeType === "output_scene"
-            ? (resolved[data.outputs.find((p) => p.name === "Arc JSON")?.id ?? ""] as
-                  string | undefined)
+          : undefined;
+
+    // output_scene's own prompt-panel content: read-only, showing whichever
+    // of its two generation stages (Картинка/Видео) is currently selected
+    // (data.outputSceneStage — see OutputParams). The "llm" path is a real
+    // API call, so it can only show what got persisted at the last Generate
+    // click (data.generation.image/.video — not params, see types.ts's
+    // `generation` doc comment). The "raw" path is pure/synchronous
+    // (composeRawPrompt, core/scenePrompt.ts) — recomputed live from
+    // whatever's currently wired, same "pure derivation" spirit as the JSON
+    // preview above, so it doesn't wait for a Generate click either.
+    const outputSceneStage = data.outputSceneStage ?? "image";
+    const outputScenePrompt =
+        data.nodeType === "output_scene"
+            ? data.params.promptComposition === "raw"
+                ? composeRawPrompt(
+                      collectConnectedEntities(data, edges, resolved),
+                      activeSceneId ? getSceneNarrativeSettings(activeSceneId) : undefined,
+                  )
+                : (
+                      data.generation as
+                          | Partial<Record<"image" | "video", { lastComposedPrompt: string }>>
+                          | undefined
+                  )?.[outputSceneStage]?.lastComposedPrompt
             : undefined;
 
     return (
@@ -234,7 +248,8 @@ export const NodeCard = memo(function NodeCard({
                     }}>
                     <i className="ti ti-arrows-horizontal" />
                 </button>
-                {RICH_ENTITY_NODE_TYPES.has(data.nodeType) && (
+                {(RICH_ENTITY_NODE_TYPES.has(data.nodeType) ||
+                    data.nodeType === "output_scene") && (
                     <button
                         className={cn(
                             styles.promptBtn,
@@ -242,7 +257,11 @@ export const NodeCard = memo(function NodeCard({
                         )}
                         aria-pressed={!!data.promptPanelOpen}
                         onMouseDown={(e) => e.stopPropagation()}
-                        title="Показать доп. описание"
+                        title={
+                            data.nodeType === "output_scene"
+                                ? "Показать составленный промпт"
+                                : "Показать доп. описание"
+                        }
                         onClick={(e) => {
                             e.stopPropagation();
                             const next = !data.promptPanelOpen;
@@ -378,8 +397,11 @@ export const NodeCard = memo(function NodeCard({
                                 updateNodeParam={updateNodeParam}
                                 updateNodeParams={updateNodeParams}
                                 setNodePhotos={setNodePhotos}
+                                setNodeField={setNodeField}
                                 addImageInput={addImageInput}
                                 addTextInput={addTextInput}
+                                addEntityInput={addEntityInput}
+                                removePinInput={removePinInput}
                                 loadPinterestBoards={loadPinterestBoards}
                                 loadPinterestPins={loadPinterestPins}
                                 executeGraph={executeGraph}
@@ -393,6 +415,23 @@ export const NodeCard = memo(function NodeCard({
                                     value={(data.params.additionalDescription as string) ?? ""}
                                     onChange={(v) =>
                                         updateNodeParam(id, "additionalDescription", v)
+                                    }
+                                />
+                            </div>
+                        )}
+                        {data.nodeType === "output_scene" && data.promptPanelOpen && (
+                            <div className={styles.promptCol}>
+                                <TextAreaField
+                                    label={
+                                        outputSceneStage === "video"
+                                            ? "Составленный промпт (Видео)"
+                                            : "Составленный промпт (Картинка)"
+                                    }
+                                    rows={12}
+                                    readOnly
+                                    value={
+                                        outputScenePrompt ||
+                                        "Промпт появится здесь после нажатия «Сгенерировать»"
                                     }
                                 />
                             </div>

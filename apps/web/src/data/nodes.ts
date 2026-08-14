@@ -1,6 +1,8 @@
 import { DEFAULT_PINS } from "@/data/presets.ts";
 import type { Port } from "@/types.ts";
 import { PORT_TYPES, type NodeType } from "@hayverse/shared";
+import { geminiNanoBananaDefaults } from "@/schemas/gemini/geminiNanoBanana.schema.ts";
+import { geminiVeoDefaults } from "@/schemas/gemini/geminiVeo.schema.ts";
 
 // Node types that call a paid AI generation service (GeminiService /
 // HiggsfieldService) — these get a per-node Run button instead of
@@ -210,15 +212,45 @@ export const NODE_TEMPLATES = {
             { name: "Visual Render", type: PORT_TYPES.IMAGE },
             { name: "Motion Render", type: PORT_TYPES.VIDEO },
         ],
-        outputs: [{ name: "Arc JSON", type: PORT_TYPES.TEXT }],
+        outputs: [],
         params: {
-            renderingEngine: "Hayverse Realtime Veo 3",
             title: "",
             start: 0,
             duration: 5,
             track: 1,
             coverUrl: "",
             activeOutput: "video",
+            // "llm" runs a text-model pass over the connected entities' JSON
+            // to write a natural-language prompt; "raw" sends their
+            // serialized JSON straight through as the prompt — a dev toggle
+            // to compare both, see core/scenePrompt.ts.
+            promptComposition: "llm",
+            // image/video hold pure generation config only — model,
+            // aspectRatio, seed, etc, exactly what a preset snapshot should
+            // capture (buildPresetSnapshot only ever looks at `params`, see
+            // types.ts). Generation history/bookkeeping (history/idx/
+            // paramsHistory/lastComposedPrompt) lives in the sibling
+            // node.data.generation.image/.video instead — absent until this
+            // node's first generation, same as every other node's
+            // data.generation (see types.ts's doc comment).
+            image: {
+                model: geminiNanoBananaDefaults.model,
+                aspectRatio: geminiNanoBananaDefaults.aspectRatio,
+                imageSize: geminiNanoBananaDefaults.imageSize,
+                seed: geminiNanoBananaDefaults.seed,
+                personGeneration: geminiNanoBananaDefaults.personGeneration,
+            },
+            video: {
+                model: geminiVeoDefaults.model,
+                aspectRatio: geminiVeoDefaults.aspectRatio,
+                resolution: geminiVeoDefaults.resolution,
+                durationSeconds: geminiVeoDefaults.durationSeconds,
+                negativePrompt: geminiVeoDefaults.negativePrompt,
+                personGeneration: geminiVeoDefaults.personGeneration,
+                enhancePrompt: geminiVeoDefaults.enhancePrompt,
+                seed: geminiVeoDefaults.seed,
+                generateAudio: geminiVeoDefaults.generateAudio,
+            },
         },
     },
 
@@ -277,7 +309,10 @@ export const NODE_TEMPLATES = {
         icon: "ti-building-arch",
         color: "var(--color-node-character)",
         inputs: [],
-        outputs: [],
+        outputs: [
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
     },
 
     clothing: {
@@ -286,7 +321,10 @@ export const NODE_TEMPLATES = {
         icon: "ti-shirt",
         color: "var(--color-node-clothing)",
         inputs: [],
-        outputs: [],
+        outputs: [
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
     },
 
     artwork: {
@@ -295,7 +333,10 @@ export const NODE_TEMPLATES = {
         icon: "ti-palette",
         color: "var(--color-node-artwork)",
         inputs: [],
-        outputs: [],
+        outputs: [
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
     },
 
     furniture: {
@@ -304,7 +345,10 @@ export const NODE_TEMPLATES = {
         icon: "ti-armchair",
         color: "var(--color-node-util)",
         inputs: [],
-        outputs: [],
+        outputs: [
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
     },
 
     music: {
@@ -313,7 +357,11 @@ export const NODE_TEMPLATES = {
         icon: "ti-music",
         color: "var(--color-node-scene)",
         inputs: [],
-        outputs: [{ name: "Audio Out", type: PORT_TYPES.AUDIO }],
+        outputs: [
+            { name: "Audio Out", type: PORT_TYPES.AUDIO },
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
     },
 
     script: {
@@ -322,7 +370,11 @@ export const NODE_TEMPLATES = {
         icon: "ti-file-text",
         color: "var(--color-node-util)",
         inputs: [],
-        outputs: [{ name: "Text Out", type: PORT_TYPES.TEXT }],
+        outputs: [
+            { name: "Text Out", type: PORT_TYPES.TEXT },
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
     },
 
     storyboard: {
@@ -331,7 +383,11 @@ export const NODE_TEMPLATES = {
         icon: "ti-layout-board",
         color: "var(--color-node-higgsfield)",
         inputs: [],
-        outputs: [{ name: "Image Out", type: PORT_TYPES.IMAGE }],
+        outputs: [
+            { name: "Image Out", type: PORT_TYPES.IMAGE },
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
     },
 
     transport: {
@@ -340,7 +396,10 @@ export const NODE_TEMPLATES = {
         icon: "ti-car",
         color: "var(--color-node-character)",
         inputs: [],
-        outputs: [],
+        outputs: [
+            { name: "Description", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT },
+        ],
     },
 } satisfies Record<NodeType, NodeTemplate>;
 

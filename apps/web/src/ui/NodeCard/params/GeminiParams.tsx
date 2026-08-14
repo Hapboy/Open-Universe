@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Controller } from "react-hook-form";
 import { edgeInput } from "@/core/graph.ts";
-import type { NodeParams } from "@/types.ts";
+import type { GenerationHistoryState } from "@/types.ts";
 import { geminiApiClient } from "@/core/api/index.ts";
 import type { GeminiModel } from "@/core/api/gemini/dto.ts";
+import { generateSeed } from "@/core/seed.ts";
+import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
 import { WirableTextField, type EEP } from "@/ui/NodeCard/params/shared.tsx";
 import { useNodeParamsForm } from "@/ui/NodeCard/params/useNodeParamsForm.ts";
 import { geminiTextParamsSchema } from "@/schemas/gemini/geminiText.schema.ts";
@@ -18,6 +20,7 @@ import { geminiLyriaParamsSchema, LYRIA_MODELS } from "@/schemas/gemini/geminiLy
 import { SelectField } from "@/ui/components/SelectField/SelectField.tsx";
 import { Select } from "@/ui/components/Select/Select.tsx";
 import { TextField } from "@/ui/components/TextField/TextField.tsx";
+import { SeedField } from "@/ui/components/SeedField/SeedField.tsx";
 import { Switch } from "@/ui/components/Switch/Switch.tsx";
 import sharedStyles from "@/styles/shared.module.css";
 
@@ -31,7 +34,7 @@ import sharedStyles from "@/styles/shared.module.css";
 // prefer — live value is correct. `fieldKey` is "prompt" everywhere except
 // GeminiVisionParams, whose wirable field is "query".
 function wiredFieldDisplayValue(
-    generation: NodeParams["generation"],
+    generation: GenerationHistoryState | undefined,
     liveValue: unknown,
     fieldKey: string,
 ): unknown {
@@ -85,7 +88,7 @@ export function GeminiTextParams({ node, params, edges, resolved, updateNodePara
                         params={params}
                         wired={prompt.wired}
                         liveValue={wiredFieldDisplayValue(
-                            node.data.generation,
+                            node.data.generation as GenerationHistoryState | undefined,
                             prompt.value,
                             "prompt",
                         )}
@@ -131,7 +134,7 @@ export function GeminiVisionParams({ node, params, edges, resolved, updateNodePa
                         params={params}
                         wired={query.wired}
                         liveValue={wiredFieldDisplayValue(
-                            node.data.generation,
+                            node.data.generation as GenerationHistoryState | undefined,
                             query.value,
                             "query",
                         )}
@@ -219,7 +222,7 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                         params={params}
                         wired={prompt.wired}
                         liveValue={wiredFieldDisplayValue(
-                            node.data.generation,
+                            node.data.generation as GenerationHistoryState | undefined,
                             prompt.value,
                             "prompt",
                         )}
@@ -244,40 +247,42 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                     />
                 )}
             />
-            <Controller
-                control={control}
-                name="aspectRatio"
-                render={({ field }) => (
-                    <SelectField
-                        label="Соотношение сторон"
-                        value={field.value}
-                        onChange={(v) => {
-                            field.onChange(v);
-                            if (isFieldValid("aspectRatio", v))
-                                updateNodeParam(node.id, "aspectRatio", v);
-                        }}
-                        options={RATIOS}
-                    />
-                )}
-            />
-            <Controller
-                control={control}
-                name="resolution"
-                render={({ field }) => (
-                    <SelectField
-                        label="Разрешение"
-                        value={field.value}
-                        onChange={(v) => {
-                            field.onChange(v);
-                            if (isFieldValid("resolution", v))
-                                updateNodeParam(node.id, "resolution", v);
-                        }}
-                        options={RESOLUTIONS}
-                        disabled={isFastModel}
-                        title={isFastModel ? IMAGEN_FAST_FIXED_SIZE_HINT : undefined}
-                    />
-                )}
-            />
+            <div className={sharedStyles.row2}>
+                <Controller
+                    control={control}
+                    name="aspectRatio"
+                    render={({ field }) => (
+                        <SelectField
+                            label="Соотношение сторон"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("aspectRatio", v))
+                                    updateNodeParam(node.id, "aspectRatio", v);
+                            }}
+                            options={RATIOS}
+                        />
+                    )}
+                />
+                <Controller
+                    control={control}
+                    name="resolution"
+                    render={({ field }) => (
+                        <SelectField
+                            label="Разрешение"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("resolution", v))
+                                    updateNodeParam(node.id, "resolution", v);
+                            }}
+                            options={RESOLUTIONS}
+                            disabled={isFastModel}
+                            title={isFastModel ? IMAGEN_FAST_FIXED_SIZE_HINT : undefined}
+                        />
+                    )}
+                />
+            </div>
             <Controller
                 control={control}
                 name="negativePrompt"
@@ -312,12 +317,10 @@ export function GeminiImagenParams({ node, params, edges, resolved, updateNodePa
                 control={control}
                 name="seed"
                 render={({ field }) => (
-                    <TextField
-                        label="Сид (seed)"
-                        disabled
-                        placeholder="авто"
+                    <SeedField
                         value={field.value}
                         onChange={field.onChange}
+                        disabled
                         title={ENTERPRISE_ONLY_HINT}
                     />
                 )}
@@ -443,35 +446,30 @@ const VEO_PERSON_GENERATION_OPTIONS = [
     { value: "allow_adult", label: "Только взрослые" },
 ];
 
-export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
+// Fields shared by the standalone Veo node and output_scene's Видео tab —
+// everything except the prompt (a WirableTextField sourced from an edge on
+// the standalone node; composed internally from connected entities on
+// output_scene, see core/scenePrompt.ts) and the reference image (an edge
+// pin there, `currentHistoryRef(data.generation?.image)` — whatever
+// Картинка's history slider is parked on — here). `paramsSlice`/
+// `onFieldChange` rather than raw params/
+// updateNodeParam so this doesn't care whether it's reading a node's flat
+// params or output_scene's nested `params.video`.
+const veoModelFieldsSchema = geminiVeoParamsSchema.omit({ prompt: true });
+
+export function VeoModelFields({
+    paramsSlice,
+    onFieldChange,
+}: {
+    paramsSlice: Record<string, unknown>;
+    onFieldChange: (key: string, value: unknown) => void;
+}) {
     const RATIOS = ["16:9", "9:16"];
     const RESOLUTIONS = ["720p", "1080p"];
-    const prompt = edgeInput(node.data, edges, resolved, 0);
-    const requiresFullDuration = params.resolution !== "720p";
-    const { control, isFieldValid } = useNodeParamsForm(geminiVeoParamsSchema, params);
+    const requiresFullDuration = paramsSlice.resolution !== "720p";
+    const { control, isFieldValid } = useNodeParamsForm(veoModelFieldsSchema, paramsSlice);
     return (
         <>
-            <Controller
-                control={control}
-                name="prompt"
-                render={({ field }) => (
-                    <WirableTextField
-                        label="Промпт"
-                        node={node}
-                        paramKey="prompt"
-                        params={params}
-                        wired={prompt.wired}
-                        liveValue={wiredFieldDisplayValue(
-                            node.data.generation,
-                            prompt.value,
-                            "prompt",
-                        )}
-                        updateNodeParam={updateNodeParam}
-                        value={field.value}
-                        onChange={field.onChange}
-                    />
-                )}
-            />
             <Controller
                 control={control}
                 name="model"
@@ -481,44 +479,44 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                         value={field.value}
                         onChange={(v) => {
                             field.onChange(v);
-                            if (isFieldValid("model", v)) updateNodeParam(node.id, "model", v);
+                            if (isFieldValid("model", v)) onFieldChange("model", v);
                         }}
                         options={modelOptions(VEO_MODELS)}
                     />
                 )}
             />
-            <Controller
-                control={control}
-                name="aspectRatio"
-                render={({ field }) => (
-                    <SelectField
-                        label="Соотношение сторон"
-                        value={field.value}
-                        onChange={(v) => {
-                            field.onChange(v);
-                            if (isFieldValid("aspectRatio", v))
-                                updateNodeParam(node.id, "aspectRatio", v);
-                        }}
-                        options={RATIOS}
-                    />
-                )}
-            />
-            <Controller
-                control={control}
-                name="resolution"
-                render={({ field }) => (
-                    <SelectField
-                        label="Разрешение"
-                        value={field.value}
-                        onChange={(v) => {
-                            field.onChange(v);
-                            if (isFieldValid("resolution", v))
-                                updateNodeParam(node.id, "resolution", v);
-                        }}
-                        options={RESOLUTIONS}
-                    />
-                )}
-            />
+            <div className={sharedStyles.row2}>
+                <Controller
+                    control={control}
+                    name="aspectRatio"
+                    render={({ field }) => (
+                        <SelectField
+                            label="Соотношение сторон"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("aspectRatio", v)) onFieldChange("aspectRatio", v);
+                            }}
+                            options={RATIOS}
+                        />
+                    )}
+                />
+                <Controller
+                    control={control}
+                    name="resolution"
+                    render={({ field }) => (
+                        <SelectField
+                            label="Разрешение"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("resolution", v)) onFieldChange("resolution", v);
+                            }}
+                            options={RESOLUTIONS}
+                        />
+                    )}
+                />
+            </div>
             <Controller
                 control={control}
                 name="durationSeconds"
@@ -532,7 +530,7 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                         onBlur={(v) => {
                             field.onBlur();
                             if (isFieldValid("durationSeconds", Number(v)))
-                                updateNodeParam(node.id, "durationSeconds", Number(v));
+                                onFieldChange("durationSeconds", Number(v));
                         }}
                     />
                 )}
@@ -548,7 +546,7 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                         onBlur={(v) => {
                             field.onBlur();
                             if (isFieldValid("negativePrompt", v))
-                                updateNodeParam(node.id, "negativePrompt", v);
+                                onFieldChange("negativePrompt", v);
                         }}
                     />
                 )}
@@ -557,12 +555,10 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                 control={control}
                 name="seed"
                 render={({ field }) => (
-                    <TextField
-                        label="Сид (seed)"
-                        disabled
-                        placeholder="авто"
+                    <SeedField
                         value={field.value}
                         onChange={field.onChange}
+                        disabled
                         title={ENTERPRISE_ONLY_HINT}
                     />
                 )}
@@ -581,31 +577,67 @@ export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam
                     />
                 )}
             />
+            <div className={sharedStyles.row2}>
+                <Controller
+                    control={control}
+                    name="enhancePrompt"
+                    render={({ field }) => (
+                        <Switch
+                            label="Улучшить промпт"
+                            value={!!field.value}
+                            onChange={field.onChange}
+                            disabled
+                            title={VEO_PREVIEW_UNSUPPORTED_HINT}
+                        />
+                    )}
+                />
+                <Controller
+                    control={control}
+                    name="generateAudio"
+                    render={({ field }) => (
+                        <Switch
+                            label="Звук"
+                            value={!!field.value}
+                            onChange={field.onChange}
+                            disabled
+                            title={ENTERPRISE_ONLY_HINT}
+                        />
+                    )}
+                />
+            </div>
+        </>
+    );
+}
+
+export function GeminiVeoParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
+    const prompt = edgeInput(node.data, edges, resolved, 0);
+    const { control } = useNodeParamsForm(geminiVeoParamsSchema, params);
+    return (
+        <>
             <Controller
                 control={control}
-                name="enhancePrompt"
+                name="prompt"
                 render={({ field }) => (
-                    <Switch
-                        label="Улучшить промпт"
-                        value={!!field.value}
+                    <WirableTextField
+                        label="Промпт"
+                        node={node}
+                        paramKey="prompt"
+                        params={params}
+                        wired={prompt.wired}
+                        liveValue={wiredFieldDisplayValue(
+                            node.data.generation as GenerationHistoryState | undefined,
+                            prompt.value,
+                            "prompt",
+                        )}
+                        updateNodeParam={updateNodeParam}
+                        value={field.value}
                         onChange={field.onChange}
-                        disabled
-                        title={VEO_PREVIEW_UNSUPPORTED_HINT}
                     />
                 )}
             />
-            <Controller
-                control={control}
-                name="generateAudio"
-                render={({ field }) => (
-                    <Switch
-                        label="Звук"
-                        value={!!field.value}
-                        onChange={field.onChange}
-                        disabled
-                        title={ENTERPRISE_ONLY_HINT}
-                    />
-                )}
+            <VeoModelFields
+                paramsSlice={params}
+                onFieldChange={(key, value) => updateNodeParam(node.id, key, value)}
             />
         </>
     );
@@ -623,45 +655,37 @@ const NANO_BANANA_PERSON_OPTIONS = [
 
 const MAX_NANO_BANANA_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
 
-export function GeminiNanoBananaParams({
-    node,
-    params,
-    edges,
-    resolved,
-    updateNodeParam,
-    addImageInput,
-}: EEP & {
-    addImageInput: (id: string) => void;
+// Fields shared by the standalone Nano Banana node and output_scene's
+// Картинка tab — everything except the prompt (a WirableTextField sourced
+// from an edge on the standalone node; composed internally from connected
+// entities on output_scene, see core/scenePrompt.ts) and reference images
+// (manually wired "+" pins there; auto-collected from wired entities' own
+// photos here). `paramsSlice`/`onFieldChange` rather than raw params/
+// updateNodeParam so this doesn't care whether it's reading a node's flat
+// params or output_scene's nested `params.image`. `modelRowAction` is an
+// optional slot next to the model select — the standalone node uses it for
+// its "add reference image pin" button; output_scene's tab leaves it empty.
+const nanoBananaModelFieldsSchema = geminiNanoBananaParamsSchema.omit({ prompt: true });
+
+export function NanoBananaModelFields({
+    paramsSlice,
+    onFieldChange,
+    modelRowAction,
+    onReroll,
+}: {
+    paramsSlice: Record<string, unknown>;
+    onFieldChange: (key: string, value: unknown) => void;
+    modelRowAction?: React.ReactNode;
+    // Bumps seed by 100 and re-runs generation — what "re-run" means differs
+    // per caller (a standalone node's runNode vs output_scene's own
+    // handleGenerateImage), so it's supplied rather than computed here.
+    onReroll?: () => void;
 }) {
     const RATIOS = ["16:9", "1:1", "9:16", "3:2", "2:3", "4:3", "21:9"];
     const SIZES = ["1K", "2K", "4K"];
-    const prompt = edgeInput(node.data, edges, resolved, 0);
-    const imageCount = node.data.inputs.length - 1;
-    const atLimit = imageCount >= MAX_NANO_BANANA_REFERENCE_IMAGES;
-    const { control, isFieldValid } = useNodeParamsForm(geminiNanoBananaParamsSchema, params);
+    const { control, isFieldValid } = useNodeParamsForm(nanoBananaModelFieldsSchema, paramsSlice);
     return (
         <>
-            <Controller
-                control={control}
-                name="prompt"
-                render={({ field }) => (
-                    <WirableTextField
-                        label="Промпт"
-                        node={node}
-                        paramKey="prompt"
-                        params={params}
-                        wired={prompt.wired}
-                        liveValue={wiredFieldDisplayValue(
-                            node.data.generation,
-                            prompt.value,
-                            "prompt",
-                        )}
-                        updateNodeParam={updateNodeParam}
-                        value={field.value}
-                        onChange={field.onChange}
-                    />
-                )}
-            />
             <div className={sharedStyles.fld}>
                 <span>Модель</span>
                 <div className={sharedStyles.presetRow}>
@@ -674,71 +698,59 @@ export function GeminiNanoBananaParams({
                                 value={field.value}
                                 onChange={(v) => {
                                     field.onChange(v);
-                                    if (isFieldValid("model", v))
-                                        updateNodeParam(node.id, "model", v);
+                                    if (isFieldValid("model", v)) onFieldChange("model", v);
                                 }}
                                 options={modelOptions(NANO_BANANA_MODELS)}
                             />
                         )}
                     />
-                    <button
-                        className={sharedStyles.iconBtn}
-                        disabled={atLimit}
-                        onClick={() => addImageInput(node.id)}
-                        title={
-                            atLimit
-                                ? "Достигнут лимит Nano Banana — 14 изображений"
-                                : "Добавить референсное изображение"
-                        }>
-                        <i className="ti ti-plus" />
-                    </button>
+                    {modelRowAction}
                 </div>
             </div>
-            <Controller
-                control={control}
-                name="aspectRatio"
-                render={({ field }) => (
-                    <SelectField
-                        label="Соотношение сторон"
-                        value={field.value}
-                        onChange={(v) => {
-                            field.onChange(v);
-                            if (isFieldValid("aspectRatio", v))
-                                updateNodeParam(node.id, "aspectRatio", v);
-                        }}
-                        options={RATIOS}
-                    />
-                )}
-            />
-            <Controller
-                control={control}
-                name="imageSize"
-                render={({ field }) => (
-                    <SelectField
-                        label="Разрешение"
-                        value={field.value}
-                        onChange={(v) => {
-                            field.onChange(v);
-                            if (isFieldValid("imageSize", v))
-                                updateNodeParam(node.id, "imageSize", v);
-                        }}
-                        options={SIZES}
-                    />
-                )}
-            />
+            <div className={sharedStyles.row2}>
+                <Controller
+                    control={control}
+                    name="aspectRatio"
+                    render={({ field }) => (
+                        <SelectField
+                            label="Соотношение сторон"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("aspectRatio", v)) onFieldChange("aspectRatio", v);
+                            }}
+                            options={RATIOS}
+                        />
+                    )}
+                />
+                <Controller
+                    control={control}
+                    name="imageSize"
+                    render={({ field }) => (
+                        <SelectField
+                            label="Разрешение"
+                            value={field.value}
+                            onChange={(v) => {
+                                field.onChange(v);
+                                if (isFieldValid("imageSize", v)) onFieldChange("imageSize", v);
+                            }}
+                            options={SIZES}
+                        />
+                    )}
+                />
+            </div>
             <Controller
                 control={control}
                 name="seed"
                 render={({ field }) => (
-                    <TextField
-                        label="Сид (seed)"
-                        placeholder="авто"
+                    <SeedField
                         value={field.value}
                         onChange={field.onChange}
                         onBlur={(v) => {
                             field.onBlur();
-                            if (isFieldValid("seed", v)) updateNodeParam(node.id, "seed", v);
+                            if (isFieldValid("seed", v)) onFieldChange("seed", v);
                         }}
+                        onReroll={onReroll}
                     />
                 )}
             />
@@ -760,9 +772,27 @@ export function GeminiNanoBananaParams({
     );
 }
 
-export function GeminiLyriaParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
+export function GeminiNanoBananaParams({
+    node,
+    params,
+    edges,
+    resolved,
+    updateNodeParam,
+    addImageInput,
+}: EEP & {
+    addImageInput: (id: string) => void;
+}) {
     const prompt = edgeInput(node.data, edges, resolved, 0);
-    const { control, isFieldValid } = useNodeParamsForm(geminiLyriaParamsSchema, params);
+    const imageCount = node.data.inputs.length - 1;
+    const atLimit = imageCount >= MAX_NANO_BANANA_REFERENCE_IMAGES;
+    const { control } = useNodeParamsForm(geminiNanoBananaParamsSchema, params);
+    const { runNode } = useGraphContext();
+    const handleRerollSeed = () => {
+        const current = params.seed ? Number(params.seed) : undefined;
+        const next =
+            current !== undefined && !Number.isNaN(current) ? current + 10000 : generateSeed();
+        void runNode(node.id, { seed: String(next) });
+    };
     return (
         <>
             <Controller
@@ -776,7 +806,62 @@ export function GeminiLyriaParams({ node, params, edges, resolved, updateNodePar
                         params={params}
                         wired={prompt.wired}
                         liveValue={wiredFieldDisplayValue(
-                            node.data.generation,
+                            node.data.generation as GenerationHistoryState | undefined,
+                            prompt.value,
+                            "prompt",
+                        )}
+                        updateNodeParam={updateNodeParam}
+                        value={field.value}
+                        onChange={field.onChange}
+                    />
+                )}
+            />
+            <NanoBananaModelFields
+                paramsSlice={params}
+                onFieldChange={(key, value) => updateNodeParam(node.id, key, value)}
+                onReroll={handleRerollSeed}
+                modelRowAction={
+                    <button
+                        className={sharedStyles.iconBtn}
+                        disabled={atLimit}
+                        onClick={() => addImageInput(node.id)}
+                        title={
+                            atLimit
+                                ? "Достигнут лимит Nano Banana — 14 изображений"
+                                : "Добавить референсное изображение"
+                        }>
+                        <i className="ti ti-plus" />
+                    </button>
+                }
+            />
+        </>
+    );
+}
+
+export function GeminiLyriaParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
+    const prompt = edgeInput(node.data, edges, resolved, 0);
+    const { control, isFieldValid } = useNodeParamsForm(geminiLyriaParamsSchema, params);
+    const { runNode } = useGraphContext();
+    const handleRerollSeed = () => {
+        const current = params.seed ? Number(params.seed) : undefined;
+        const next =
+            current !== undefined && !Number.isNaN(current) ? current + 10000 : generateSeed();
+        void runNode(node.id, { seed: String(next) });
+    };
+    return (
+        <>
+            <Controller
+                control={control}
+                name="prompt"
+                render={({ field }) => (
+                    <WirableTextField
+                        label="Промпт"
+                        node={node}
+                        paramKey="prompt"
+                        params={params}
+                        wired={prompt.wired}
+                        liveValue={wiredFieldDisplayValue(
+                            node.data.generation as GenerationHistoryState | undefined,
                             prompt.value,
                             "prompt",
                         )}
@@ -805,11 +890,10 @@ export function GeminiLyriaParams({ node, params, edges, resolved, updateNodePar
                 control={control}
                 name="seed"
                 render={({ field }) => (
-                    <TextField
-                        label="Сид (seed)"
-                        placeholder="авто"
+                    <SeedField
                         value={field.value}
                         onChange={field.onChange}
+                        onReroll={handleRerollSeed}
                         onBlur={(v) => {
                             field.onBlur();
                             if (isFieldValid("seed", v)) updateNodeParam(node.id, "seed", v);

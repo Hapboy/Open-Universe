@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { Edge } from "@xyflow/react";
-import type { NodeRef, TimelineScene } from "@/types.ts";
+import type { NodeType } from "@hayverse/shared";
+import type { NodeParams, NodeRef, TimelineScene } from "@/types.ts";
 import { usePresetLibraryContext } from "@/store/contexts/PresetLibraryContext.tsx";
 import { Switch } from "@/ui/components/Switch/Switch.tsx";
 import { ENTITY_PARAM_SCHEMAS } from "@/schemas/entities/schemas.ts";
@@ -18,8 +19,11 @@ export interface NodeParamsProps {
         opts?: { skipHistory?: boolean },
     ) => void;
     setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
+    setNodeField: (id: string, patch: Partial<NodeParams>) => void;
     addImageInput: (id: string) => void;
     addTextInput: (id: string) => void;
+    addEntityInput: (id: string, entityType: NodeType, entityLabel: string) => void;
+    removePinInput: (id: string, portId: string) => void;
     loadPinterestBoards: (node: NodeRef) => Promise<void>;
     loadPinterestPins: (node: NodeRef, boardId: string) => Promise<void>;
     executeGraph: () => Promise<void>;
@@ -73,9 +77,9 @@ export function WirableTextField({
     return (
         <div className={styles.fld}>
             <span>{label}</span>
-            <input
+            <textarea
                 key={wired ? "wired" : "editable"}
-                type="text"
+                rows={6}
                 disabled={wired}
                 {...(wired
                     ? { value: (liveValue as string) ?? "" }

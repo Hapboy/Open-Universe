@@ -2,11 +2,15 @@ import { useRef, useState } from "react";
 import cn from "classnames";
 import { WirableTextField, type EEP, type NodeParamsProps } from "@/ui/NodeCard/params/shared.tsx";
 import type { SceneNarrativeSettings } from "@/store/contexts/NarrativeContext.tsx";
+import type { GenerationHistoryState } from "@/types.ts";
 import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
 import { useNarrativeContext } from "@/store/contexts/NarrativeContext.tsx";
+import { useToastContext } from "@/store/contexts/ToastContext.tsx";
 import { edgeInput } from "@/core/graph.ts";
+import { appendGenerationHistory } from "@/core/generationHistory.ts";
+import { generateSeed } from "@/core/seed.ts";
+import { useGenerationHistory } from "@/ui/hooks/useGenerationHistory.ts";
 import { SelectField } from "@/ui/components/SelectField/SelectField.tsx";
-import { Select } from "@/ui/components/Select/Select.tsx";
 import { TextField } from "@/ui/components/TextField/TextField.tsx";
 import { NumberField } from "@/ui/components/NumberField/NumberField.tsx";
 import { RangeField } from "@/ui/components/RangeField/RangeField.tsx";
@@ -14,14 +18,45 @@ import { CategoryTagGroup } from "@/ui/components/CategoryTagGroup/CategoryTagGr
 import { SearchField } from "@/ui/components/SearchField/SearchField.tsx";
 import { EmotionalCurvePreview } from "@/ui/components/EmotionalCurvePreview/EmotionalCurvePreview.tsx";
 import { StoryPhaseBeats } from "@/ui/components/StoryPhaseBeats/StoryPhaseBeats.tsx";
-import { putBlob, useResolvedMediaUrl } from "@/core/mediaRef.ts";
+import { Switch } from "@/ui/components/Switch/Switch.tsx";
+import {
+    putBlob,
+    putGeneratedBlob,
+    resolveMediaRef,
+    useResolvedMediaUrl,
+} from "@/core/mediaRef.ts";
 import { MediaPickerButton } from "@/ui/components/MediaLibrary/MediaLibrary.tsx";
+import { MediaSlider } from "@/ui/NodeCard/MediaSlider/MediaSlider.tsx";
 import { Button } from "@/ui/components/Button/Button.tsx";
 import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
+import { geminiApiClient } from "@/core/api/index.ts";
+import { NanoBananaModelFields, VeoModelFields } from "@/ui/NodeCard/params/GeminiParams.tsx";
+import {
+    collectConnectedEntities,
+    collectReferenceImageUrls,
+    composeScenePrompt,
+} from "@/core/scenePrompt.ts";
+import { ENTITY_NODE_TYPES, NODE_TEMPLATES } from "@/data/nodes.ts";
 import styles from "@/ui/NodeCard/params/UtilParams.module.css";
+
+// Every entity kind output_scene can take an input pin from — the "+ <Kind>"
+// buttons in its Сущности tab, one per addEntityInput call. Order follows
+// ENTITY_NODE_TYPES' own insertion order (data/nodes.ts).
+const ENTITY_KIND_OPTIONS = Array.from(ENTITY_NODE_TYPES).map((type) => ({
+    type,
+    label: NODE_TEMPLATES[type].label,
+    icon: NODE_TEMPLATES[type].icon,
+}));
+
+// output_scene's own per-stage generation shape — the shared
+// GenerationHistoryState fields plus the composed prompt (see types.ts's
+// `generation` doc comment for why this doesn't live in `params`).
+type OutputStageGeneration = GenerationHistoryState & { lastComposedPrompt?: string };
 
 const OUTPUT_SCENE_CATEGORIES = [
     { key: "general", label: "Общие" },
+    { key: "entities", label: "Сущности" },
+    { key: "generation", label: "Генерация" },
     { key: "arc", label: "Арка" },
 ];
 
@@ -50,12 +85,22 @@ const getTensionColor = (level: number) => {
 export function OutputParams({
     node,
     params,
+    edges,
+    resolved,
     scenes,
     updateNodeParam,
-}: EEP & { scenes: NodeParamsProps["scenes"] }) {
-    const ENGINES = ["Hayverse Realtime Veo 3", "Hayverse Draft", "Hayverse Cinema 4K"];
+    updateNodeParams,
+    setNodeField,
+    addEntityInput,
+}: EEP & {
+    scenes: NodeParamsProps["scenes"];
+    updateNodeParams: NodeParamsProps["updateNodeParams"];
+    setNodeField: NodeParamsProps["setNodeField"];
+    addEntityInput: NodeParamsProps["addEntityInput"];
+}) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { activeSceneId } = useGraphContext();
+    const { showToast } = useToastContext();
     // Scene-arc fields below still live in NarrativeContext, keyed by scene
     // id, separate from this node's own `params`. Only the active scene's
     // graph is ever mounted, so this node's activeSceneId is always its own
@@ -65,19 +110,76 @@ export function OutputParams({
     const { getSceneNarrativeSettings, updateNarrativeSettings } = useNarrativeContext();
     const [activeTags, setActiveTags] = useState<Record<string, boolean>>({
         general: true,
+        entities: false,
+        generation: false,
         arc: false,
     });
     const [searchQuery, setSearchQuery] = useState("");
     const resolvedCoverUrl = useResolvedMediaUrl(params.coverUrl as string | undefined);
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+    const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
 
     const track = (params.track as number) ?? 1;
+    const stage = node.data.outputSceneStage ?? "image";
+    const imageParams = (params.image as Record<string, unknown>) ?? {};
+    const videoParams = (params.video as Record<string, unknown>) ?? {};
+    const visualRenderWired = edges.some((e) => e.targetHandle === node.data.inputs[0]?.id);
+    const motionRenderWired = edges.some((e) => e.targetHandle === node.data.inputs[1]?.id);
+    // node.data.generation.image/.video — this node's own two independent
+    // generation-history streams, sibling to `params` (see types.ts's
+    // `generation` doc comment for why this data doesn't live in params).
+    const currentGeneration =
+        (node.data.generation as
+            Partial<Record<"image" | "video", OutputStageGeneration>> | undefined) ?? {};
+    const imageGeneration = currentGeneration.image;
+    const videoGeneration = currentGeneration.video;
+    const isFinalImage = (params.activeOutput ?? "video") === "image";
+    const isFinalVideo = (params.activeOutput ?? "video") === "video";
+
+    const setImageGeneration = (next: Partial<OutputStageGeneration>) =>
+        setNodeField(node.id, {
+            generation: { ...currentGeneration, image: { ...imageGeneration, ...next } },
+        });
+    const setVideoGeneration = (next: Partial<OutputStageGeneration>) =>
+        setNodeField(node.id, {
+            generation: { ...currentGeneration, video: { ...videoGeneration, ...next } },
+        });
+
+    // Scrubbing the slider restores that generation's own params (model,
+    // aspectRatio, seed, ...) into the form below — same "history nav = time
+    // travel through your settings too" behavior as the standalone Gemini
+    // nodes (NodeCard.tsx's onHistoryIndexChange), via useNodeParamsForm's
+    // store-resync — plus the composed prompt, restored separately since it
+    // lives in data.generation rather than params (see types.ts). A pick
+    // with no recorded snapshot (media-library pick) just leaves both as
+    // they were. Called unconditionally, above the activeSceneId early
+    // return below — these are hooks (rules-of-hooks).
+    const imageHist = useGenerationHistory<OutputStageGeneration>(
+        imageGeneration,
+        setImageGeneration,
+        (snapshot) => {
+            const { lastComposedPrompt, ...configSnapshot } = snapshot;
+            updateNodeParams(node.id, { image: { ...imageParams, ...configSnapshot } });
+            return { lastComposedPrompt: lastComposedPrompt as string | undefined };
+        },
+    );
+    const videoHist = useGenerationHistory<OutputStageGeneration>(
+        videoGeneration,
+        setVideoGeneration,
+        (snapshot) => {
+            const { lastComposedPrompt, ...configSnapshot } = snapshot;
+            updateNodeParams(node.id, { video: { ...videoParams, ...configSnapshot } });
+            return { lastComposedPrompt: lastComposedPrompt as string | undefined };
+        },
+    );
 
     // Defensive: activeSceneId is nullable in GraphContext's types, but a
     // mounted output_scene node always belongs to the active scene.
     if (!activeSceneId) return null;
     const arc = getSceneNarrativeSettings(activeSceneId);
 
-    const isAllActive = activeTags.general && activeTags.arc;
+    const isAllActive =
+        activeTags.general && activeTags.entities && activeTags.generation && activeTags.arc;
 
     const toggleTag = (tag: string) => {
         setActiveTags((prev) => ({ ...prev, [tag]: !prev[tag] }));
@@ -85,7 +187,116 @@ export function OutputParams({
 
     const toggleAll = () => {
         const nextVal = !isAllActive;
-        setActiveTags({ general: nextVal, arc: nextVal });
+        setActiveTags({ general: nextVal, entities: nextVal, generation: nextVal, arc: nextVal });
+    };
+
+    const updateImageParam = (key: string, value: unknown) =>
+        updateNodeParams(node.id, { image: { ...imageParams, [key]: value } });
+    const updateVideoParam = (key: string, value: unknown) =>
+        updateNodeParams(node.id, { video: { ...videoParams, [key]: value } });
+
+    // `seedOverride` lets the reroll button (SeedField) supply an exact
+    // seed+100 value rather than whatever's currently in imageParams —
+    // computed locally by the caller and passed straight through, since a
+    // separate updateImageParam-then-generate would hit the same
+    // stale-closure gap core/seed.ts's withNodeOverrides doc comment
+    // describes. Absent a seedOverride, an empty seed field self-generates
+    // one here rather than leaving it undefined — the Gemini Developer API
+    // never echoes back a randomly-picked seed, so leaving it unset would
+    // make it unrecoverable after the fact (see core/seed.ts).
+    const handleGenerateImage = async (seedOverride?: number) => {
+        setIsGeneratingImage(true);
+        try {
+            const entities = collectConnectedEntities(node.data, edges, resolved);
+            const prompt = await composeScenePrompt(
+                params.promptComposition,
+                entities,
+                arc,
+                showToast,
+            );
+            setImageGeneration({ lastComposedPrompt: prompt });
+            const imageUrls = collectReferenceImageUrls(entities);
+            const seed =
+                seedOverride ?? (imageParams.seed ? Number(imageParams.seed) : generateSeed());
+            const seedStr = String(seed);
+            if (imageParams.seed !== seedStr) updateImageParam("seed", seedStr);
+            const dataUrl = await geminiApiClient.generateImageFromRefs(
+                {
+                    prompt,
+                    imageUrls,
+                    model: imageParams.model as string,
+                    aspectRatio: imageParams.aspectRatio as string,
+                    imageSize: imageParams.imageSize as string,
+                    seed,
+                },
+                showToast,
+            );
+            if (!dataUrl) return;
+            const blob = await (await fetch(dataUrl)).blob();
+            const ref = await putGeneratedBlob(blob);
+            setImageGeneration({
+                ...appendGenerationHistory(imageGeneration, ref, {
+                    ...imageParams,
+                    seed: seedStr,
+                    lastComposedPrompt: prompt,
+                }),
+                lastComposedPrompt: prompt,
+            });
+        } finally {
+            setIsGeneratingImage(false);
+        }
+    };
+
+    const handleRerollImageSeed = () => {
+        const current = imageParams.seed ? Number(imageParams.seed) : undefined;
+        const next =
+            current !== undefined && !Number.isNaN(current) ? current + 10000 : generateSeed();
+        void handleGenerateImage(next);
+    };
+
+    const handleGenerateVideo = async () => {
+        const refImage = imageHist.currentRef;
+        if (!refImage) {
+            showToast("Сначала выберите или сгенерируйте кадр во вкладке «Картинка»");
+            return;
+        }
+        setIsGeneratingVideo(true);
+        try {
+            const entities = collectConnectedEntities(node.data, edges, resolved);
+            const prompt = await composeScenePrompt(
+                params.promptComposition,
+                entities,
+                arc,
+                showToast,
+            );
+            setVideoGeneration({ lastComposedPrompt: prompt });
+            const dataUrl = await geminiApiClient.generateVideo(
+                {
+                    prompt,
+                    imageUrl: resolveMediaRef(refImage),
+                    model: videoParams.model as string,
+                    aspectRatio: videoParams.aspectRatio as string,
+                    resolution: videoParams.resolution as string,
+                    durationSeconds: videoParams.durationSeconds as number,
+                    negativePrompt: (videoParams.negativePrompt as string) || undefined,
+                    personGeneration: videoParams.personGeneration as string,
+                    enhancePrompt: videoParams.enhancePrompt as boolean,
+                },
+                showToast,
+            );
+            if (!dataUrl) return;
+            const blob = await (await fetch(dataUrl)).blob();
+            const ref = await putGeneratedBlob(blob);
+            setVideoGeneration({
+                ...appendGenerationHistory(videoGeneration, ref, {
+                    ...videoParams,
+                    lastComposedPrompt: prompt,
+                }),
+                lastComposedPrompt: prompt,
+            });
+        } finally {
+            setIsGeneratingVideo(false);
+        }
     };
 
     // Filter fields by active tab tag and search label queries
@@ -165,56 +376,26 @@ export function OutputParams({
                 </div>
             )}
 
-            {(shouldShow("general", "Дорожка") || shouldShow("general", "Выход монитора")) && (
-                <div className={styles.row2}>
-                    {shouldShow("general", "Дорожка") && (
-                        <div className={styles.fld}>
-                            <span>Дорожка</span>
-                            <div className={styles.segBtn}>
-                                {[1, 2].map((t) => (
-                                    <button
-                                        key={t}
-                                        className={cn(track === t && styles.isOn)}
-                                        onClick={() => handleTrackChange(t)}>
-                                        {t}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {shouldShow("general", "Выход монитора") && (
-                        <div className={styles.fld}>
-                            <span>Выход монитора</span>
-                            <div className={styles.segBtn}>
-                                <button
-                                    className={cn(
-                                        (params.activeOutput ?? "video") === "video" && styles.isOn,
-                                    )}
-                                    onClick={() =>
-                                        updateNodeParam(node.id, "activeOutput", "video")
-                                    }>
-                                    Видео
-                                </button>
-                                <button
-                                    className={cn(
-                                        (params.activeOutput ?? "video") === "image" && styles.isOn,
-                                    )}
-                                    onClick={() =>
-                                        updateNodeParam(node.id, "activeOutput", "image")
-                                    }>
-                                    Картинка
-                                </button>
-                            </div>
-                        </div>
-                    )}
+            {shouldShow("general", "Дорожка") && (
+                <div className={styles.fld}>
+                    <span>Дорожка</span>
+                    <div className={styles.segBtn}>
+                        {[1, 2].map((t) => (
+                            <button
+                                key={t}
+                                className={cn(track === t && styles.isOn)}
+                                onClick={() => handleTrackChange(t)}>
+                                {t}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             )}
 
-            {(shouldShow("general", "Обложка сцены") || shouldShow("general", "Рендер-движок")) && (
+            {shouldShow("general", "Обложка сцены") && (
                 <div className={styles.fld}>
-                    <span>Рендер-движок</span>
-                    {shouldShow("general", "Обложка сцены") && params.coverUrl ? (
+                    <span>Обложка сцены</span>
+                    {params.coverUrl ? (
                         <div className={styles.coverPreviewWrapper}>
                             <img
                                 src={resolvedCoverUrl}
@@ -231,27 +412,33 @@ export function OutputParams({
                         onChange={handleCoverUpload}
                     />
                     <div className={styles.presetRow}>
-                        {shouldShow("general", "Рендер-движок") && (
-                            <Select
-                                className={styles.presetSelect}
-                                value={params.renderingEngine as string}
-                                onChange={(v) => updateNodeParam(node.id, "renderingEngine", v)}
-                                options={ENGINES}
-                            />
-                        )}
-                        {shouldShow("general", "Обложка сцены") && (
-                            <>
-                                <IconButton
-                                    icon="upload"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    title="Загрузить обложку"
-                                />
-                                <MediaPickerButton
-                                    onPick={handleCoverPick}
-                                    title="Выбрать обложку из медиатеки"
-                                />
-                            </>
-                        )}
+                        <IconButton
+                            icon="upload"
+                            onClick={() => fileInputRef.current?.click()}
+                            title="Загрузить обложку"
+                        />
+                        <MediaPickerButton
+                            onPick={handleCoverPick}
+                            title="Выбрать обложку из медиатеки"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {shouldShow("entities", "Сущности") && (
+                <div className={styles.fld}>
+                    <span>Добавить сущность</span>
+                    <div className={styles.entityChips}>
+                        {ENTITY_KIND_OPTIONS.map((opt) => (
+                            <button
+                                key={opt.type}
+                                type="button"
+                                className={styles.entityChip}
+                                onClick={() => addEntityInput(node.id, opt.type, opt.label)}>
+                                <i className={`ti ${opt.icon}`} />
+                                {opt.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
             )}
@@ -335,6 +522,152 @@ export function OutputParams({
                     }
                     options={pacingOptions}
                 />
+            )}
+
+            {activeTags.generation && (
+                <>
+                    <Switch
+                        label="Составлять промпт через LLM"
+                        value={(params.promptComposition ?? "llm") === "llm"}
+                        onChange={(v) =>
+                            updateNodeParam(node.id, "promptComposition", v ? "llm" : "raw")
+                        }
+                    />
+
+                    <hr className={styles.divider} />
+                    <div className={styles.fld}>
+                        <div className={styles.segBtn}>
+                            <button
+                                className={cn(stage === "image" && styles.isOn)}
+                                onClick={() =>
+                                    setNodeField(node.id, { outputSceneStage: "image" })
+                                }>
+                                <i className="ti ti-photo" /> Картинка
+                            </button>
+                            <button
+                                className={cn(stage === "video" && styles.isOn)}
+                                onClick={() =>
+                                    setNodeField(node.id, { outputSceneStage: "video" })
+                                }>
+                                <i className="ti ti-video" /> Видео
+                            </button>
+                        </div>
+                    </div>
+
+                    {stage === "image" && (
+                        <>
+                            {visualRenderWired ? (
+                                <p className={styles.hint}>
+                                    <i className="ti ti-info-circle" />
+                                    Visual Render подключён вручную — внутренняя генерация
+                                    отключена.
+                                </p>
+                            ) : (
+                                <>
+                                    <NanoBananaModelFields
+                                        paramsSlice={imageParams}
+                                        onFieldChange={updateImageParam}
+                                        onReroll={handleRerollImageSeed}
+                                    />
+                                    <div className={styles.generateRow}>
+                                        <IconButton
+                                            icon="wand"
+                                            loading={isGeneratingImage}
+                                            onClick={handleGenerateImage}
+                                            title="Сгенерировать"
+                                        />
+                                        <MediaPickerButton
+                                            onPick={(ref) => imageHist.append(ref)}
+                                            title="Выбрать кадр из медиатеки"
+                                        />
+                                    </div>
+                                    {imageHist.resolvedUrls.length > 0 && (
+                                        <div className={styles.previewWrap}>
+                                            <MediaSlider
+                                                items={imageHist.resolvedUrls.map((url) => ({
+                                                    url,
+                                                    type: "image",
+                                                }))}
+                                                index={imageHist.idx}
+                                                onIndexChange={imageHist.onIndexChange}
+                                                onDelete={imageHist.onDelete}
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                            <Button
+                                icon={isFinalImage ? "flag-filled" : "flag"}
+                                variant={isFinalImage ? "primary" : "default"}
+                                disabled={!visualRenderWired && !imageHist.currentRef}
+                                onClick={() => updateNodeParam(node.id, "activeOutput", "image")}>
+                                {isFinalImage
+                                    ? "Финальный вывод сцены"
+                                    : "Сделать финальным выводом сцены"}
+                            </Button>
+                        </>
+                    )}
+
+                    {stage === "video" && (
+                        <>
+                            {motionRenderWired ? (
+                                <p className={styles.hint}>
+                                    <i className="ti ti-info-circle" />
+                                    Motion Render подключён вручную — внутренняя генерация
+                                    отключена.
+                                </p>
+                            ) : (
+                                <>
+                                    <p className={styles.hint}>
+                                        <i className="ti ti-info-circle" />
+                                        {imageHist.currentRef
+                                            ? "Референс-кадр выбран на вкладке «Картинка»."
+                                            : "Сначала сгенерируйте или выберите кадр на вкладке «Картинка»."}
+                                    </p>
+                                    <VeoModelFields
+                                        paramsSlice={videoParams}
+                                        onFieldChange={updateVideoParam}
+                                    />
+                                    <div className={styles.generateRow}>
+                                        <IconButton
+                                            icon="wand"
+                                            loading={isGeneratingVideo}
+                                            disabled={!imageHist.currentRef}
+                                            onClick={handleGenerateVideo}
+                                            title="Сгенерировать"
+                                        />
+                                        <MediaPickerButton
+                                            onPick={(ref) => videoHist.append(ref)}
+                                            title="Выбрать видео из медиатеки"
+                                        />
+                                    </div>
+                                    {videoHist.resolvedUrls.length > 0 && (
+                                        <div className={styles.previewWrap}>
+                                            <MediaSlider
+                                                items={videoHist.resolvedUrls.map((url) => ({
+                                                    url,
+                                                    type: "video",
+                                                }))}
+                                                index={videoHist.idx}
+                                                onIndexChange={videoHist.onIndexChange}
+                                                onDelete={videoHist.onDelete}
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                            <Button
+                                icon={isFinalVideo ? "flag-filled" : "flag"}
+                                variant={isFinalVideo ? "primary" : "default"}
+                                disabled={!motionRenderWired && !videoHist.currentRef}
+                                onClick={() => updateNodeParam(node.id, "activeOutput", "video")}>
+                                {isFinalVideo
+                                    ? "Финальный вывод сцены"
+                                    : "Сделать финальным выводом сцены"}
+                            </Button>
+                        </>
+                    )}
+                </>
             )}
         </>
     );

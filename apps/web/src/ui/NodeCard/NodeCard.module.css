@@ -269,7 +269,6 @@
     background: var(--color-bg-card);
     padding: 1px 5px;
     border-radius: 3px;
-    border: 1px solid var(--color-border);
     white-space: nowrap;
     flex-shrink: 0;
 }
