@@ -19,11 +19,26 @@
 
     --color-node-higgsfield: #7f77dd;
     --color-node-pinterest: #e60023;
-    --color-node-character: #378add;
     --color-node-scene: #1d9e75;
     --color-node-util: #ba7517;
+    --color-node-character: #378add;
     --color-node-clothing: #d4537e;
     --color-node-artwork: #639922;
+
+    /* Dedicated colors for the entity types (data/nodes.ts's
+       ENTITY_NODE_TYPES) that used to share a color with an unrelated node
+       type or with each other — character/location(scene)/clothing/artwork
+       above already had their own, this fills in the rest. Used for both
+       the entity node's own left-border accent and, on output_scene, its
+       dynamic entity input pins (see NodeCard.tsx's portColor, keyed off
+       Port.entityKind). */
+    --color-node-building: #c96a3f;
+    --color-node-furniture: #cf9a3a;
+    --color-node-music: #2fa8ad;
+    --color-node-script: #5f7fd6;
+    --color-node-storyboard: #a15a7a;
+    --color-node-transport: #6b8ca3;
+    --color-node-mise-en-scene: #9b5fd1;
 
     --font-sans:
         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;

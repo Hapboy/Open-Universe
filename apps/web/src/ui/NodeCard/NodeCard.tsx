@@ -1,7 +1,7 @@
 import { memo, useEffect, useState } from "react";
 import cn from "classnames";
 import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/react";
-import type { GenerationHistoryState, NodeParams, PortType } from "@/types.ts";
+import type { GenerationHistoryState, NodeParams, Port, PortType } from "@/types.ts";
 import {
     AI_MODEL_NODE_TYPES,
     HISTORY_NODE_TYPES,
@@ -21,10 +21,17 @@ import { NodeParamsPanel } from "@/ui/NodeCard/params/NodeParamsPanel.tsx";
 import { NodeMenu } from "@/ui/NodeCard/NodeMenu/NodeMenu.tsx";
 import styles from "@/ui/NodeCard/NodeCard.module.css";
 
-function portColor(type: PortType): string {
-    if (type === "Image") return "var(--color-node-scene)";
-    if (type === "Video") return "var(--color-node-higgsfield)";
-    if (type === "Text") return "var(--color-node-pinterest)";
+// Entity-typed pins (output_scene's dynamic "Character 1"/"Location 2"/...
+// input pins, see addEntityInput in GraphContext.tsx) are all plain
+// Text-typed ports — entityKind is what actually distinguishes them, so it
+// takes priority and colors the pin/handle after that entity's own node
+// color (NODE_TEMPLATES) instead of the generic Text color everyone else
+// falls back to.
+function portColor(port: Port): string {
+    if (port.entityKind) return NODE_TEMPLATES[port.entityKind].color;
+    if (port.type === "Image") return "var(--color-node-scene)";
+    if (port.type === "Video") return "var(--color-node-higgsfield)";
+    if (port.type === "Text") return "var(--color-node-pinterest)";
     return "var(--color-text-tertiary)";
 }
 
@@ -308,7 +315,7 @@ export const NodeCard = memo(function NodeCard({
                                     position={Position.Left}
                                     id={port.id}
                                     className={cn(styles.handle, styles.handleLeft)}
-                                    style={{ background: portColor(port.type) }}
+                                    style={{ background: portColor(port) }}
                                     title={text}
                                 />
                                 {data.pinLabelsWide && (
@@ -480,7 +487,7 @@ export const NodeCard = memo(function NodeCard({
                                     position={Position.Right}
                                     id={port.id}
                                     className={cn(styles.handle, styles.handleRight)}
-                                    style={{ background: portColor(port.type) }}
+                                    style={{ background: portColor(port) }}
                                     title={text}
                                 />
                             </div>

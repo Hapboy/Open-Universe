@@ -279,7 +279,7 @@ export const NODE_TEMPLATES = {
         type: "character",
         label: "Персонаж",
         icon: "ti-user",
-        color: "var(--color-node-higgsfield)",
+        color: "var(--color-node-character)",
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
@@ -303,7 +303,7 @@ export const NODE_TEMPLATES = {
         type: "mise_en_scene",
         label: "Мизансцена",
         icon: "ti-users",
-        color: "var(--color-node-clothing)",
+        color: "var(--color-node-mise-en-scene)",
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
@@ -315,7 +315,7 @@ export const NODE_TEMPLATES = {
         type: "building",
         label: "Здание",
         icon: "ti-building-arch",
-        color: "var(--color-node-character)",
+        color: "var(--color-node-building)",
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
@@ -351,7 +351,7 @@ export const NODE_TEMPLATES = {
         type: "furniture",
         label: "Мебель",
         icon: "ti-armchair",
-        color: "var(--color-node-util)",
+        color: "var(--color-node-furniture)",
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
@@ -363,7 +363,7 @@ export const NODE_TEMPLATES = {
         type: "music",
         label: "Музыка",
         icon: "ti-music",
-        color: "var(--color-node-scene)",
+        color: "var(--color-node-music)",
         inputs: [],
         outputs: [
             { name: "Audio Out", type: PORT_TYPES.AUDIO },
@@ -376,7 +376,7 @@ export const NODE_TEMPLATES = {
         type: "script",
         label: "Сценарий",
         icon: "ti-file-text",
-        color: "var(--color-node-util)",
+        color: "var(--color-node-script)",
         inputs: [],
         outputs: [
             { name: "Text Out", type: PORT_TYPES.TEXT },
@@ -389,7 +389,7 @@ export const NODE_TEMPLATES = {
         type: "storyboard",
         label: "Раскадровка",
         icon: "ti-layout-board",
-        color: "var(--color-node-higgsfield)",
+        color: "var(--color-node-storyboard)",
         inputs: [],
         outputs: [
             { name: "Image Out", type: PORT_TYPES.IMAGE },
@@ -402,7 +402,7 @@ export const NODE_TEMPLATES = {
         type: "transport",
         label: "Транспорт",
         icon: "ti-car",
-        color: "var(--color-node-character)",
+        color: "var(--color-node-transport)",
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },

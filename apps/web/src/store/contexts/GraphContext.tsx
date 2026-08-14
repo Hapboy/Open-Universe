@@ -112,6 +112,23 @@ function templateParams(type: string, overrides: Record<string, unknown> = {}) {
     return { ...base, ...(overrides || {}) };
 }
 
+// Maps an entity input pin's own label prefix (see addEntityInput's
+// `${label} ${n}` naming, e.g. "Локация 3") back to its entity kind —
+// backfills `entityKind` on pins added before that field existed on Port,
+// so old scenes' entity pins/handles still get their proper per-kind color
+// (NodeCard.tsx's portColor) instead of the generic Text color forever.
+// output_scene's fixed Visual Render/Motion Render pins never match any
+// entity label, so they pass through untouched.
+const ENTITY_LABEL_TO_KIND = new Map(
+    Array.from(ENTITY_NODE_TYPES).map((type) => [NODE_TEMPLATES[type].label, type]),
+);
+function inferEntityKind(pinName: string): NodeType | undefined {
+    for (const [label, type] of ENTITY_LABEL_TO_KIND) {
+        if (pinName.startsWith(`${label} `)) return type;
+    }
+    return undefined;
+}
+
 // Stored graphs may predate params added to templates later (e.g. character
 // coordinates) — merge template defaults under stored params so param editors
 // never receive undefined and a missing field can't crash the tree. Also
@@ -123,14 +140,33 @@ function templateParams(type: string, overrides: Record<string, unknown> = {}) {
 // gets dynamic output pins (unlike entity nodes' Description/JSON), so
 // forcing it back to the template's `outputs: []` is always correct, not
 // just a one-time migration.
+//
+// Also re-syncs `color` from the current template on every load — there's no
+// per-node color customization anywhere (createNode/duplicateNode are the
+// only writers, both just copy the template's color at creation time), so a
+// node's color is always meant to equal its template's, never a deliberate
+// per-instance override. Without this, a node created before a template's
+// color was reassigned (e.g. today's per-entity-type color pass) would keep
+// showing the old color forever, on both its own left-border accent and any
+// wire leaving it (NodeEditor.tsx's edge coloring).
 function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
     if (!Array.isArray(nodes)) return [];
     return nodes.map((n) => ({
         ...n,
         data: {
             ...n.data,
+            color:
+                NODE_TEMPLATES[n?.data?.nodeType as keyof typeof NODE_TEMPLATES]?.color ??
+                n.data.color,
             params: templateParams(n?.data?.nodeType, n?.data?.params),
             outputs: n?.data?.nodeType === "output_scene" ? [] : n.data.outputs,
+            inputs:
+                n?.data?.nodeType === "output_scene"
+                    ? n.data.inputs.map((p) => ({
+                          ...p,
+                          entityKind: p.entityKind ?? inferEntityKind(p.name),
+                      }))
+                    : n.data.inputs,
         },
     }));
 }

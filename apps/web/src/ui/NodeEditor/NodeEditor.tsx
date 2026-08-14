@@ -119,6 +119,30 @@ function NodeEditorCanvas() {
         [nodes, selectedNodeId],
     );
 
+    // Edges take on their source node's own color (the same value driving
+    // that node's left-border accent, see NodeCard.module.css's --nc) —
+    // answers "what kind of thing is this wire carrying" at a glance,
+    // entity-colored wires included, without needing per-port color logic
+    // here. Inline `style` wins over xyflow's own stylesheet regardless of
+    // specificity, so selection is signaled via stroke width instead of the
+    // library's default color swap.
+    const nodeColorById = useMemo(() => {
+        const map = new Map<string, string>();
+        nodes.forEach((n) => map.set(n.id, (n.data as NodeParams).color));
+        return map;
+    }, [nodes]);
+    const styledEdges = useMemo(
+        () =>
+            edges.map((e) => ({
+                ...e,
+                style: {
+                    stroke: nodeColorById.get(e.source) ?? "var(--color-border-hover)",
+                    strokeWidth: e.selected ? 2.5 : 1.5,
+                },
+            })),
+        [edges, nodeColorById],
+    );
+
     return (
         <div
             className={styles.canvasWrap}
@@ -127,7 +151,7 @@ function NodeEditorCanvas() {
             onDoubleClick={onCanvasDoubleClick}>
             <ReactFlow
                 nodes={styledNodes}
-                edges={edges}
+                edges={styledEdges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
