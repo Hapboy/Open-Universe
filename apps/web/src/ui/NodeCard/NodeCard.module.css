@@ -34,6 +34,16 @@
     width: 640px;
 }
 
+/* Both toggles can be on at once (pinLabelsWide + promptPanelOpen) — wide
+   enough for the 130px pin columns on both sides plus paramsMain and
+   promptCol sitting side by side (see .paramsCol override below, which
+   lets it fill the extra room instead of staying pinned to cardWide's
+   normal 320px). Higher specificity than either single-state rule above
+   (3 classes vs 2), so it wins regardless of source order. */
+.card.cardWide.promptOpen {
+    width: 900px;
+}
+
 .header {
     display: flex;
     align-items: center;
@@ -211,6 +221,10 @@
 
 .card.cardWide .paramsCol {
     flex: 0 0 320px;
+}
+
+.card.cardWide.promptOpen .paramsCol {
+    flex: 1 1 auto;
 }
 
 .pinRow {

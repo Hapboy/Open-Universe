@@ -248,11 +248,7 @@ export const NodeCard = memo(function NodeCard({
                     title="Показать подписи пинов"
                     onClick={(e) => {
                         e.stopPropagation();
-                        const next = !data.pinLabelsWide;
-                        setNodeField(id, {
-                            pinLabelsWide: next,
-                            ...(next ? { promptPanelOpen: false } : {}),
-                        });
+                        setNodeField(id, { pinLabelsWide: !data.pinLabelsWide });
                     }}>
                     <i className="ti ti-arrows-horizontal" />
                 </button>
@@ -272,11 +268,7 @@ export const NodeCard = memo(function NodeCard({
                         }
                         onClick={(e) => {
                             e.stopPropagation();
-                            const next = !data.promptPanelOpen;
-                            setNodeField(id, {
-                                promptPanelOpen: next,
-                                ...(next ? { pinLabelsWide: false } : {}),
-                            });
+                            setNodeField(id, { promptPanelOpen: !data.promptPanelOpen });
                         }}>
                         <i className="ti ti-notes" />
                     </button>
