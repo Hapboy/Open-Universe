@@ -20,12 +20,17 @@ export interface Port {
     // input pin out of that. Meaningless on output pins, which always allow
     // fanning out to multiple targets.
     allowMultiple?: boolean;
-    // Set only on output_scene's dynamic entity pins (addEntityInput,
-    // GraphContext.tsx) — every entity kind's JSON output is typed as plain
-    // "Text" (see PortType), so without this, isValidConnection's
-    // type-equality check alone would let e.g. a Location's JSON be wired
-    // into a "Character 1" pin. When set, isValidConnection additionally
-    // requires the source node's own nodeType to match.
+    // Set on two kinds of pins, both because every entity kind's JSON is
+    // typed as plain "Text" (see PortType) and so otherwise indistinguishable
+    // from one another:
+    // 1. output_scene's dynamic entity input pins (addEntityInput,
+    //    GraphContext.tsx) — isValidConnection additionally requires the
+    //    wired source node's own nodeType to match, so e.g. a Location's
+    //    JSON can't be wired into a "Character 1" pin.
+    // 2. Each entity type's own "JSON" output port (data/nodes.ts) — set to
+    //    that same type, purely for NodeCard.tsx's portColor to color it by
+    //    entity instead of the generic Text color. Deliberately not set on
+    //    the neighboring "Description" output, which stays generic Text.
     entityKind?: NodeType;
 }
 

@@ -19,19 +19,29 @@
 
     --color-node-higgsfield: #7f77dd;
     --color-node-pinterest: #e60023;
+    /* Reserved for the "Scene" concept — output_scene's own node color,
+       Timeline/Modals' scene indicator, and PortType "Image" (NodeCard.tsx's
+       portColor) — not the location entity, which used to reuse this and
+       visually collided with Image-typed pins (identical color, not just a
+       similar one) until it got --color-node-location below. */
     --color-node-scene: #1d9e75;
     --color-node-util: #ba7517;
     --color-node-character: #378add;
     --color-node-clothing: #d4537e;
     --color-node-artwork: #639922;
+    /* Audio-typed pins (PORT_TYPES.AUDIO) — Image/Video/Text ports already
+       had a color (NodeCard.tsx's portColor); Audio fell through to the
+       plain gray default until now. */
+    --color-node-audio: #eab308;
 
     /* Dedicated colors for the entity types (data/nodes.ts's
        ENTITY_NODE_TYPES) that used to share a color with an unrelated node
-       type or with each other — character/location(scene)/clothing/artwork
-       above already had their own, this fills in the rest. Used for both
-       the entity node's own left-border accent and, on output_scene, its
-       dynamic entity input pins (see NodeCard.tsx's portColor, keyed off
+       type or with each other — character/clothing/artwork above already
+       had their own, this fills in the rest. Used for both the entity
+       node's own left-border accent and, on output_scene, its dynamic
+       entity input pins (see NodeCard.tsx's portColor, keyed off
        Port.entityKind). */
+    --color-node-location: #8d6e63;
     --color-node-building: #c96a3f;
     --color-node-furniture: #cf9a3a;
     --color-node-music: #2fa8ad;

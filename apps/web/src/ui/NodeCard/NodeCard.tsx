@@ -21,16 +21,17 @@ import { NodeParamsPanel } from "@/ui/NodeCard/params/NodeParamsPanel.tsx";
 import { NodeMenu } from "@/ui/NodeCard/NodeMenu/NodeMenu.tsx";
 import styles from "@/ui/NodeCard/NodeCard.module.css";
 
-// Entity-typed pins (output_scene's dynamic "Character 1"/"Location 2"/...
-// input pins, see addEntityInput in GraphContext.tsx) are all plain
-// Text-typed ports — entityKind is what actually distinguishes them, so it
-// takes priority and colors the pin/handle after that entity's own node
-// color (NODE_TEMPLATES) instead of the generic Text color everyone else
-// falls back to.
+// entityKind takes priority over the plain-type colors below — it's set on
+// output_scene's dynamic "Character 1"/"Location 2"/... input pins
+// (addEntityInput, GraphContext.tsx) and on each entity type's own "JSON"
+// output port (data/nodes.ts; deliberately not "Description", which stays
+// the generic Text color) since both are otherwise indistinguishable
+// Text-typed ports. Everything else colors by its plain PortType.
 function portColor(port: Port): string {
     if (port.entityKind) return NODE_TEMPLATES[port.entityKind].color;
     if (port.type === "Image") return "var(--color-node-scene)";
     if (port.type === "Video") return "var(--color-node-higgsfield)";
+    if (port.type === "Audio") return "var(--color-node-audio)";
     if (port.type === "Text") return "var(--color-node-pinterest)";
     return "var(--color-text-tertiary)";
 }

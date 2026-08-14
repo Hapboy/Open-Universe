@@ -149,6 +149,11 @@ function inferEntityKind(pinName: string): NodeType | undefined {
 // color was reassigned (e.g. today's per-entity-type color pass) would keep
 // showing the old color forever, on both its own left-border accent and any
 // wire leaving it (NodeEditor.tsx's edge coloring).
+//
+// And backfills `entityKind` on entity nodes' own "JSON" output port —
+// added to the template so NodeCard.tsx's portColor can color it by entity
+// instead of the generic Text color, same reasoning as the entity input pin
+// backfill above. Always the node's own type, so no inference needed.
 function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
     if (!Array.isArray(nodes)) return [];
     return nodes.map((n) => ({
@@ -159,7 +164,16 @@ function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
                 NODE_TEMPLATES[n?.data?.nodeType as keyof typeof NODE_TEMPLATES]?.color ??
                 n.data.color,
             params: templateParams(n?.data?.nodeType, n?.data?.params),
-            outputs: n?.data?.nodeType === "output_scene" ? [] : n.data.outputs,
+            outputs:
+                n?.data?.nodeType === "output_scene"
+                    ? []
+                    : ENTITY_NODE_TYPES.has(n?.data?.nodeType)
+                      ? n.data.outputs.map((p) =>
+                            p.name === "JSON" && !p.entityKind
+                                ? { ...p, entityKind: n.data.nodeType }
+                                : p,
+                        )
+                      : n.data.outputs,
             inputs:
                 n?.data?.nodeType === "output_scene"
                     ? n.data.inputs.map((p) => ({

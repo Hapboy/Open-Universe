@@ -283,7 +283,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "character" },
         ],
     },
 
@@ -291,11 +291,11 @@ export const NODE_TEMPLATES = {
         type: "location",
         label: "Локация",
         icon: "ti-map-pin",
-        color: "var(--color-node-scene)",
+        color: "var(--color-node-location)",
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "location" },
         ],
     },
 
@@ -307,7 +307,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "mise_en_scene" },
         ],
     },
 
@@ -319,7 +319,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "building" },
         ],
     },
 
@@ -331,7 +331,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "clothing" },
         ],
     },
 
@@ -343,7 +343,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "artwork" },
         ],
     },
 
@@ -355,7 +355,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "furniture" },
         ],
     },
 
@@ -368,7 +368,7 @@ export const NODE_TEMPLATES = {
         outputs: [
             { name: "Audio Out", type: PORT_TYPES.AUDIO },
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "music" },
         ],
     },
 
@@ -381,7 +381,7 @@ export const NODE_TEMPLATES = {
         outputs: [
             { name: "Text Out", type: PORT_TYPES.TEXT },
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "script" },
         ],
     },
 
@@ -394,7 +394,7 @@ export const NODE_TEMPLATES = {
         outputs: [
             { name: "Image Out", type: PORT_TYPES.IMAGE },
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "storyboard" },
         ],
     },
 
@@ -406,7 +406,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT },
+            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "transport" },
         ],
     },
 } satisfies Record<NodeType, NodeTemplate>;
