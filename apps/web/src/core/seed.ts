@@ -22,7 +22,7 @@ export function generateSeed(): number {
 // shape, request-only). Leaving it unset would make the actual seed
 // unrecoverable after the fact, so every generation resolves and persists a
 // concrete seed instead — the field always shows the real value that
-// produced the current result, and a "reroll" (seed + 100, see SeedField)
+// produced the current result, and a "reroll" (seed + 10000, see SeedField)
 // always has a real previous value to bump from.
 function resolvedSeedPatch(params: Record<string, unknown>): Record<string, unknown> | null {
     const current = params.seed;
@@ -47,7 +47,7 @@ export function withEnsuredSeeds(nodes: Node<NodeParams>[]): Node<NodeParams>[] 
 }
 
 // Ensures one node's seed (if seed-capable) and applies any extra param
-// overrides (e.g. a reroll button bumping seed by 100) in a single write —
+// overrides (e.g. a reroll button bumping seed by 10000) in a single write —
 // used right before runNode's cascade so the value it executes with is
 // exactly the value that ends up persisted, with no stale-closure gap
 // between "write to state" and "read state back" (React state updates are

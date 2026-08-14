@@ -7,9 +7,10 @@ import sharedStyles from "@/styles/shared.module.css";
 // currently in the field) and reroll (only where seed is actually
 // functional — Nano Banana/Lyria; Imagen/Veo's field stays disabled and
 // gets no `onReroll`, see core/seed.ts's SEED_CAPABLE_NODE_TYPES). Reroll
-// bumps by a fixed +100 and re-runs generation in one click — see the
-// callers for what "re-run" means in each context (a standalone node's
-// runNode vs output_scene's own handleGenerateImage).
+// bumps by a fixed +10000 and re-runs generation in one click (see the
+// title text below and each caller's handleRerollSeed) — see the callers
+// for what "re-run" means in each context (a standalone node's runNode vs
+// output_scene's own handleGenerateImage).
 export function SeedField({
     value,
     onChange,

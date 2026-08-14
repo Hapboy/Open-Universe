@@ -1,8 +1,10 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import cn from "classnames";
 import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
 import type { TimelineScene } from "@/types.ts";
 import { useResolvedMediaUrls } from "@/core/mediaRef.ts";
+import { ConfirmDialog } from "@/ui/components/ConfirmDialog/ConfirmDialog.tsx";
 import {
     computeRulerTicks,
     findSceneAtTime,
@@ -34,9 +36,11 @@ export function SceneTrackView({
     packedStarts,
     onToggleCamera,
 }: SceneTrackViewProps) {
-    const { setActiveSceneId } = useGraphContext();
+    const { setActiveSceneId, deleteScene } = useGraphContext();
     const containerRef = useRef<HTMLDivElement>(null);
     const isDragging = useRef<boolean>(false);
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+    const pendingDeleteScene = scenes.find((s) => s.id === pendingDeleteId);
 
     const resolvedCovers = useResolvedMediaUrls(scenes.map((s) => s.coverUrl));
     const coverBySceneId = useMemo(
@@ -116,8 +120,20 @@ export function SceneTrackView({
                             ? `url(${coverBySceneId.get(scene.id)})`
                             : undefined,
                     }}
+                    tabIndex={0}
                     onMouseDown={(e) => e.stopPropagation()}
-                    onClick={() => handleSceneTabClick(scene.id, scene.start)}>
+                    onClick={() => handleSceneTabClick(scene.id, scene.start)}
+                    onKeyDown={(e) => {
+                        // The only way to delete a scene now — output_scene
+                        // itself is no longer deletable/duplicable directly
+                        // on the canvas (see NodeCard.tsx/NodeEditor.tsx).
+                        // Confirmed via the dialog below, not immediate —
+                        // there's no undo for a scene delete (it fires a
+                        // real backend remove).
+                        if (e.key !== "Delete") return;
+                        e.preventDefault();
+                        setPendingDeleteId(scene.id);
+                    }}>
                     <div className={styles.cardOverlay}>
                         <span className={styles.sceneNum}>Scene {scene.num}</span>
                         <span className={styles.sceneTitle}>{scene.title}</span>
@@ -145,6 +161,21 @@ export function SceneTrackView({
             <div className={styles.playhead} style={{ left: `${scrubberPercent}%` }}>
                 <div className={styles.playheadHandle} />
             </div>
+
+            {pendingDeleteScene &&
+                createPortal(
+                    <ConfirmDialog
+                        title="Удалить сцену?"
+                        message={`Сцена «${pendingDeleteScene.title || `Сцена ${pendingDeleteScene.num}`}» будет удалена без возможности отменить.`}
+                        confirmLabel="Удалить"
+                        onConfirm={() => {
+                            deleteScene(pendingDeleteScene.id);
+                            setPendingDeleteId(null);
+                        }}
+                        onCancel={() => setPendingDeleteId(null)}
+                    />,
+                    document.body,
+                )}
         </div>
     );
 }

@@ -274,20 +274,22 @@ export const NodeCard = memo(function NodeCard({
                         <i className="ti ti-notes" />
                     </button>
                 )}
-                <NodeMenu
-                    onDuplicate={() => duplicateNode(id)}
-                    onDelete={() => {
-                        deleteNode(id);
-                        selectNode(null);
-                    }}
-                    {...(hasJsonPreview
-                        ? {
-                              jsonPreviewVisible: !!data.showJsonPreview,
-                              onToggleJsonPreview: () =>
-                                  setNodeField(id, { showJsonPreview: !data.showJsonPreview }),
-                          }
-                        : {})}
-                />
+                {data.nodeType !== "output_scene" && (
+                    <NodeMenu
+                        onDuplicate={() => duplicateNode(id)}
+                        onDelete={() => {
+                            deleteNode(id);
+                            selectNode(null);
+                        }}
+                        {...(hasJsonPreview
+                            ? {
+                                  jsonPreviewVisible: !!data.showJsonPreview,
+                                  onToggleJsonPreview: () =>
+                                      setNodeField(id, { showJsonPreview: !data.showJsonPreview }),
+                              }
+                            : {})}
+                    />
+                )}
             </div>
 
             <div className={styles.middleRow}>

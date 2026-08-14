@@ -196,7 +196,7 @@ export function OutputParams({
         updateNodeParams(node.id, { video: { ...videoParams, [key]: value } });
 
     // `seedOverride` lets the reroll button (SeedField) supply an exact
-    // seed+100 value rather than whatever's currently in imageParams —
+    // seed+10000 value rather than whatever's currently in imageParams —
     // computed locally by the caller and passed straight through, since a
     // separate updateImageParam-then-generate would hit the same
     // stale-closure gap core/seed.ts's withNodeOverrides doc comment

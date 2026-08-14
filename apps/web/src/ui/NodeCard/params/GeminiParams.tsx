@@ -676,8 +676,8 @@ export function NanoBananaModelFields({
     paramsSlice: Record<string, unknown>;
     onFieldChange: (key: string, value: unknown) => void;
     modelRowAction?: React.ReactNode;
-    // Bumps seed by 100 and re-runs generation — what "re-run" means differs
-    // per caller (a standalone node's runNode vs output_scene's own
+    // Bumps seed by 10000 and re-runs generation — what "re-run" means
+    // differs per caller (a standalone node's runNode vs output_scene's own
     // handleGenerateImage), so it's supplied rather than computed here.
     onReroll?: () => void;
 }) {

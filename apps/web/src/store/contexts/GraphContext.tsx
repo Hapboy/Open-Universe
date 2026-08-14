@@ -336,6 +336,7 @@ interface GraphCtx {
     createNode: (type: NodeType, x: number, y: number) => Node<NodeParams> | null;
     duplicateNode: (id: string) => void;
     deleteNode: (id: string) => void;
+    deleteScene: (sceneId: string) => void;
     renameNode: (nodeId: string, label: string) => void;
     setNodeField: (nodeId: string, patch: Partial<NodeParams>) => void;
     updateNodeParam: (nodeId: string, key: string, value: unknown) => void;
@@ -767,6 +768,41 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         [history],
     );
 
+    // The only sanctioned way to delete a whole scene — output_scene itself
+    // is no longer deletable/duplicable directly on the canvas (NodeCard's
+    // menu omits both for it, React Flow's Delete key is blocked via
+    // `deletable: false` in NodeEditor.tsx's styledNodes), so this is now
+    // reached only from the Timeline's scene card (Delete key while
+    // focused, see SceneTrackView.tsx).
+    const deleteScene = useCallback(
+        (sceneId: string) => {
+            if (sceneId === activeSceneId) {
+                // Deleting the active scene's output_scene node is what the
+                // cascade-delete effect below actually watches for — this
+                // reuses that single cleanup path (sceneGraphs/backend/
+                // history + switching to another scene) rather than
+                // duplicating it here.
+                const outNode = nodes.find((n) => n.data.nodeType === "output_scene");
+                if (outNode) deleteNode(outNode.id);
+                return;
+            }
+            // A non-active scene has nothing live in `nodes` to remove —
+            // clean up its stored graph directly, same steps the cascade
+            // effect does minus the active-scene switch (nothing here was
+            // ever the active scene to switch away from).
+            setSceneGraphs((prev) => {
+                const next = { ...prev };
+                delete next[sceneId];
+                return next;
+            });
+            history.garbageCollectScene(sceneId);
+            hayverseApiClient.scenes
+                .remove(sceneId)
+                .catch(() => showToast("Не удалось удалить сцену на сервере"));
+        },
+        [activeSceneId, nodes, deleteNode, history, showToast],
+    );
+
     const renameNode = useCallback(
         (nodeId: string, label: string) => {
             history.record(null);
@@ -989,6 +1025,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         createNode,
         duplicateNode,
         deleteNode,
+        deleteScene,
         renameNode,
         setNodeField,
         updateNodeParam,

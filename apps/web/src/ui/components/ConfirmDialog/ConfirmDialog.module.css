@@ -1,0 +1,43 @@
+.modal {
+    composes: modal from "../../../styles/shared.module.css";
+}
+
+.sheet {
+    composes: sheet from "../../../styles/shared.module.css";
+    max-width: 380px;
+}
+
+.sheetH {
+    composes: sheetH from "../../../styles/shared.module.css";
+}
+
+.sheetBody {
+    composes: sheetBody from "../../../styles/shared.module.css";
+}
+
+.message {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-bottom: 16px;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+.actions > * {
+    flex: 1;
+}
+
+/* Element+class beats the plain `.btn` class Button.tsx already applies,
+   regardless of which CSS module's rules happen to get injected first. */
+button.danger {
+    background: var(--color-text-danger);
+    border-color: var(--color-text-danger);
+    color: #fff;
+}
+
+button.danger:hover {
+    opacity: 0.9;
+}

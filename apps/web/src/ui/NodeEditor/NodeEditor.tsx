@@ -55,7 +55,12 @@ function NodeEditorCanvas() {
             if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
 
             if (e.key === "c" || e.key === "C") {
-                if (selectedNodeId) copiedIdRef.current = selectedNodeId;
+                // output_scene is a singleton per scene, auto-created by the
+                // app — it can't be duplicated, so it's never worth copying.
+                const selected = nodes.find((n) => n.id === selectedNodeId);
+                if (selected && selected.data.nodeType !== "output_scene") {
+                    copiedIdRef.current = selectedNodeId;
+                }
             } else if (e.key === "v" || e.key === "V") {
                 const id = copiedIdRef.current;
                 if (id && nodes.some((n) => n.id === id)) {
@@ -114,8 +119,17 @@ function NodeEditorCanvas() {
         [browserAt, createNode, selectNode, showToast],
     );
 
+    // output_scene is a singleton per scene, auto-created by the app —
+    // `deletable: false` blocks React Flow's own Delete-key removal path for
+    // it (deleteKeyCode below); deleting a scene is now only reachable from
+    // the Timeline's scene card (see SceneTrackView.tsx's deleteScene call).
     const styledNodes = useMemo(
-        () => nodes.map((n) => ({ ...n, selected: n.id === selectedNodeId })),
+        () =>
+            nodes.map((n) => ({
+                ...n,
+                selected: n.id === selectedNodeId,
+                deletable: n.data.nodeType !== "output_scene",
+            })),
         [nodes, selectedNodeId],
     );
 
