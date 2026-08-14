@@ -225,6 +225,14 @@ export const NODE_TEMPLATES = {
             // serialized JSON straight through as the prompt — a dev toggle
             // to compare both, see core/scenePrompt.ts.
             promptComposition: "llm",
+            // Free-text, user-authored addition to the composed prompt — same
+            // role as character/location's additionalDescription (see
+            // EntityParams.tsx), edited via the same promptPanelOpen side
+            // panel (NodeCard.tsx). Prepended before the entity-composed
+            // prompt at generation time (core/scenePrompt.ts's
+            // composeScenePrompt), not merged into `image`/`video` since it
+            // applies to both stages equally.
+            additionalDescription: "",
             // image/video hold pure generation config only — model,
             // aspectRatio, seed, etc, exactly what a preset snapshot should
             // capture (buildPresetSnapshot only ever looks at `params`, see

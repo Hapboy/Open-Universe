@@ -62,12 +62,15 @@ export function collectReferenceImageUrls(entities: ConnectedEntity[]): string[]
 // The "raw" prompt-composition path: serializes the connected entities' own
 // JSON plus the scene's arc settings straight through, no model call. Cheap
 // and pure — safe to recompute on every keystroke if ever needed, unlike
-// composeLlmPrompt below.
+// composeLlmPrompt below. `additionalDescription` (params.additionalDescription
+// — the node's own free-text field, see UtilParams.tsx/NodeCard.tsx) is
+// prepended verbatim ahead of the structured data when present.
 export function composeRawPrompt(
     entities: ConnectedEntity[],
     arcSettings: SceneNarrativeSettings | undefined,
+    additionalDescription?: string,
 ): string {
-    return JSON.stringify(
+    const structured = JSON.stringify(
         {
             entities: entities.map((e) => ({ pin: e.pinLabel, ...e.data })),
             arc: arcSettings ?? null,
@@ -75,6 +78,7 @@ export function composeRawPrompt(
         null,
         2,
     );
+    return additionalDescription ? `${additionalDescription}\n\n${structured}` : structured;
 }
 
 // The "llm" prompt-composition path: one text-model call turning the same
@@ -104,12 +108,18 @@ export async function composeLlmPrompt(
 
 // Single entry point for either path — reads `params.promptComposition`
 // ("llm" | "raw", default "llm") so callers don't have to branch themselves.
+// `additionalDescription` is always prepended ahead of whichever path's
+// output, so it reads first in the final generation prompt regardless of
+// composition mode (see composeRawPrompt for the "raw" case).
 export async function composeScenePrompt(
     promptComposition: unknown,
     entities: ConnectedEntity[],
     arcSettings: SceneNarrativeSettings | undefined,
     showToast: ShowToast,
+    additionalDescription?: string,
 ): Promise<string> {
-    if (promptComposition === "raw") return composeRawPrompt(entities, arcSettings);
-    return composeLlmPrompt(entities, arcSettings, showToast);
+    if (promptComposition === "raw")
+        return composeRawPrompt(entities, arcSettings, additionalDescription);
+    const composed = await composeLlmPrompt(entities, arcSettings, showToast);
+    return additionalDescription ? `${additionalDescription}\n\n${composed}` : composed;
 }

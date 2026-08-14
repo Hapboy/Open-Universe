@@ -300,6 +300,8 @@
     flex: 1 1 260px;
     min-width: 200px;
     display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .promptCol > div {

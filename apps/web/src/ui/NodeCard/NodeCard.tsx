@@ -175,6 +175,7 @@ export const NodeCard = memo(function NodeCard({
                 ? composeRawPrompt(
                       collectConnectedEntities(data, edges, resolved),
                       activeSceneId ? getSceneNarrativeSettings(activeSceneId) : undefined,
+                      data.params.additionalDescription as string | undefined,
                   )
                 : (
                       data.generation as
@@ -421,6 +422,14 @@ export const NodeCard = memo(function NodeCard({
                         )}
                         {data.nodeType === "output_scene" && data.promptPanelOpen && (
                             <div className={styles.promptCol}>
+                                <TextAreaField
+                                    label="Дополнительное описание"
+                                    rows={4}
+                                    value={(data.params.additionalDescription as string) ?? ""}
+                                    onChange={(v) =>
+                                        updateNodeParam(id, "additionalDescription", v)
+                                    }
+                                />
                                 <TextAreaField
                                     label={
                                         outputSceneStage === "video"

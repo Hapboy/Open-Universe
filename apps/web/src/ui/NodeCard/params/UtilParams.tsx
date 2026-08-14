@@ -213,6 +213,7 @@ export function OutputParams({
                 entities,
                 arc,
                 showToast,
+                params.additionalDescription as string | undefined,
             );
             setImageGeneration({ lastComposedPrompt: prompt });
             const imageUrls = collectReferenceImageUrls(entities);
@@ -268,6 +269,7 @@ export function OutputParams({
                 entities,
                 arc,
                 showToast,
+                params.additionalDescription as string | undefined,
             );
             setVideoGeneration({ lastComposedPrompt: prompt });
             const dataUrl = await geminiApiClient.generateVideo(
