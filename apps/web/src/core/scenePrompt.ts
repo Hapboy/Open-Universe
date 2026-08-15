@@ -59,25 +59,52 @@ export function collectReferenceImageUrls(entities: ConnectedEntity[]): string[]
     return entities.flatMap((e) => e.photoUrls);
 }
 
+// Unlike entities' own filledEntityParams (schemas/entities/schemas.ts),
+// this filters by whether each field's *own* value is empty, not whether it
+// differs from some baseline default — arc's enum fields (curveType,
+// conflictType, pacing, storyPhase, conflictTarget) never have an "empty"
+// state (a dropdown/button-group always has something selected), so
+// diffing against a default would wrongly hide a real, informative value
+// like curveType: "linear" just because nobody changed it from the initial
+// selection. Only emotionalTrend/tensionLevel (0 = neutral/unset) and
+// loreRevelations (an actual list) can be meaningfully "empty".
+function isEmptyArcValue(value: unknown): boolean {
+    if (typeof value === "number") return value === 0;
+    if (Array.isArray(value)) return value.length === 0;
+    return value === "" || value == null;
+}
+
+function filledArcSettings(
+    arcSettings: SceneNarrativeSettings | undefined,
+): Partial<SceneNarrativeSettings> {
+    if (!arcSettings) return {};
+    return Object.fromEntries(
+        Object.entries(arcSettings).filter(([, value]) => !isEmptyArcValue(value)),
+    );
+}
+
 // The "raw" prompt-composition path: serializes the connected entities' own
 // JSON plus the scene's arc settings straight through, no model call. Cheap
 // and pure — safe to recompute on every keystroke if ever needed, unlike
 // composeLlmPrompt below. `additionalDescription` (params.additionalDescription
 // — the node's own free-text field, see UtilParams.tsx/NodeCard.tsx) is
-// prepended verbatim ahead of the structured data when present.
+// prepended verbatim ahead of the structured data when present. `entities`/
+// `arc` keys are omitted entirely rather than shown empty/default — nothing
+// connected or customized means nothing useful to tell the model.
 export function composeRawPrompt(
     entities: ConnectedEntity[],
     arcSettings: SceneNarrativeSettings | undefined,
     additionalDescription?: string,
 ): string {
-    const structured = JSON.stringify(
-        {
-            entities: entities.map((e) => ({ pin: e.pinLabel, ...e.data })),
-            arc: arcSettings ?? null,
-        },
-        null,
-        2,
-    );
+    const arc = filledArcSettings(arcSettings);
+    const payload: Record<string, unknown> = {};
+    if (entities.length > 0) {
+        payload.entities = entities.map((e) => ({ pin: e.pinLabel, ...e.data }));
+    }
+    if (Object.keys(arc).length > 0) {
+        payload.arc = arc;
+    }
+    const structured = JSON.stringify(payload, null, 2);
     return additionalDescription ? `${additionalDescription}\n\n${structured}` : structured;
 }
 

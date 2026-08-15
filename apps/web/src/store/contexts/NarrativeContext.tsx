@@ -1,31 +1,21 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useToastContext } from "@/store/contexts/ToastContext.tsx";
 import { readJSON, writeJSON } from "@/core/browserStorage.ts";
-import type { ConflictType, ConflictTarget, StoryPhase, Pacing, CurveType } from "@hayverse/shared";
+import {
+    sceneNarrativeSettingsDefaults,
+    type SceneNarrativeSettings,
+} from "@/schemas/narrative/sceneNarrativeSettings.schema.ts";
+
+export type { SceneNarrativeSettings };
 
 const NARRATIVE_SETTINGS_KEY = "hv_narrative_settings";
 
-export interface SceneNarrativeSettings {
-    emotionalTrend: number; // slope percentage (-100 to 100)
-    conflictType: ConflictType;
-    conflictTarget: ConflictTarget;
-    storyPhase: StoryPhase;
-    tensionLevel: number; // 0 to 100
-    pacing: Pacing;
-    loreRevelations: string[]; // array of tags
-    curveType: CurveType;
-}
-
-export const DEFAULT_NARRATIVE_SETTINGS: SceneNarrativeSettings = {
-    emotionalTrend: 0,
-    conflictType: "physical",
-    conflictTarget: "man_vs_man",
-    storyPhase: "exposition",
-    tensionLevel: 30,
-    pacing: "moderate",
-    loreRevelations: [],
-    curveType: "linear",
-};
+// Re-exported under this established name — shape/validation/defaults now
+// live in schemas/narrative/sceneNarrativeSettings.schema.ts (single source
+// of truth, same role character.schema.ts etc play for entity params), kept
+// under this name here since every consumer already imports it as
+// `DEFAULT_NARRATIVE_SETTINGS` from this module.
+export const DEFAULT_NARRATIVE_SETTINGS = sceneNarrativeSettingsDefaults;
 
 interface NarrativeCtx {
     narrativeSettings: Record<string, SceneNarrativeSettings>;
