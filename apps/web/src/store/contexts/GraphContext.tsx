@@ -26,16 +26,16 @@ import { ENTITY_PARAM_DEFAULTS } from "@/schemas/entities/schemas.ts";
 import { GEMINI_PARAM_DEFAULTS } from "@/schemas/gemini/schemas.ts";
 import type { NodeParams, NodeRef, Port, TimelineScene } from "@/types.ts";
 import type { NodeType } from "@hayverse/shared";
+import type { Scene } from "@hayverse/api-client";
 import type { SceneOutput } from "@/core/graph.ts";
 import { useToastContext } from "@/store/contexts/ToastContext.tsx";
 import { useUserContext } from "@/store/contexts/UserContext.tsx";
-import { readJSON, readRaw, removeKey, writeRaw } from "@/core/browserStorage.ts";
+import { readRaw, removeKey, writeRaw } from "@/core/browserStorage.ts";
 import { buildPhotoPorts } from "@/core/characterPorts.ts";
 import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
 import { useGraphExecution } from "@/store/contexts/graphExecution.ts";
 import { useGraphHistory } from "@/store/contexts/graphHistory.ts";
 
-const SCENE_GRAPHS_KEY = "hv_scene_graphs";
 const ACTIVE_SCENE_KEY = "hv_active_scene_id";
 const TIMELINE_DURATION_KEY = "hv_timeline_duration";
 const DEFAULT_TOTAL_DURATION = 60; // 01:00 in seconds
@@ -64,30 +64,6 @@ function loadStoredTotalDuration(): number {
     const raw = readRaw(TIMELINE_DURATION_KEY);
     const parsed = raw ? Number(raw) : NaN;
     return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TOTAL_DURATION;
-}
-
-// A stored scene graph is corrupted if any edge points at a node id that no
-// longer exists in that same scene's node list.
-function isValidSceneGraphs(value: unknown): value is SceneGraphs {
-    if (!value || typeof value !== "object") return false;
-    for (const key of Object.keys(value as Record<string, unknown>)) {
-        const graph = (value as Record<string, { nodes?: unknown; edges?: unknown }>)[key];
-        if (graph?.nodes && graph?.edges) {
-            const nodeIds = new Set(
-                (graph.nodes as { id?: string }[]).map((n) => n?.id).filter(Boolean),
-            );
-            for (const edge of graph.edges as { source?: string; target?: string }[]) {
-                if (!edge || !nodeIds.has(edge.source) || !nodeIds.has(edge.target)) return false;
-            }
-        }
-    }
-    return true;
-}
-
-function loadStoredSceneGraphs(): SceneGraphs {
-    return readJSON(SCENE_GRAPHS_KEY, {} as SceneGraphs, isValidSceneGraphs, () =>
-        removeKey(SCENE_GRAPHS_KEY),
-    );
 }
 
 // Params from the node template, deep-cloned, with overrides on top. Entity
@@ -250,38 +226,20 @@ interface InitialGraphState {
     edges: Edge[];
 }
 
-function titleFromGraph(graph: { nodes: Node<NodeParams>[]; edges: Edge[] }): string {
-    const outNode = graph.nodes?.find((n) => n?.data?.nodeType === "output_scene");
-    const title = (outNode?.data.params as Record<string, unknown> | undefined)?.title;
-    return typeof title === "string" && title ? title : "Сцена";
-}
-
 // Loads every scene from the backend (source of truth — see DECISIONS.md's
-// Scenes/Media persistence entry). If the backend has none yet, one-time
-// migrates whatever's still sitting in localStorage from before this cutover
-// instead of silently discarding it, or bootstraps a single blank scene if
-// there's nothing to migrate either. Never re-runs once the backend has ≥1
-// scene, so `SCENE_GRAPHS_KEY` is cleared right after a successful migration
-// (otherwise deleting every scene later would re-migrate the stale snapshot).
-async function loadInitialGraphState(): Promise<InitialGraphState> {
-    let scenes = await hayverseApiClient.scenes.list();
+// Scenes/Media persistence entry), or `prefetched` if the server already
+// fetched them (see page.tsx). Bootstraps a single blank scene if there are
+// none at all yet.
+async function loadInitialGraphState(prefetched: Scene[] | null): Promise<InitialGraphState> {
+    let scenes = prefetched ?? (await hayverseApiClient.scenes.list());
 
     if (scenes.length === 0) {
-        const legacyEntries = Object.entries(loadStoredSceneGraphs());
-        scenes =
-            legacyEntries.length > 0
-                ? await Promise.all(
-                      legacyEntries.map(([, graph]) =>
-                          hayverseApiClient.scenes.create({ title: titleFromGraph(graph), graph }),
-                      ),
-                  )
-                : [
-                      await hayverseApiClient.scenes.create({
-                          title: "Сцена 1",
-                          graph: createEmptySceneGraph({ title: "Сцена 1" }),
-                      }),
-                  ];
-        removeKey(SCENE_GRAPHS_KEY);
+        scenes = [
+            await hayverseApiClient.scenes.create({
+                title: "Сцена 1",
+                graph: createEmptySceneGraph({ title: "Сцена 1" }),
+            }),
+        ];
     }
 
     const sceneGraphs: SceneGraphs = {};
@@ -386,7 +344,13 @@ interface GraphCtx {
 const Ctx = createContext<GraphCtx>(null!);
 export const useGraphContext = () => useContext(Ctx);
 
-export function GraphProvider({ children }: { children: React.ReactNode }) {
+export function GraphProvider({
+    children,
+    initialScenes,
+}: {
+    children: React.ReactNode;
+    initialScenes: Scene[] | null;
+}) {
     const { showToast } = useToastContext();
     const { pinterestStatus } = useUserContext();
 
@@ -441,7 +405,7 @@ export function GraphProvider({ children }: { children: React.ReactNode }) {
         setTotalDurationState(loadStoredTotalDuration());
 
         let cancelled = false;
-        loadInitialGraphState()
+        loadInitialGraphState(initialScenes)
             .then((initial) => {
                 if (cancelled) return;
 

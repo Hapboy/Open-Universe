@@ -1,3 +1,4 @@
+import type { Scene } from "@hayverse/api-client";
 import { ToastProvider } from "@/store/contexts/ToastContext.tsx";
 import { PresetLibraryProvider } from "@/store/contexts/PresetLibraryContext.tsx";
 import { UserProvider } from "@/store/contexts/UserContext.tsx";
@@ -7,14 +8,20 @@ import { GraphProvider } from "@/store/contexts/GraphContext.tsx";
 import { NarrativeProvider } from "@/store/contexts/NarrativeContext.tsx";
 import { PlayerProvider } from "@/store/contexts/PlayerContext.tsx";
 
-export function AppProviders({ children }: { children: React.ReactNode }) {
+export function AppProviders({
+    children,
+    initialScenes,
+}: {
+    children: React.ReactNode;
+    initialScenes: Scene[] | null;
+}) {
     return (
         <ToastProvider>
             <UserProvider>
                 <AuthProvider>
                     <ModalProvider>
                         <NarrativeProvider>
-                            <GraphProvider>
+                            <GraphProvider initialScenes={initialScenes}>
                                 {/* Deliberately nested inside GraphProvider, not outside it:
                                     React fires mount effects child-before-parent, so this
                                     ordering makes PresetLibraryContext's hydration effect

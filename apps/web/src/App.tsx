@@ -1,5 +1,8 @@
+"use client";
+
 import cn from "classnames";
 import dynamic from "next/dynamic";
+import type { Scene } from "@hayverse/api-client";
 import { AppProviders } from "@/store/AppProviders.tsx";
 import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
 import { isProviderConfigured } from "@/core/api/env.ts";
@@ -75,9 +78,9 @@ function StatusBar() {
     );
 }
 
-export function App() {
+export function App({ initialScenes }: { initialScenes: Scene[] | null }) {
     return (
-        <AppProviders>
+        <AppProviders initialScenes={initialScenes}>
             <AppShell />
         </AppProviders>
     );
