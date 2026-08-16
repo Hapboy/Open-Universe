@@ -7,35 +7,14 @@ lose track of things between sessions.
 
 ## Node Editor
 
-- **Edge selection sometimes deletes the connected node too, not just the
-  edge.** Found while discussing the undo/redo work above (2026-08-10), not
-  yet fixed. Root cause: `NodeEditor.tsx`'s `styledNodes` (~line 104) forces
-  every node's `selected` flag from `selectedNodeId` on _every_ render, but
-  there's no `onEdgeClick` handler on `<ReactFlow>` to clear `selectedNodeId`
-  when the user clicks an edge instead of a node. So a previously-selected
-  node stays selected (both visually and as far as React Flow's internal
-  state is concerned) even after clicking an edge, and `deleteKeyCode`
-  deletes everything currently marked selected — both the edge just clicked
-  and the stale-selected node. Fix: add an `onEdgeClick` that calls
-  `selectNode(null)`, mirroring what `onPaneClick` already does.
+- ~~Edge selection sometimes deletes the connected node too~~ — fixed
+  2026-08-16: added `onEdgeClick` on `<ReactFlow>` in `NodeEditor.tsx` that
+  calls `selectNode(null)`, mirroring `onPaneClick`.
 
-- **New node lands in the middle of the graph instead of where you
-  double-clicked, once the canvas has been panned.** Found 2026-08-10,
-  not yet fixed. `NodeEditor.tsx`'s `onCanvasDoubleClick` correctly converts
-  the click into flow-space coordinates via `screenToFlowPosition` and opens
-  the NodeBrowser popup right there — that part's fine. But
-  `GraphContext.tsx`'s `createNode` (~line 631) clamps the new node's
-  position: `{ x: Math.max(0, x), y: Math.max(0, y) }`. Flow-space
-  coordinates are relative to the graph's own origin (near where the first
-  node was placed), not the screen — going negative is normal and expected
-  once you've panned. Double-click anywhere that maps to a negative flow
-  coordinate and the clamp silently snaps that axis back to `0`, landing the
-  node near the original cluster instead of at the cursor. `git blame`
-  traces the clamp to before the double-click-to-place UX existed (likely
-  leftover from when nodes were just appended at a fixed spot); it was never
-  revisited once `screenToFlowPosition` was wired in and now actively fights
-  that feature. Fix: drop the clamp — `Math.max(0, x)`/`Math.max(0, y)` →
-  plain `x`/`y`.
+- ~~New node lands in the middle of the graph instead of where you
+  double-clicked, once the canvas has been panned~~ — fixed 2026-08-16:
+  dropped the `Math.max(0, x)`/`Math.max(0, y)` clamp in `GraphContext.tsx`'s
+  `createNode`, now just `{ x, y }`.
 
 ## Generative Node Params
 

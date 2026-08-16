@@ -90,6 +90,10 @@ function NodeEditorCanvas() {
         selectNode(null);
     }, [selectNode]);
 
+    const onEdgeClick = useCallback(() => {
+        selectNode(null);
+    }, [selectNode]);
+
     const onCanvasDoubleClick = useCallback(
         (e: React.MouseEvent<HTMLDivElement>) => {
             if (!(e.target as HTMLElement).classList.contains("react-flow__pane")) return;
@@ -172,6 +176,7 @@ function NodeEditorCanvas() {
                 isValidConnection={isValidConnection}
                 onNodeClick={onNodeClick}
                 onPaneClick={onPaneClick}
+                onEdgeClick={onEdgeClick}
                 nodeTypes={nodeTypes}
                 fitView
                 deleteKeyCode="Delete"

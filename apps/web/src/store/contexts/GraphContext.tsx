@@ -666,7 +666,7 @@ export function GraphProvider({
             const newNode: Node<NodeParams> = {
                 id,
                 type: "custom",
-                position: { x: Math.max(0, x), y: Math.max(0, y) },
+                position: { x, y },
                 data: {
                     nodeType: type,
                     label: template.label,
