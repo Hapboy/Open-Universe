@@ -16,6 +16,32 @@ lose track of things between sessions.
   dropped the `Math.max(0, x)`/`Math.max(0, y)` clamp in `GraphContext.tsx`'s
   `createNode`, now just `{ x, y }`.
 
+## Timeline / Scenes
+
+- **On reload, if your last-active (or `?scene=`-linked) scene isn't the
+  first one in the list, the canvas/Timeline briefly show the _first_ scene
+  before swapping to the real one.** Found 2026-08-16 while fixing the
+  "Сцен пока нет" flash (see `GraphContext.tsx`'s `seedFromPrefetched`/mount
+  effect). That fix seeds `sceneGraphs`/`nodes`/`edges`/`activeSceneId`
+  synchronously from `page.tsx`'s server-prefetched scene list so the
+  Timeline never renders "no scenes yet" on first paint — but the seed
+  always picks `prefetched[0].id` as a placeholder active scene, since the
+  real choice (`?scene=` URL param, then `hv_active_scene_id` in
+  localStorage, see `resolveActiveSceneId`) needs browser APIs unavailable
+  during SSR/first hydration. The mount effect re-resolves the real scene
+  and swaps to it via `loadSceneIntoState` right after mount — but if that
+  resolved scene differs from `scenes[0]`, the user visibly sees scene 1's
+  canvas for one moment before the swap, trading the old "flash to empty"
+  bug for a "flash to the wrong scene" one whenever they aren't already on
+  the first scene. Not fixed yet — no clean way to resolve `?scene=`/
+  localStorage server-side (Next server components don't see localStorage,
+  and would need the URL forwarded some other way), so a real fix likely
+  means either accepting the first-scene flash only for that one case, or
+  finding a different way to make the real active-scene choice available
+  synchronously (e.g. reading `?scene=` from `page.tsx`'s own server-side
+  `searchParams`, though that still leaves localStorage's own stored id
+  unresolved server-side).
+
 ## Generative Node Params
 
 - **Nano Banana can return multiple images per request, but the backend only

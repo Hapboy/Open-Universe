@@ -226,12 +226,58 @@ interface InitialGraphState {
     edges: Edge[];
 }
 
+function sceneGraphsFrom(scenes: Scene[]): SceneGraphs {
+    const graphs: SceneGraphs = {};
+    for (const scene of scenes) {
+        graphs[scene.id] = scene.graph as { nodes: Node<NodeParams>[]; edges: Edge[] };
+    }
+    return graphs;
+}
+
+function resolveActiveSceneId(sceneGraphs: SceneGraphs, fallback: string): string {
+    const urlSceneId =
+        typeof window !== "undefined"
+            ? new URLSearchParams(window.location.search).get("scene")
+            : null;
+    const storedSceneId = readRaw(ACTIVE_SCENE_KEY);
+    return (
+        (urlSceneId && sceneGraphs[urlSceneId] ? urlSceneId : null) ??
+        (storedSceneId && sceneGraphs[storedSceneId] ? storedSceneId : null) ??
+        fallback
+    );
+}
+
+// Synchronous seed for GraphProvider's initial state (below), used instead
+// of always starting empty and waiting for the mount effect — safe because
+// `initialScenes` (page.tsx's server-side prefetch) is a plain prop,
+// identical on the server render and the client's first hydration pass, so
+// seeding real data from it can't cause a hydration mismatch. Only covers
+// the common case of >=1 existing scene, picking `scenes[0]` as a
+// placeholder active scene; the real URL-param/localStorage-based choice
+// needs browser APIs unavailable here, so it's re-resolved (and swapped in,
+// if different) in the mount effect once mounted. Returns null when there's
+// nothing to seed synchronously (server prefetch failed, or a genuinely new
+// account with zero scenes) — the mount effect's `loadInitialGraphState`
+// below handles both of those the same way it always has.
+function seedFromPrefetched(prefetched: Scene[] | null): InitialGraphState | null {
+    if (!prefetched || prefetched.length === 0) return null;
+    const sceneGraphs = sceneGraphsFrom(prefetched);
+    const activeSceneId = prefetched[0].id;
+    const activeGraph = sceneGraphs[activeSceneId];
+    return {
+        activeSceneId,
+        sceneGraphs,
+        nodes: withTemplateDefaults(activeGraph.nodes),
+        edges: activeGraph.edges,
+    };
+}
+
 // Loads every scene from the backend (source of truth — see DECISIONS.md's
-// Scenes/Media persistence entry), or `prefetched` if the server already
-// fetched them (see page.tsx). Bootstraps a single blank scene if there are
-// none at all yet.
-async function loadInitialGraphState(prefetched: Scene[] | null): Promise<InitialGraphState> {
-    let scenes = prefetched ?? (await hayverseApiClient.scenes.list());
+// Scenes/Media persistence entry). Bootstraps a single blank scene if there
+// are none at all yet. Only runs when `seedFromPrefetched` couldn't seed
+// synchronously.
+async function loadInitialGraphState(): Promise<InitialGraphState> {
+    let scenes = await hayverseApiClient.scenes.list();
 
     if (scenes.length === 0) {
         scenes = [
@@ -242,21 +288,8 @@ async function loadInitialGraphState(prefetched: Scene[] | null): Promise<Initia
         ];
     }
 
-    const sceneGraphs: SceneGraphs = {};
-    for (const scene of scenes) {
-        sceneGraphs[scene.id] = scene.graph as { nodes: Node<NodeParams>[]; edges: Edge[] };
-    }
-
-    const urlSceneId =
-        typeof window !== "undefined"
-            ? new URLSearchParams(window.location.search).get("scene")
-            : null;
-    const storedSceneId = readRaw(ACTIVE_SCENE_KEY);
-    const activeSceneId =
-        (urlSceneId && sceneGraphs[urlSceneId] ? urlSceneId : null) ??
-        (storedSceneId && sceneGraphs[storedSceneId] ? storedSceneId : null) ??
-        scenes[0].id;
-
+    const sceneGraphs = sceneGraphsFrom(scenes);
+    const activeSceneId = resolveActiveSceneId(sceneGraphs, scenes[0].id);
     const activeGraph = sceneGraphs[activeSceneId];
     return {
         activeSceneId,
@@ -354,13 +387,15 @@ export function GraphProvider({
     const { showToast } = useToastContext();
     const { pinterestStatus } = useUserContext();
 
-    // SSR-safe default: identical on the server and the client's first paint
-    // (no localStorage/URL access), matching the "no scenes yet" state the app
-    // already renders correctly. The real data loads in the mount effect below.
-    const [activeSceneId, setActiveSceneIdState] = useState<string | null>(null);
-    const [sceneGraphs, setSceneGraphs] = useState<SceneGraphs>({});
-    const [nodes, setNodes] = useState<Node<NodeParams>[]>([]);
-    const [edges, setEdges] = useState<Edge[]>([]);
+    // Computed once, synchronously — see seedFromPrefetched's doc comment.
+    const [seed] = useState(() => seedFromPrefetched(initialScenes));
+
+    const [activeSceneId, setActiveSceneIdState] = useState<string | null>(
+        seed?.activeSceneId ?? null,
+    );
+    const [sceneGraphs, setSceneGraphs] = useState<SceneGraphs>(seed?.sceneGraphs ?? {});
+    const [nodes, setNodes] = useState<Node<NodeParams>[]>(seed?.nodes ?? []);
+    const [edges, setEdges] = useState<Edge[]>(seed?.edges ?? []);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const history = useGraphHistory({
         nodes,
@@ -389,50 +424,6 @@ export function GraphProvider({
         [showToast],
     );
 
-    // Loads the real (backend-fetched) graph state once on mount — deferred
-    // out of a lazy useState initializer so the server and the client's
-    // first paint render the same SSR-safe default above, avoiding a
-    // hydration mismatch. The URL-cleanup step is folded in here rather than
-    // kept as its own mount effect: both would be `[]`-dep effects in this
-    // same component, so they'd run in source-declaration order — if cleanup
-    // ran first it would strip `?scene=` before loadInitialGraphState's own
-    // read of it, silently breaking `?scene=`-based deep links.
-    useEffect(() => {
-        // Syncing from localStorage/the backend/URL, external systems
-        // unreadable at render time on the server; this is the documented
-        // valid case for the rule.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTotalDurationState(loadStoredTotalDuration());
-
-        let cancelled = false;
-        loadInitialGraphState(initialScenes)
-            .then((initial) => {
-                if (cancelled) return;
-
-                setActiveSceneIdState(initial.activeSceneId);
-                setSceneGraphs(initial.sceneGraphs);
-                setNodes(initial.nodes);
-                setEdges(initial.edges);
-
-                const params = new URLSearchParams(window.location.search);
-                if (params.get("scene")) {
-                    const newUrl =
-                        window.location.protocol +
-                        "//" +
-                        window.location.host +
-                        window.location.pathname;
-                    window.history.replaceState({ path: newUrl }, "", newUrl);
-                }
-            })
-            .catch(() => {
-                if (!cancelled) showToast("Не удалось загрузить сцены с сервера");
-            });
-        return () => {
-            cancelled = true;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     // Loads a scene's graph into the live editor state (or clears the canvas
     // when `nextId` is null, i.e. no scenes remain).
     const loadSceneIntoState = useCallback(
@@ -453,6 +444,60 @@ export function GraphProvider({
         },
         [history],
     );
+
+    // Resolves the real active scene once on mount (or, if `seed` came back
+    // null, loads everything from the backend first) — deferred out of the
+    // lazy useState initializers above because URL/localStorage access is
+    // unavailable at render time on the server. When `seed` already seeded
+    // real data synchronously, this only needs to re-check the URL param/
+    // localStorage against it and swap scenes locally if they disagree — no
+    // network round trip, since that scene's graph is already sitting in
+    // `seed.sceneGraphs`. The URL-cleanup step is folded into both branches
+    // rather than kept as its own mount effect: both would be `[]`-dep
+    // effects in this same component, so they'd run in source-declaration
+    // order — if cleanup ran first it would strip `?scene=` before either
+    // branch's own read of it, silently breaking `?scene=`-based deep links.
+    useEffect(() => {
+        // Syncing from localStorage/the backend/URL, external systems
+        // unreadable at render time on the server; this is the documented
+        // valid case for the rule.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTotalDurationState(loadStoredTotalDuration());
+
+        const stripSceneParam = () => {
+            const params = new URLSearchParams(window.location.search);
+            if (!params.get("scene")) return;
+            const newUrl =
+                window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({ path: newUrl }, "", newUrl);
+        };
+
+        if (seed) {
+            const resolved = resolveActiveSceneId(seed.sceneGraphs, seed.activeSceneId);
+            if (resolved !== seed.activeSceneId) loadSceneIntoState(resolved, seed.sceneGraphs);
+            stripSceneParam();
+            return;
+        }
+
+        let cancelled = false;
+        loadInitialGraphState()
+            .then((initial) => {
+                if (cancelled) return;
+
+                setActiveSceneIdState(initial.activeSceneId);
+                setSceneGraphs(initial.sceneGraphs);
+                setNodes(initial.nodes);
+                setEdges(initial.edges);
+                stripSceneParam();
+            })
+            .catch(() => {
+                if (!cancelled) showToast("Не удалось загрузить сцены с сервера");
+            });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const setActiveSceneId = useCallback(
         (nextId: string) => {
