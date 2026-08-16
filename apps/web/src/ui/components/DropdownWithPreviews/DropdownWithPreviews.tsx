@@ -43,7 +43,7 @@ export function DropdownWithPreviews({
     return (
         <div className={styles.customSelectWrapper} ref={dropdownRef}>
             <span className={styles.selectLabel}>{label}</span>
-            <div className={styles.selectTrigger} onClick={() => setIsOpen(!isOpen)}>
+            <div className={cn(styles.selectTrigger, "nodrag")} onClick={() => setIsOpen(!isOpen)}>
                 {selectedOption && (
                     <div className={styles.selectedContent}>
                         <div className={styles.previewThumb}>{selectedOption.previewSvg}</div>
@@ -65,6 +65,7 @@ export function DropdownWithPreviews({
                             key={opt.value}
                             className={cn(
                                 styles.selectOption,
+                                "nodrag",
                                 opt.value === value && styles.selectOptionActive,
                             )}
                             onClick={() => {

@@ -1,4 +1,5 @@
 import cn from "classnames";
+import { BareButton } from "@/ui/components/BareButton/BareButton.tsx";
 import styles from "@/ui/components/CategoryTagGroup/CategoryTagGroup.module.css";
 
 export interface CategoryTagOption {
@@ -24,21 +25,19 @@ export function CategoryTagGroup({
     return (
         <div className={styles.tagsContainer}>
             {options.map((opt) => (
-                <button
+                <BareButton
                     key={opt.key}
-                    type="button"
                     className={cn(styles.tagBtn, active[opt.key] && styles.tagBtnActive)}
                     onClick={() => onToggle(opt.key)}>
                     {opt.label}
-                </button>
+                </BareButton>
             ))}
             {onToggleAll && (
-                <button
-                    type="button"
+                <BareButton
                     className={cn(styles.tagBtn, isAllActive && styles.tagBtnActiveAll)}
                     onClick={onToggleAll}>
                     {allLabel}
-                </button>
+                </BareButton>
             )}
         </div>
     );

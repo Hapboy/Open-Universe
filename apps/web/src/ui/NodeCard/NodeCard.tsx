@@ -390,7 +390,7 @@ export const NodeCard = memo(function NodeCard({
                         </>
                     )}
 
-                    <div className={cn(styles.paramsWrap, "nodrag", "nowheel")}>
+                    <div className={styles.paramsWrap}>
                         <div className={styles.paramsMain}>
                             <NodeParamsPanel
                                 node={{ id, data }}

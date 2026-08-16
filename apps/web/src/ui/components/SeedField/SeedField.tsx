@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Input } from "@/ui/components/Input/Input.tsx";
 import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
 import sharedStyles from "@/styles/shared.module.css";
 
@@ -40,7 +41,7 @@ export function SeedField({
         <div className={sharedStyles.fld} title={title}>
             <span>Сид (seed)</span>
             <div className={sharedStyles.presetRow}>
-                <input
+                <Input
                     type="text"
                     className={sharedStyles.presetSelect}
                     placeholder="авто"

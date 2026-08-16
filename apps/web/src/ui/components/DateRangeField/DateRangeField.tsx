@@ -1,3 +1,4 @@
+import { Input } from "@/ui/components/Input/Input.tsx";
 import styles from "@/ui/components/DateRangeField/DateRangeField.module.css";
 
 export function DateRangeField({
@@ -19,7 +20,7 @@ export function DateRangeField({
         <div className={styles.pair}>
             <div className={styles.fld}>
                 <span>{fromLabel}</span>
-                <input
+                <Input
                     type="datetime-local"
                     step={1}
                     value={from}
@@ -28,7 +29,7 @@ export function DateRangeField({
             </div>
             <div className={styles.fld}>
                 <span>{toLabel}</span>
-                <input
+                <Input
                     type="datetime-local"
                     step={1}
                     value={to}

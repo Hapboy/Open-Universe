@@ -29,7 +29,7 @@ export function Button({
     return (
         <button
             type={type}
-            className={cn(styles.btn, variant === "primary" && styles.pri, className)}
+            className={cn(styles.btn, "nodrag", variant === "primary" && styles.pri, className)}
             disabled={disabled || loading}
             title={title}
             onClick={onClick}>

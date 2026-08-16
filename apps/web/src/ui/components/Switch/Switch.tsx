@@ -22,7 +22,7 @@ export function Switch({
                 role="switch"
                 aria-checked={value}
                 disabled={disabled}
-                className={cn(styles.track, value && styles.isOn)}
+                className={cn(styles.track, "nodrag", value && styles.isOn)}
                 onClick={() => onChange(!value)}>
                 <span className={styles.thumb} />
             </button>

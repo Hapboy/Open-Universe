@@ -1,4 +1,5 @@
 import cn from "classnames";
+import { Input } from "@/ui/components/Input/Input.tsx";
 import styles from "@/ui/components/TextField/TextField.module.css";
 
 // Supports both interaction styles used across the app: fully controlled
@@ -34,7 +35,7 @@ export function TextField({
     return (
         <div className={cn(styles.fld, className)} title={title}>
             {label && <span>{label}</span>}
-            <input
+            <Input
                 type={type}
                 className={cn(error && styles.isInvalid)}
                 disabled={disabled}

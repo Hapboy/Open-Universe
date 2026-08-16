@@ -33,7 +33,7 @@ export function Select({
     const hasMatch = normalized.some((o) => o.value === safe);
     return (
         <select
-            className={cn(styles.select, className)}
+            className={cn(styles.select, "nodrag", className)}
             disabled={disabled}
             value={safe}
             title={title}

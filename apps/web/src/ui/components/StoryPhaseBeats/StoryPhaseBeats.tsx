@@ -20,7 +20,11 @@ export function StoryPhaseBeats({
                     return (
                         <div
                             key={phase.key}
-                            className={cn(styles.beatStep, isActive && styles.beatStepActive)}
+                            className={cn(
+                                styles.beatStep,
+                                "nodrag",
+                                isActive && styles.beatStepActive,
+                            )}
                             onClick={() => onChange(phase.key)}>
                             <div className={styles.beatNode}>
                                 {isActive && <div className={styles.beatNodePulse} />}

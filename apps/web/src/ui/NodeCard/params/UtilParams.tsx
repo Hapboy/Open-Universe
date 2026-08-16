@@ -19,6 +19,7 @@ import { SearchField } from "@/ui/components/SearchField/SearchField.tsx";
 import { EmotionalCurvePreview } from "@/ui/components/EmotionalCurvePreview/EmotionalCurvePreview.tsx";
 import { StoryPhaseBeats } from "@/ui/components/StoryPhaseBeats/StoryPhaseBeats.tsx";
 import { Switch } from "@/ui/components/Switch/Switch.tsx";
+import { BareButton } from "@/ui/components/BareButton/BareButton.tsx";
 import {
     putBlob,
     putGeneratedBlob,
@@ -383,12 +384,12 @@ export function OutputParams({
                     <span>Дорожка</span>
                     <div className={styles.segBtn}>
                         {[1, 2].map((t) => (
-                            <button
+                            <BareButton
                                 key={t}
                                 className={cn(track === t && styles.isOn)}
                                 onClick={() => handleTrackChange(t)}>
                                 {t}
-                            </button>
+                            </BareButton>
                         ))}
                     </div>
                 </div>
@@ -432,14 +433,13 @@ export function OutputParams({
                     <span>Добавить сущность</span>
                     <div className={styles.entityChips}>
                         {ENTITY_KIND_OPTIONS.map((opt) => (
-                            <button
+                            <BareButton
                                 key={opt.type}
-                                type="button"
                                 className={styles.entityChip}
                                 onClick={() => addEntityInput(node.id, opt.type, opt.label)}>
                                 <i className={`ti ${opt.icon}`} />
                                 {opt.label}
-                            </button>
+                            </BareButton>
                         ))}
                     </div>
                 </div>
@@ -539,20 +539,20 @@ export function OutputParams({
                     <hr className={styles.divider} />
                     <div className={styles.fld}>
                         <div className={styles.segBtn}>
-                            <button
+                            <BareButton
                                 className={cn(stage === "image" && styles.isOn)}
                                 onClick={() =>
                                     setNodeField(node.id, { outputSceneStage: "image" })
                                 }>
                                 <i className="ti ti-photo" /> Картинка
-                            </button>
-                            <button
+                            </BareButton>
+                            <BareButton
                                 className={cn(stage === "video" && styles.isOn)}
                                 onClick={() =>
                                     setNodeField(node.id, { outputSceneStage: "video" })
                                 }>
                                 <i className="ti ti-video" /> Видео
-                            </button>
+                            </BareButton>
                         </div>
                     </div>
 

@@ -1,3 +1,4 @@
+import { Input } from "@/ui/components/Input/Input.tsx";
 import styles from "@/ui/components/CoordinateField/CoordinateField.module.css";
 
 export interface Coordinates {
@@ -22,7 +23,7 @@ export function CoordinateField({
         <div className={styles.fld}>
             <span>{label}</span>
             <div className={styles.pair}>
-                <input
+                <Input
                     type="number"
                     placeholder="Широта"
                     min={-90}
@@ -31,7 +32,7 @@ export function CoordinateField({
                     value={value.lat ?? ""}
                     onChange={(e) => onChange({ ...value, lat: parseCoord(e.target.value) })}
                 />
-                <input
+                <Input
                     type="number"
                     placeholder="Долгота"
                     min={-180}

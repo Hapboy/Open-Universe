@@ -1,4 +1,5 @@
 import cn from "classnames";
+import { Input } from "@/ui/components/Input/Input.tsx";
 import styles from "@/ui/components/NumberField/NumberField.module.css";
 
 export function NumberField({
@@ -25,7 +26,7 @@ export function NumberField({
     return (
         <div className={styles.fld}>
             <span>{label}</span>
-            <input
+            <Input
                 type="number"
                 className={cn(error && styles.isInvalid)}
                 min={min}

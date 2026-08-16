@@ -1,5 +1,6 @@
 import cn from "classnames";
 import { TextField } from "@/ui/components/TextField/TextField.tsx";
+import { BareButton } from "@/ui/components/BareButton/BareButton.tsx";
 import styles from "@/ui/components/SearchField/SearchField.module.css";
 
 export function SearchField({
@@ -26,14 +27,13 @@ export function SearchField({
                 autoFocus={autoFocus}
             />
             {value && (
-                <button
-                    type="button"
+                <BareButton
                     className={styles.clearBtn}
                     onClick={() => onChange("")}
                     aria-label="Очистить поиск"
                     title="Очистить поиск">
                     <i className="ti ti-x" />
-                </button>
+                </BareButton>
             )}
         </div>
     );

@@ -22,6 +22,7 @@ import { Select } from "@/ui/components/Select/Select.tsx";
 import { TextField } from "@/ui/components/TextField/TextField.tsx";
 import { SeedField } from "@/ui/components/SeedField/SeedField.tsx";
 import { Switch } from "@/ui/components/Switch/Switch.tsx";
+import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
 import sharedStyles from "@/styles/shared.module.css";
 
 // Shared by every Gemini component with a wirable prompt/query-style field:
@@ -821,17 +822,16 @@ export function GeminiNanoBananaParams({
                 onFieldChange={(key, value) => updateNodeParam(node.id, key, value)}
                 onReroll={handleRerollSeed}
                 modelRowAction={
-                    <button
-                        className={sharedStyles.iconBtn}
+                    <IconButton
+                        icon="plus"
                         disabled={atLimit}
                         onClick={() => addImageInput(node.id)}
                         title={
                             atLimit
                                 ? "Достигнут лимит Nano Banana — 14 изображений"
                                 : "Добавить референсное изображение"
-                        }>
-                        <i className="ti ti-plus" />
-                    </button>
+                        }
+                    />
                 }
             />
         </>

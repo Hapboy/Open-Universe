@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import cn from "classnames";
 import { useResolvedMediaUrls } from "@/core/mediaRef.ts";
 import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
+import { BareButton } from "@/ui/components/BareButton/BareButton.tsx";
 import type { PresetCardItem } from "@/ui/NodeCard/params/shared.tsx";
 import styles from "@/ui/NodeCard/params/PresetsField/PresetsField.module.css";
 
@@ -42,7 +43,7 @@ export function PresetsField({
         <div className={styles.fld}>
             <span>{label}</span>
             <div className={styles.triggerRow}>
-                <button type="button" className={styles.trigger} onClick={() => setOpen(true)}>
+                <BareButton className={styles.trigger} onClick={() => setOpen(true)}>
                     {selectedItem ? (
                         <>
                             <span
@@ -59,7 +60,7 @@ export function PresetsField({
                         <span className={styles.triggerLabel}>Выбрать пресет...</span>
                     )}
                     <i className={cn("ti ti-chevron-right", styles.triggerChevron)} />
-                </button>
+                </BareButton>
                 <IconButton
                     icon="device-floppy"
                     variant={hasUnsavedChanges ? "primary" : "default"}

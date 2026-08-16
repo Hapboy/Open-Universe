@@ -29,7 +29,7 @@ export function IconButton({
     return (
         <button
             type={type}
-            className={cn(styles.iconBtn, variant === "primary" && styles.pri, className)}
+            className={cn(styles.iconBtn, "nodrag", variant === "primary" && styles.pri, className)}
             disabled={disabled || loading}
             title={title}
             onClick={onClick}>

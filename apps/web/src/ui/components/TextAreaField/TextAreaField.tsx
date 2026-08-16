@@ -1,4 +1,5 @@
 import cn from "classnames";
+import { Textarea } from "@/ui/components/Textarea/Textarea.tsx";
 import styles from "@/ui/components/TextAreaField/TextAreaField.module.css";
 
 // Mirrors TextField's controlled/deferred-commit shape for multi-line text.
@@ -24,7 +25,7 @@ export function TextAreaField({
     return (
         <div className={styles.fld}>
             <span>{label}</span>
-            <textarea
+            <Textarea
                 rows={rows}
                 readOnly={readOnly}
                 className={cn(error && styles.isInvalid)}

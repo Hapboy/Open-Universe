@@ -44,12 +44,13 @@ export function PinterestParams({
             />
             <div className={styles.fld}>
                 <span>Выберите изображение (Pin)</span>
-                <div className={styles.pinterestPinsGrid}>
+                <div className={cn(styles.pinterestPinsGrid, "nowheel")}>
                     {pins.map((p) => (
                         <div
                             key={p.id}
                             className={cn(
                                 styles.pinterestPinItem,
+                                "nodrag",
                                 params.selectedPin === p.image && styles.isSelected,
                             )}
                             style={{ backgroundImage: `url('${p.image}')` }}

@@ -4,6 +4,7 @@ import type { NodeType } from "@hayverse/shared";
 import type { NodeParams, NodeRef, TimelineScene } from "@/types.ts";
 import { usePresetLibraryContext } from "@/store/contexts/PresetLibraryContext.tsx";
 import { Switch } from "@/ui/components/Switch/Switch.tsx";
+import { Textarea } from "@/ui/components/Textarea/Textarea.tsx";
 import { ENTITY_PARAM_SCHEMAS } from "@/schemas/entities/schemas.ts";
 import styles from "@/styles/shared.module.css";
 
@@ -77,7 +78,7 @@ export function WirableTextField({
     return (
         <div className={styles.fld}>
             <span>{label}</span>
-            <textarea
+            <Textarea
                 key={wired ? "wired" : "editable"}
                 rows={6}
                 disabled={wired}

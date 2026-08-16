@@ -46,6 +46,7 @@ export function PhotoPreview({
                     <div
                         key={idx}
                         className={cn(
+                            "nodrag",
                             styles.thumbCell,
                             idx === coverPhotoIndex && styles.thumbCellActive,
                         )}

@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import cn from "classnames";
+import { Input } from "@/ui/components/Input/Input.tsx";
 import styles from "@/ui/components/RangeField/RangeField.module.css";
 
 // Always controlled (unlike the old inline `defaultValue` sliders) so the
@@ -36,7 +37,7 @@ export function RangeField({
                 slider track centers at the same y as a tall <select>, rather
                 than sitting flush under the label. */}
             <div className={styles.controlRow}>
-                <input
+                <Input
                     type="range"
                     min={min}
                     max={max}

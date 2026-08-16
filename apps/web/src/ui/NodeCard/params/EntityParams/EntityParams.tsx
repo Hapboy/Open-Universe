@@ -58,6 +58,7 @@ import { CategoryTagGroup } from "@/ui/components/CategoryTagGroup/CategoryTagGr
 import { SearchField } from "@/ui/components/SearchField/SearchField.tsx";
 import { DropdownWithPreviews } from "@/ui/components/DropdownWithPreviews/DropdownWithPreviews.tsx";
 import { ColorField } from "@/ui/components/ColorField/ColorField.tsx";
+import { BareButton } from "@/ui/components/BareButton/BareButton.tsx";
 import {
     haircutOptions,
     tattooOptions,
@@ -756,7 +757,7 @@ export function LocationParams({
                             <span>Интерьер / Экстерьер</span>
                             <div className={styles.segBtn}>
                                 {INTERIOR_EXTERIOR.map((v) => (
-                                    <button
+                                    <BareButton
                                         key={v}
                                         className={cn(field.value === v && styles.isOn)}
                                         onClick={() => {
@@ -765,7 +766,7 @@ export function LocationParams({
                                                 updateNodeParam(node.id, "interiorExterior", v);
                                         }}>
                                         {v}
-                                    </button>
+                                    </BareButton>
                                 ))}
                             </div>
                         </div>
@@ -911,6 +912,7 @@ export function MiseEnSceneParams({
                                 key={d.src}
                                 className={cn(
                                     styles.diagramCell,
+                                    "nodrag",
                                     activeDiagramSrc === d.src && styles.diagramCellActive,
                                 )}
                                 style={{ backgroundImage: `url(${d.src})` }}

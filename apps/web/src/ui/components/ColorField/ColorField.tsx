@@ -1,3 +1,4 @@
+import { Input } from "@/ui/components/Input/Input.tsx";
 import styles from "@/ui/components/ColorField/ColorField.module.css";
 
 export function ColorField({
@@ -12,7 +13,7 @@ export function ColorField({
     return (
         <div className={styles.fld}>
             <span>{label}</span>
-            <input
+            <Input
                 type="color"
                 value={value || "#000000"}
                 onChange={(e) => onChange(e.target.value)}
