@@ -28,6 +28,11 @@ function groupBackendPresets(rows: Preset[]): PresetLibrary {
 
 interface PresetLibraryCtx {
     library: PresetLibrary;
+    // True until the initial `presets.list()` call settles. A node can render
+    // with a valid, saved `presetId` before this resolves (see
+    // GraphContext.tsx's synchronous `seedFromPrefetched` seed) — callers use
+    // this to show "still checking" instead of wrongly claiming "no match".
+    isLoading: boolean;
     addPreset: (entityType: string, presetId: string, snapshot: Record<string, unknown>) => void;
 }
 
@@ -42,6 +47,7 @@ export function PresetLibraryProvider({ children }: { children: React.ReactNode 
     // GraphProvider so this effect fires before GraphContext's own hydration
     // populates `nodes` — see the comment there for why that ordering matters.
     const [library, setLibrary] = useState<PresetLibrary>({});
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         // One-time cleanup: nothing reads this key anymore, so a browser that
@@ -54,7 +60,8 @@ export function PresetLibraryProvider({ children }: { children: React.ReactNode 
             .then((rows) => {
                 setLibrary(groupBackendPresets(rows));
             })
-            .catch(() => showToast("Не удалось загрузить пресеты с сервера"));
+            .catch(() => showToast("Не удалось загрузить пресеты с сервера"))
+            .finally(() => setIsLoading(false));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -77,7 +84,7 @@ export function PresetLibraryProvider({ children }: { children: React.ReactNode 
         [showToast],
     );
 
-    const ctx: PresetLibraryCtx = { library, addPreset };
+    const ctx: PresetLibraryCtx = { library, isLoading, addPreset };
 
     return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>;
 }

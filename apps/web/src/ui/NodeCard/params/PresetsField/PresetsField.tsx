@@ -24,6 +24,7 @@ export function PresetsField({
     onSave,
     hasUnsavedChanges,
     missingSaveFields,
+    isResolving = false,
 }: {
     label: string;
     items: readonly PresetCardItem[];
@@ -32,6 +33,11 @@ export function PresetsField({
     onSave: () => void;
     hasUnsavedChanges: boolean;
     missingSaveFields: readonly string[];
+    // True while the saved `presetId` hasn't been checked against the loaded
+    // preset library yet — shows a spinner instead of "Выбрать пресет...",
+    // which right after reload would otherwise look like the selection was
+    // lost even though it's just not confirmed yet.
+    isResolving?: boolean;
 }) {
     const [open, setOpen] = useState(false);
     const thumbs = useResolvedMediaUrls(items.map((i) => i.photo ?? ""));
@@ -55,6 +61,11 @@ export function PresetsField({
                                 }
                             />
                             <span className={styles.triggerLabel}>{selectedItem.label}</span>
+                        </>
+                    ) : isResolving ? (
+                        <>
+                            <i className={cn("ti ti-loader-2", styles.triggerSpinner)} />
+                            <span className={styles.triggerLabel}>Загрузка пресета...</span>
                         </>
                     ) : (
                         <span className={styles.triggerLabel}>Выбрать пресет...</span>

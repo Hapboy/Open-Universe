@@ -116,11 +116,8 @@ export function CharacterParams({
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
     setNodeField: (id: string, patch: Partial<NodeParams>) => void;
 }) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { generate, isGenerating } = useImageGeneration();
     const { showToast } = useToastContext();
     const requireAuth = useRequireAuth();
@@ -280,6 +277,7 @@ export function CharacterParams({
                     onSave={onSave}
                     hasUnsavedChanges={hasUnsavedChanges}
                     missingSaveFields={missingSaveFields}
+                    isResolving={isResolving}
                 />
             )}
 
@@ -704,11 +702,8 @@ export function LocationParams({
 }: EP<LocationNodeParams> & {
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(locationParamsSchema, params);
 
     // Toggle Category Tags and Search State
@@ -770,6 +765,7 @@ export function LocationParams({
                     onSave={onSave}
                     hasUnsavedChanges={hasUnsavedChanges}
                     missingSaveFields={missingSaveFields}
+                    isResolving={isResolving}
                 />
             )}
 
@@ -938,11 +934,8 @@ export function MiseEnSceneParams({
 }: EP<MiseEnSceneNodeParams> & {
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(miseEnSceneParamsSchema, params);
 
     const diagrams = getMiseEnSceneDiagrams(params.peopleCount, params.cameraCount);
@@ -975,6 +968,7 @@ export function MiseEnSceneParams({
                 onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
+                isResolving={isResolving}
             />
             <Controller
                 control={control}
@@ -1067,11 +1061,8 @@ export function BuildingParams({
 }: EP<BuildingNodeParams> & {
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(buildingParamsSchema, params);
     return (
         <>
@@ -1090,6 +1081,7 @@ export function BuildingParams({
                 onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
+                isResolving={isResolving}
             />
             <Controller
                 control={control}
@@ -1156,11 +1148,8 @@ export function ClothingParams({
 }: EP<ClothingNodeParams> & {
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(clothingParamsSchema, params);
     return (
         <>
@@ -1179,6 +1168,7 @@ export function ClothingParams({
                 onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
+                isResolving={isResolving}
             />
             <Controller
                 control={control}
@@ -1247,11 +1237,8 @@ export function ArtworkParams({
 }: EP<ArtworkNodeParams> & {
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(artworkParamsSchema, params);
     return (
         <>
@@ -1270,6 +1257,7 @@ export function ArtworkParams({
                 onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
+                isResolving={isResolving}
             />
             <Controller
                 control={control}
@@ -1336,11 +1324,8 @@ export function FurnitureParams({
 }: EP<FurnitureNodeParams> & {
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(furnitureParamsSchema, params);
     return (
         <>
@@ -1359,6 +1344,7 @@ export function FurnitureParams({
                 onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
+                isResolving={isResolving}
             />
             <Controller
                 control={control}
@@ -1425,11 +1411,8 @@ export function MusicParams({
 }: EP<MusicNodeParams> & {
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(musicParamsSchema, params);
     return (
         <>
@@ -1448,6 +1431,7 @@ export function MusicParams({
                 onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
+                isResolving={isResolving}
             />
             <Controller
                 control={control}
@@ -1499,11 +1483,8 @@ export function ScriptParams({
 }: EP<ScriptNodeParams> & {
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(scriptParamsSchema, params);
     return (
         <>
@@ -1522,6 +1503,7 @@ export function ScriptParams({
                 onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
+                isResolving={isResolving}
             />
             <Controller
                 control={control}
@@ -1570,11 +1552,8 @@ export function StoryboardParams({
     updateNodeParam,
     updateNodeParams,
 }: EP<StoryboardNodeParams>) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(storyboardParamsSchema, params);
     return (
         <>
@@ -1586,6 +1565,7 @@ export function StoryboardParams({
                 onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
+                isResolving={isResolving}
             />
             <Controller
                 control={control}
@@ -1633,11 +1613,8 @@ export function TransportParams({
 }: EP<TransportNodeParams> & {
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
 }) {
-    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields } = usePresetDatabase(
-        node,
-        params,
-        updateNodeParams,
-    );
+    const { db, onSelect, onSave, hasUnsavedChanges, missingSaveFields, isResolving } =
+        usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(transportParamsSchema, params);
     return (
         <>
@@ -1656,6 +1633,7 @@ export function TransportParams({
                 onSave={onSave}
                 hasUnsavedChanges={hasUnsavedChanges}
                 missingSaveFields={missingSaveFields}
+                isResolving={isResolving}
             />
             <Controller
                 control={control}

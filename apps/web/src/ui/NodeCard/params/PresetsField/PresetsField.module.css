@@ -60,6 +60,18 @@
     flex-shrink: 0;
 }
 
+.triggerSpinner {
+    color: var(--color-text-tertiary);
+    flex-shrink: 0;
+    animation: presetsFieldSpin 0.8s linear infinite;
+}
+
+@keyframes presetsFieldSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
