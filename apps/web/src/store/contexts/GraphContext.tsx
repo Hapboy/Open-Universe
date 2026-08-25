@@ -40,6 +40,7 @@ import { useGraphHistory } from "@/store/contexts/graphHistory.ts";
 
 const ACTIVE_SCENE_KEY = "hv_active_scene_id";
 const TIMELINE_DURATION_KEY = "hv_timeline_duration";
+const SHOW_MONTAGE_MONITOR_KEY = "hv_show_montage_monitor";
 const DEFAULT_TOTAL_DURATION = 60; // 01:00 in seconds
 const MAX_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
 const MAX_TEXT_INPUTS = 8; // text_prompt's own dynamic-field cap
@@ -408,7 +409,11 @@ export function GraphProvider({
         setSelectedNodeId,
     });
     const [showMiniMap, setShowMiniMap] = useState<boolean>(false);
-    const [showMontageMonitor, setShowMontageMonitor] = useState<boolean>(false);
+    const [showMontageMonitor, setShowMontageMonitorState] = useState<boolean>(false);
+    const setShowMontageMonitor = useCallback((v: boolean) => {
+        setShowMontageMonitorState(v);
+        writeRaw(SHOW_MONTAGE_MONITOR_KEY, String(v));
+    }, []);
     const [showWorldMap, setShowWorldMap] = useState<boolean>(false);
     const [worldMapFullscreen, setWorldMapFullscreen] = useState<boolean>(false);
     const [showTimeline, setShowTimeline] = useState<boolean>(true);
@@ -464,6 +469,8 @@ export function GraphProvider({
         // valid case for the rule.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setTotalDurationState(loadStoredTotalDuration());
+
+        setShowMontageMonitorState(readRaw(SHOW_MONTAGE_MONITOR_KEY) === "true");
 
         const stripSceneParam = () => {
             const params = new URLSearchParams(window.location.search);

@@ -142,7 +142,7 @@ export function MontageMonitor() {
             </div>
 
             <div className={styles.screenArea}>
-                {media &&
+                {media?.url &&
                     (media.type === "video" ? (
                         <video
                             key={media.url}
