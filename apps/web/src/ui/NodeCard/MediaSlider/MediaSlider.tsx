@@ -1,5 +1,6 @@
 import { useState } from "react";
 import cn from "classnames";
+import { MediaFullscreenViewer } from "@/ui/components/MediaFullscreenViewer/MediaFullscreenViewer.tsx";
 import styles from "@/ui/NodeCard/MediaSlider/MediaSlider.module.css";
 
 export interface MediaItem {
@@ -19,6 +20,7 @@ export function MediaSlider({
     onDelete?: (i: number) => void;
 }) {
     const [ratios, setRatios] = useState<Record<string, number>>({});
+    const [fullscreen, setFullscreen] = useState(false);
 
     if (items.length === 0) return null;
     const activeIndex = Math.min(index, items.length - 1);
@@ -54,6 +56,16 @@ export function MediaSlider({
                     }
                 />
             )}
+            <button
+                className={styles.expand}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setFullscreen(true);
+                }}
+                title="На весь экран">
+                <i className="ti ti-maximize" />
+            </button>
             {items.length > 1 && onIndexChange && (
                 <>
                     <button
@@ -89,6 +101,14 @@ export function MediaSlider({
                     }}>
                     <i className="ti ti-trash" />
                 </button>
+            )}
+            {fullscreen && (
+                <MediaFullscreenViewer
+                    items={items}
+                    initialIndex={activeIndex}
+                    onClose={() => setFullscreen(false)}
+                    onIndexChange={onIndexChange}
+                />
             )}
         </div>
     );
