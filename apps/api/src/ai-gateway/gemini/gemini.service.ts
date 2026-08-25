@@ -185,7 +185,18 @@ export class GeminiService {
       operation = await client.operations.getVideosOperation({ operation });
     }
     const video = operation.response?.generatedVideos?.[0]?.video;
-    if (!video) throw new Error('no video in response');
+    if (!video) {
+      // Same silent-drop behavior as Imagen's RAI filter (see runImagen
+      // above) - Veo can finish the operation with an empty video list
+      // instead of a hard error, and the real reason lives in this
+      // separate field rather than anywhere runVeo's caller would see it.
+      const reasons = operation.response?.raiMediaFilteredReasons;
+      throw new Error(
+        reasons?.length
+          ? `no video in response: ${reasons.join('; ')}`
+          : 'no video in response',
+      );
+    }
     if (video.videoBytes)
       return `data:${video.mimeType ?? 'video/mp4'};base64,${video.videoBytes}`;
     if (video.uri) {
