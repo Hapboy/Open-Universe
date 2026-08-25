@@ -175,8 +175,17 @@ export class HayverseApiClient {
         // 202 - `request()` accepts any 2xx as ok, no special-casing needed.
         generateVeo: (input: GenerateVeoInput): Promise<{ jobId: string }> =>
             this.request<{ jobId: string }>("POST", "/ai/gemini/veo", { json: input }),
-        generateNanoBanana: (input: GenerateNanoBananaInput): Promise<{ dataUrl: string }> =>
-            this.request<{ dataUrl: string }>("POST", "/ai/gemini/nano-banana", { json: input }),
+        // `dataUrls` holds every image the model returned; `dataUrl` (the
+        // first one) stays for the deploy window where apps/api hasn't been
+        // `railway up`'d yet — see GeminiController.nanoBanana.
+        generateNanoBanana: (
+            input: GenerateNanoBananaInput,
+        ): Promise<{ dataUrl: string; dataUrls?: string[] }> =>
+            this.request<{ dataUrl: string; dataUrls?: string[] }>(
+                "POST",
+                "/ai/gemini/nano-banana",
+                { json: input },
+            ),
         generateLyria: (input: GenerateLyriaInput): Promise<{ dataUrl: string }> =>
             this.request<{ dataUrl: string }>("POST", "/ai/gemini/lyria", { json: input }),
     };

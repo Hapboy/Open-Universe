@@ -39,7 +39,17 @@ function isNotConfigured(e: unknown): boolean {
 }
 
 async function urlToBase64(url: string): Promise<string> {
-    const resp = await fetch(url);
+    // `cache: "reload"` is load-bearing, not a perf tweak. Reference images are
+    // usually on screen before they're sent (a node's photo strip, a media
+    // preview), and CSS `background-image` always fetches no-cors — which puts
+    // an *opaque* response in the HTTP cache for that URL. A later CORS `fetch`
+    // of the same URL is served that cached entry and then rejected for having
+    // no Access-Control-Allow-Origin, even though R2 does send one. Forcing a
+    // fresh request sidesteps the poisoned entry; `crossOrigin="anonymous"` on
+    // the <img> tags wouldn't be enough, since the thumbnails are CSS
+    // backgrounds and can't opt in.
+    const resp = await fetch(url, { mode: "cors", cache: "reload" });
+    if (!resp.ok) throw new Error(`reference image HTTP ${resp.status}`);
     const buf = await resp.arrayBuffer();
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -199,13 +209,25 @@ export const geminiApiClient: GeminiApiClient = {
                 imageSize: req.imageSize,
                 seed: req.seed,
             };
-            const { dataUrl } = await hayverseApiClient.gemini.generateNanoBanana({
+            const { dataUrl, dataUrls } = await hayverseApiClient.gemini.generateNanoBanana({
                 prompt: req.prompt,
                 imageBase64List,
                 options,
             });
-            showToast("Nano Banana: изображение готово!");
-            return dataUrl;
+            // `dataUrls` is the real answer; falling back to the singular
+            // `dataUrl` covers an apps/api that hasn't been deployed yet (see
+            // GeminiController.nanoBanana).
+            const images = dataUrls ?? (dataUrl ? [dataUrl] : []);
+            if (images.length === 0) {
+                showToast("Nano Banana: пустой ответ — изображение не получено");
+                return null;
+            }
+            showToast(
+                images.length > 1
+                    ? `Nano Banana: готово изображений — ${images.length}!`
+                    : "Nano Banana: изображение готово!",
+            );
+            return images;
         } catch (e) {
             if (isNotConfigured(e)) {
                 showToast("Nano Banana: mock режим");

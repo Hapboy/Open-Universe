@@ -14,6 +14,7 @@ import { geminiImagenParamsSchema, IMAGEN_MODELS } from "@/schemas/gemini/gemini
 import { geminiVeoParamsSchema, VEO_MODELS } from "@/schemas/gemini/geminiVeo.schema.ts";
 import {
     geminiNanoBananaParamsSchema,
+    nanoBananaSliceSchema,
     NANO_BANANA_MODELS,
 } from "@/schemas/gemini/geminiNanoBanana.schema.ts";
 import { geminiLyriaParamsSchema, LYRIA_MODELS } from "@/schemas/gemini/geminiLyria.schema.ts";
@@ -666,8 +667,6 @@ const MAX_NANO_BANANA_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
 // params or output_scene's nested `params.image`. `modelRowAction` is an
 // optional slot next to the model select — the standalone node uses it for
 // its "add reference image pin" button; output_scene's tab leaves it empty.
-const nanoBananaModelFieldsSchema = geminiNanoBananaParamsSchema.omit({ prompt: true });
-
 export function NanoBananaModelFields({
     paramsSlice,
     onFieldChange,
@@ -684,7 +683,7 @@ export function NanoBananaModelFields({
 }) {
     const RATIOS = ["16:9", "1:1", "9:16", "3:2", "2:3", "4:3", "21:9"];
     const SIZES = ["1K", "2K", "4K"];
-    const { control, isFieldValid } = useNodeParamsForm(nanoBananaModelFieldsSchema, paramsSlice);
+    const { control, isFieldValid } = useNodeParamsForm(nanoBananaSliceSchema, paramsSlice);
     return (
         <>
             <div className={sharedStyles.fld}>

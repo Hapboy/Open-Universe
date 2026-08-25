@@ -2,10 +2,12 @@ import type { Edge, Node } from "@xyflow/react";
 import type { GenerationHistoryState, NodeParams } from "@/types.ts";
 import type { SceneOutputType } from "@hayverse/shared";
 import { geminiApiClient, higgsfieldApiClient } from "@/core/api/index.ts";
+import { nanoBananaRequestFromSlice } from "@/core/api/gemini/dto.ts";
 import { AI_MODEL_NODE_TYPES, ENTITY_NODE_TYPES } from "@/data/nodes.ts";
 import { resolveMediaRef } from "@/core/mediaRef.ts";
 import { photoPortId } from "@/core/characterPorts.ts";
-import { filledEntityParams } from "@/schemas/entities/schemas.ts";
+import { entityJsonPayload } from "@/schemas/entities/schemas.ts";
+import type { EntityPhoto } from "@/schemas/entities/schemaHelpers.ts";
 import { currentHistoryRef } from "@/core/generationHistory.ts";
 
 type ShowToast = (msg: string) => void;
@@ -39,11 +41,20 @@ export function edgeInput(
 // computeRichEntityExtraOutputs below, keyed by port name rather than by
 // `outputs[0]`, so it's unaffected by this function returning nothing for
 // them. That's correct behavior, not a missing case.
+// `multiOutputs` is the side channel for a node whose one run produced more
+// than one output (only Nano Banana today): a pin can carry exactly one
+// value, so `resolved` keeps the first image and the extras are stashed here
+// under the node's id for graphExecution.ts's persist step to fold into that
+// node's generation history. Optional — callers that don't care (none today,
+// but the graph functions are exported) just get single-value behavior.
+export type MultiOutputs = Map<string, string[]>;
+
 async function computeNodeOutput(
     node: Node<NodeParams>,
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
+    multiOutputs?: MultiOutputs,
 ): Promise<unknown> {
     const d = node.data;
 
@@ -146,18 +157,13 @@ async function computeNodeOutput(
             .map((_, i) => edgeInput(d, edges, resolved, i + 1))
             .filter((img) => img.wired && img.value != null)
             .map((img) => img.value as string);
-        const toNum = (v: unknown) => (v === "" || v == null ? undefined : Number(v));
-        return await geminiApiClient.generateImageFromRefs(
-            {
-                prompt: promptVal || "",
-                imageUrls,
-                model: d.params.model as string,
-                aspectRatio: d.params.aspectRatio as string,
-                imageSize: d.params.imageSize as string,
-                seed: toNum(d.params.seed),
-            },
+        const images = await geminiApiClient.generateImageFromRefs(
+            nanoBananaRequestFromSlice(d.params, { prompt: promptVal || "", imageUrls }),
             showToast,
         );
+        if (!images) return null;
+        if (images.length > 1) multiOutputs?.set(node.id, images);
+        return images[0];
     } else if (d.nodeType === "gemini_lyria") {
         const prompt = edgeInput(d, edges, resolved, 0);
         const promptVal = (prompt.wired ? prompt.value : d.params.prompt) as string;
@@ -196,10 +202,10 @@ async function computeRichEntityExtraOutputs(
 ): Promise<void> {
     const d = node.data;
     if (!ENTITY_NODE_TYPES.has(d.nodeType)) return;
-    const photos = (d.params.photos as string[] | undefined) ?? [];
+    const photos = (d.params.photos as EntityPhoto[] | undefined) ?? [];
     await Promise.all(
-        photos.map(async (ref) => {
-            resolved[photoPortId(node.id, ref)] = await resolveMediaRef(ref);
+        photos.map(async (photo) => {
+            resolved[photoPortId(node.id, photo.ref)] = await resolveMediaRef(photo.ref);
         }),
     );
     const descPort = d.outputs.find((p) => p.name === "Description");
@@ -211,7 +217,7 @@ async function computeRichEntityExtraOutputs(
                 id: node.id,
                 nodeType: d.nodeType,
                 label: d.label,
-                ...filledEntityParams(d.nodeType, d.params),
+                ...entityJsonPayload(d.nodeType, d.params),
             },
             null,
             2,
@@ -286,7 +292,7 @@ export async function runGraph(
     edges: Edge[],
     resolved: Resolved,
     showToast: ShowToast,
-    opts?: { autoMode?: boolean },
+    opts?: { autoMode?: boolean; multiOutputs?: MultiOutputs },
 ): Promise<SceneOutput | null> {
     for (let pass = 0; pass < nodes.length; pass++) {
         for (const node of nodes) {
@@ -300,7 +306,13 @@ export async function runGraph(
             const alreadyResolved = d.outputs[0]?.id && resolved[d.outputs[0].id] !== undefined;
             if (alreadyResolved && !opts?.autoMode) continue;
 
-            const out = await computeNodeOutput(node, edges, resolved, showToast);
+            const out = await computeNodeOutput(
+                node,
+                edges,
+                resolved,
+                showToast,
+                opts?.multiOutputs,
+            );
             if (out !== undefined && d.outputs[0]?.id) resolved[d.outputs[0].id] = out;
         }
     }
@@ -320,6 +332,7 @@ async function resolveNode(
     onNodeStart: ((nodeId: string) => void) | undefined,
     onNodeDone: ((nodeId: string) => void) | undefined,
     inFlight: Set<string>,
+    multiOutputs?: MultiOutputs,
 ): Promise<void> {
     if (inFlight.has(id)) return;
     inFlight.add(id);
@@ -340,12 +353,13 @@ async function resolveNode(
             onNodeStart,
             onNodeDone,
             inFlight,
+            multiOutputs,
         );
     }
 
     onNodeStart?.(id);
     try {
-        const out = await computeNodeOutput(node, edges, resolved, showToast);
+        const out = await computeNodeOutput(node, edges, resolved, showToast, multiOutputs);
         const outputId = node.data.outputs[0]?.id;
         if (outputId) {
             if (out !== undefined) resolved[outputId] = out;
@@ -368,6 +382,7 @@ export async function runNodeCascade(
     showToast: ShowToast,
     onNodeStart?: (nodeId: string) => void,
     onNodeDone?: (nodeId: string) => void,
+    multiOutputs?: MultiOutputs,
 ): Promise<SceneOutput | null> {
     const queue = [startNodeId];
     const visited = new Set<string>();
@@ -386,6 +401,7 @@ export async function runNodeCascade(
             onNodeStart,
             onNodeDone,
             new Set(),
+            multiOutputs,
         );
 
         for (const edge of edges) {

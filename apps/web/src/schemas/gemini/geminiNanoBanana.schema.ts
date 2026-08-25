@@ -30,3 +30,17 @@ export const geminiNanoBananaDefaults: GeminiNanoBananaFormValues = {
     seed: "",
     personGeneration: "ALLOW_ADULT",
 };
+
+// Everything NanoBananaModelFields edits — i.e. the whole schema except the
+// prompt, which every host sources differently (a wired pin on the standalone
+// node, composed from connected entities in output_scene, composed from the
+// entity itself on a character). The three hosts store this slice in three
+// places (flat params / params.image / params.photoGen) but must never drift in
+// *shape*, so both the schema and the defaults are derived here once: adding a
+// Nano Banana param means editing this file, the shared field component, and the
+// request mapper (core/api/gemini/dto.ts) — never the hosts.
+export const nanoBananaSliceSchema = geminiNanoBananaParamsSchema.omit({ prompt: true });
+export type NanoBananaSlice = z.infer<typeof nanoBananaSliceSchema>;
+
+const { prompt: _prompt, ...sliceDefaults } = geminiNanoBananaDefaults;
+export const nanoBananaSliceDefaults: NanoBananaSlice = sliceDefaults;

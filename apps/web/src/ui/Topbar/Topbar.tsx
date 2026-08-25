@@ -3,12 +3,16 @@ import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
 import { useUserContext } from "@/store/contexts/UserContext.tsx";
 import { useModalContext } from "@/store/contexts/ModalContext.tsx";
 import { useFullscreenToggle } from "@/ui/hooks/useFullscreenToggle.ts";
+import { useRequireAuth } from "@/ui/hooks/useRequireAuth.ts";
 import styles from "@/ui/Topbar/Topbar.module.css";
 
 export function Topbar() {
     const { executeGraph, showTimeline, setShowTimeline } = useGraphContext();
-    const { openModal } = useModalContext();
     const toggleFullscreen = useFullscreenToggle(() => document.getElementById("app"));
+    // A graph run drives every AI node in the scene, so it's gated like the
+    // individual generate buttons. Free/local nodes are unaffected — they
+    // resolve reactively without this button (see graphExecution.ts's autoMode).
+    const requireAuth = useRequireAuth();
 
     return (
         <header className={styles.topbar}>
@@ -44,7 +48,10 @@ export function Topbar() {
             <button
                 className={cn(styles.tb, styles.runBtn)}
                 id="btnRun"
-                onClick={() => void executeGraph()}>
+                onClick={() => {
+                    if (!requireAuth()) return;
+                    void executeGraph();
+                }}>
                 <i className="ti ti-player-play" />
                 <span>Прогнать граф</span>
             </button>

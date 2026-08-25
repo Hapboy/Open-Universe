@@ -44,23 +44,48 @@ lose track of things between sessions.
 
 ## Generative Node Params
 
-- **Nano Banana can return multiple images per request, but the backend only
-  keeps the first one.** Found 2026-08-10, not yet fixed. Nano Banana
-  (`gemini-3.1-flash-image`) has no `numberOfImages`-style config field like
-  Imagen — multi-image output is prompt-driven (e.g. asking for several
-  variations in one prompt), and the model can return several `inlineData`
-  parts in the same candidate's `content.parts`.
-  `apps/api/src/ai-gateway/gemini/gemini.service.ts`'s `runNanoBanana`
-  (~line 233) uses `.find((p) => p.inlineData)`, which stops at the first
-  match and silently drops any additional images the model returns. Fixing
-  this for real needs: `.filter()` instead of `.find()` and a return type
-  change (`string` → `string[]`) in `runNanoBanana`, the corresponding route
-  in `gemini.controller.ts`, and frontend plumbing (`NanoBananaOptions`,
-  history/gallery handling in `graphExecution.ts`/`NodeCard.tsx`) to store
-  and display more than one result per generation. No product decision yet
-  on whether multi-image output is even wanted for this node — currently
-  just a silent data-loss risk if a user's prompt happens to ask for
-  multiple images.
+- ~~**Nano Banana can return multiple images per request, but the backend only
+  keeps the first one.**~~ — fixed 2026-08-17: `runNanoBanana` now
+  `.filter()`s every `inlineData` part and returns `string[]`; the route
+  answers `{ dataUrl, dataUrls }` (singular kept for the window where
+  `apps/web` has deployed but `apps/api` hasn't been `railway up`'d);
+  `appendGenerationHistoryMany` appends all of them to one history stream in a
+  single store write. The standalone node's extras travel on a
+  `multiOutputs` side channel (`core/graph.ts`) since a pin can only carry one
+  value — downstream edges still get the first image. Deliberately _not_
+  added: a "generate N" fan-out of parallel requests; multi-image stays
+  whatever the model chooses to return for a prompt.
+
+- **A downstream edge always gets the first generated image, even when the
+  history slider is parked on another variant.** Surfaced 2026-08-17 by the
+  multi-image work above, but it predates it (a re-run has always left
+  `resolved` holding the newest result regardless of where the slider sits).
+  Fixing it means making `resolved` follow `currentHistoryRef` rather than the
+  raw run output — i.e. re-resolving downstream consumers on every scrub,
+  which is a real change to when the graph recomputes. Left alone until
+  someone actually wants "park on variant 3, then run the scene with it".
+
+- **Generation is character-only among entity types — for now.** The intent
+  is that the «Генерация» section eventually exists **everywhere photos can be
+  uploaded or picked**: every entity node rendering `PhotoGallerySection`
+  (location, clothing, building, furniture, art, transport, …) should get the
+  same block — nano-banana fields, own history, «Принять в фото» — not just
+  character. The pieces are per-type by design (`photoGen` slice +
+  `characterVisualKeys` + `ENTITY_GENERATION_NODE_TYPES`/`ENTITY_VISUAL_KEYS`
+  registration), so each addition is mostly declaring that type's visual keys
+  and a prompt subject, then adding it to `ENTITY_GENERATION_NODE_TYPES`.
+  Character shipped first as the proving ground; the remaining decision is
+  ordering and per-type prompt wording, not whether to do it.
+
+- **`photoMeta`-style tags.** `EntityPhoto` carries `caption` + `role`
+  (`PHOTO_ROLES`); a freeform `tags: string[]` would slot in without another
+  migration if a taxonomy ever earns its keep. Skipped for now — nothing
+  consumes tags, and they need autocomplete UI to be usable.
+
+- **The thumbnail strip doesn't scroll a newly added photo into view.**
+  `PhotoGallerySection.module.css`'s `.thumbnailsList` is
+  `max-height: 100px; overflow-y: auto`, so past ~2 rows a freshly added photo
+  lands out of sight even though the cover/preview does update.
 
 - **`gemini_vision`'s model dropdown shows every Gemini model, not just
   vision-capable ones — no API to filter by modality.** Checked
@@ -81,3 +106,92 @@ lose track of things between sessions.
   that drifts as Google ships new models), or leave as-is and accept the
   runtime-error UX. Not acted on yet — no clear preference expressed either
   way.
+
+## Redesign — Claude Design pipeline
+
+Not started — **blocked on Vahan supplying visual references.** Once they
+land, run in order:
+
+1. Draft a design direction from the references using the `frontend-design`
+   skill's process: a compact plan (4-6 named colors, 2 typefaces, a layout
+   concept, one signature element), checked against generic-AI-design
+   defaults before anything gets built. Present the plan for approval first.
+2. Pick 2-3 pilot components to prove the pipeline before touching the whole
+   registry — candidates: Button, SelectField, one entity card. Self-
+   contained, no context providers needed, so they're safe to preview in
+   isolation.
+3. Build isolated preview HTML for the pilots (variants/states shown per
+   card, first-line `<!-- @dsCard group="…" -->` marker).
+4. `DesignSync`: `create_project` (first sync only — creates the design-
+   system project) → `finalize_plan` → `write_files`, pushing the pilots to
+   claude.ai/design.
+5. Review/tweak visually in claude.ai/design.
+6. Read back whatever changed and port it into the real components
+   (`apps/web/src/ui/components/`, CSS Modules/TSX) — the repo stays the
+   source of truth, not Claude Design.
+7. Once the pilots are approved, roll the same direction through the rest of
+   the component registry incrementally — never a wholesale replace
+   (`DesignSync`'s own constraint, not just a preference).
+
+Tooling already in place: `frontend-design@claude-plugins-official` enabled
+at project scope (`.claude/settings.json`, 2026-08-24); `DesignSync` account
+access confirmed live (`list_projects` succeeded, zero projects yet — the
+first project gets created at step 4). Figma MCP is also available this
+session but out of scope for this repo — earmarked for a different future
+project that already has Figma files.
+
+Explicitly deferred from this pass: a skin/theming system (swappable color/
+type/spacing tokens for multiple visual identities). Only layouts are in
+scope for now — see the next section.
+
+## Layout variants — headless component architecture (pilot: Character node)
+
+Not started — independent of the redesign pipeline above, can begin any
+time. **Goal:** support rendering the same node/entity as multiple
+structurally different layouts (e.g. today's compact graph card vs. a full
+inspector panel/drawer) without forking logic per layout. This is _not_
+about skinning/theming (tokens/colors) — that's the separate, deferred axis
+noted above.
+
+**Why Character first:** it touches both layers that need splitting — the
+generic node shell (`NodeCard.tsx`) and a type-specific params form
+(`CharacterParams` in `EntityParams.tsx`) — so it's representative of the
+refactor the other 22 node types will eventually need.
+
+Current coupling to undo:
+
+- `NodeCard.tsx` mixes React Flow wiring (`Handle`/`Position`/
+  `useUpdateNodeInternals`), graph-context data fetching (`useGraphContext`,
+  `useNarrativeContext`, `useGenerationHistory`), and the actual card JSX
+  (header, ports, media slider, history nav, menu) in one component. There's
+  no seam to render the same node's data in a non-card shape.
+- `CharacterParams` (and the other `*Params` functions in
+  `EntityParams.tsx`) already separate field _bindings_ from JSX via
+  `useNodeParamsForm` (`control`/`isFieldValid`, react-hook-form-ish) — but
+  the visual arrangement of fields (grouping, order, stacked layout) is
+  hardcoded in the same function that owns the bindings.
+
+Tasks:
+
+1. Extract a headless `useNodeCardData(id)` hook out of `NodeCard.tsx` —
+   everything currently pulled from context plus derived state (`resolved`,
+   connected entities, running state, actions like `runNode`/
+   `duplicateNode`/`deleteNode`/`renameNode`/`updateNodeParam`) with zero
+   JSX. `NodeCard.tsx` becomes one _consumer_ of it (today's React Flow
+   card), not the owner of the logic.
+2. Do the same for a single params form: split `useNodeParamsForm`'s output
+   (field bindings/validity) from field _layout_. Introduce a small field-
+   descriptor shape (label, control type, validation) that a layout
+   component renders — so "CharacterParams the data contract" and
+   "CharacterParams the stacked-form JSX" become two separate things.
+3. Build one alternate layout for Character only (e.g. an inspector-panel/
+   drawer variant) consuming the same two headless hooks, to prove the split
+   actually decouples logic from presentation before generalizing.
+4. Once proven on Character, roll the same `useNodeCardData` + field-
+   descriptor split through the other entity types that already share
+   `useNodeParamsForm` (Location, Clothing, Building, Artwork, Furniture,
+   Music, Script, Storyboard, Transport) — mechanical once the pattern
+   exists.
+5. No layout-selection UI/registry yet — out of scope until there are ≥2
+   real layouts to actually choose between. Don't build the switcher
+   speculatively ahead of that.

@@ -32,6 +32,8 @@ import { useToastContext } from "@/store/contexts/ToastContext.tsx";
 import { useUserContext } from "@/store/contexts/UserContext.tsx";
 import { readRaw, removeKey, writeRaw } from "@/core/browserStorage.ts";
 import { buildPhotoPorts } from "@/core/characterPorts.ts";
+import { MAX_ENTITY_PHOTOS } from "@/schemas/entities/schemaHelpers.ts";
+import type { EntityPhoto } from "@/schemas/entities/schemaHelpers.ts";
 import { hayverseApiClient } from "@/core/api/hayverse/client.ts";
 import { useGraphExecution } from "@/store/contexts/graphExecution.ts";
 import { useGraphHistory } from "@/store/contexts/graphHistory.ts";
@@ -41,7 +43,6 @@ const TIMELINE_DURATION_KEY = "hv_timeline_duration";
 const DEFAULT_TOTAL_DURATION = 60; // 01:00 in seconds
 const MAX_REFERENCE_IMAGES = 14; // Nano Banana's own API limit
 const MAX_TEXT_INPUTS = 8; // text_prompt's own dynamic-field cap
-const MAX_ENTITY_PHOTOS = 10;
 const MAX_ENTITY_INPUTS = 20; // output_scene's own dynamic entity-pin cap, across all kinds
 // Pure view-state data flags (setNodeField) — no content/semantic meaning,
 // so they're excluded from undo history (see graphHistory.ts usage below).
@@ -52,7 +53,7 @@ const UI_ONLY_FIELD_KEYS = new Set<keyof NodeParams>([
     "outputSceneStage",
 ]);
 
-function withPhotoOutputs(nodeId: string, outputs: Port[], photos: string[]): Port[] {
+function withPhotoOutputs(nodeId: string, outputs: Port[], photos: EntityPhoto[]): Port[] {
     const photoPrefix = `${nodeId}_photo_`;
     const fixedOutputs = outputs.filter((p) => !p.id.startsWith(photoPrefix));
     return [...fixedOutputs, ...buildPhotoPorts(nodeId, photos)];
@@ -336,7 +337,7 @@ interface GraphCtx {
         patch: Record<string, unknown>,
         opts?: { skipHistory?: boolean },
     ) => void;
-    setNodePhotos: (nodeId: string, photos: string[], coverPhotoIndex: number) => void;
+    setNodePhotos: (nodeId: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
     addImageInput: (nodeId: string) => void;
     addTextInput: (nodeId: string) => void;
     addEntityInput: (nodeId: string, entityType: NodeType, entityLabel: string) => void;
@@ -742,7 +743,7 @@ export function GraphProvider({
                     ? withPhotoOutputs(
                           newId,
                           clonedData.outputs.map((out, i) => ({ ...out, id: `${newId}_out_${i}` })),
-                          (clonedData.params.photos as string[] | undefined) ?? [],
+                          (clonedData.params.photos as EntityPhoto[] | undefined) ?? [],
                       )
                     : clonedData.outputs.map((out, i) => ({ ...out, id: `${newId}_out_${i}` }));
                 const duplicated: Node<NodeParams> = {
@@ -978,7 +979,7 @@ export function GraphProvider({
     // per-photo output pins (one per photo, id'd by blob ref) in sync with
     // the array, and prunes edges wired to any pin that no longer exists.
     const setNodePhotos = useCallback(
-        (nodeId: string, photos: string[], coverPhotoIndex: number) => {
+        (nodeId: string, photos: EntityPhoto[], coverPhotoIndex: number) => {
             history.record(null);
             const capped = photos.slice(0, MAX_ENTITY_PHOTOS);
             setNodes((ns) =>
@@ -996,7 +997,7 @@ export function GraphProvider({
                 ),
             );
             const photoPrefix = `${nodeId}_photo_`;
-            const validIds = new Set(capped.map((ref) => `${photoPrefix}${ref}`));
+            const validIds = new Set(capped.map((photo) => `${photoPrefix}${photo.ref}`));
             setEdges((es) =>
                 es.filter(
                     (e) =>

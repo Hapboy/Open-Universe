@@ -1,6 +1,7 @@
 import { useResolvedMediaUrls } from "@/core/mediaRef.ts";
 import {
     appendGenerationHistory,
+    appendGenerationHistoryMany,
     clampHistoryIdx,
     currentHistoryRef,
     historyIndexChange,
@@ -64,5 +65,12 @@ export function useGenerationHistory<T extends GenerationHistoryState = Generati
         onChange(appendGenerationHistory(generation, ref, paramsSnapshot) as Partial<T>);
     };
 
-    return { history, idx, resolvedUrls, currentRef, onIndexChange, onDelete, append };
+    // One generation that produced several outputs — appended in a single
+    // store write so the intermediate states never render (see
+    // appendGenerationHistoryMany).
+    const appendMany = (refs: string[], paramsSnapshot?: Record<string, unknown>) => {
+        onChange(appendGenerationHistoryMany(generation, refs, paramsSnapshot) as Partial<T>);
+    };
+
+    return { history, idx, resolvedUrls, currentRef, onIndexChange, onDelete, append, appendMany };
 }

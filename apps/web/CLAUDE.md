@@ -14,48 +14,24 @@
 ## Стек приложения
 
 **React 19 + Next.js (App Router) + TypeScript**. `src/` — корень исходников;
-`app/` (Next-конвенция) содержит только роут-файлы (`layout.tsx`, `page.tsx`,
-`api/higgsfield/*/route.ts`, `pinterest/callback/`).
+`app/` (Next-конвенция) содержит только роут-файлы.
 
-```
-src/
-├── core/
-│   ├── api/       env.ts (getApiUrl/getR2PublicUrl), hayverse/ (hayverseApiClient),
-│   │               gemini/ pinterest/ higgsfield/ (client.ts + dto.ts per provider),
-│   │               pollJob.ts, index.ts
-│   ├── auth/      tokenStore.ts (JWT в браузере)
-│   ├── services/  higgsfield.ts (провайдер-специфичная логика, ещё не в apps/api)
-│   ├── mediaRef.ts         резолвит `s3:<uuid>` медиа-refs в R2-URL (см. ниже);
-│   │                        IndexedDB-логика вырезана, старые idb:/gen: refs не резолвятся
-│   ├── browserStorage.ts, characterPorts.ts, graph.ts, renderer (см. graph.ts)
-├── data/          nodes.ts (NODE_TEMPLATES), presets.ts, scenes.ts, miseEnSceneDiagrams.ts
-├── store/         AppProviders.tsx + contexts/ (Graph/Auth/User/Player/Narrative/
-│                  Modal/Toast — React Context per concern) + hooks/
-├── ui/            App.tsx (+ App.module.css), NodeEditor/, NodeCard/, NodeBrowser/,
-│                  Timeline/, MontageMonitor/, WorldMap/, Topbar/, Modals/, Toast/,
-│                  components/, hooks/ — каждый компонент = папка с колокейтед
-│                  `Name.module.css`
-├── styles/        global.css (CSS-переменные, reset; импортируется из
-│                  app/layout.tsx), shared.module.css (общие атомы через `composes`)
-└── types.ts       TS-интерфейсы (NodeParams, PinItem, BoardItem, ...)
+Что не видно из дерева файлов:
 
-app/
-├── layout.tsx     root layout: metadata/viewport, глобальный CSS, StrictMode
-├── page.tsx       'use client', рендерит <App /> из src/App.tsx
-├── api/higgsfield/*/route.ts   последний провайдер ещё не перенесённый в apps/api
-└── pinterest/callback/          OAuth callback (Pinterest уже проксируется через apps/api)
-```
-
+- `src/store/` — состояние разложено на React Context per concern
+  (Graph/Auth/User/Player/Narrative/Modal/Toast), общего стора нет.
+- `src/core/mediaRef.ts` резолвит `s3:<uuid>` медиа-refs в R2-URL (см.
+  «Talking to the backend»); IndexedDB-логика вырезана целиком, старые
+  `idb:`/`gen:` refs не резолвятся.
+- `src/core/services/higgsfield.ts` + `app/api/higgsfield/*/route.ts` —
+  единственный провайдер, ещё не перенесённый в `apps/api`. Остальные
+  (`gemini/`, `pinterest/`) — тонкие адаптеры поверх `hayverseApiClient`.
+- `src/core/auth/tokenStore.ts` — JWT в браузере; `app/pinterest/callback/`
+  — OAuth callback (сам Pinterest уже проксируется через `apps/api`).
 - `public/prototypes/` — устаревшие HTML-прототипы; игнорировать.
 - Env-переменные — `NEXT_PUBLIC_*` (не `VITE_*`); `src/core/api/env.ts` держит
   их в статичной map, т.к. Next инлайнит только буквальные
   `process.env.NEXT_PUBLIC_X` — динамический `process.env[name]` не работает.
-
-## Запуск / превью
-
-`npm run dev` (из корня или `apps/web`) → `http://localhost:4174/`
-(Next.js dev server, Turbopack). `npm run build` → `.next/`; `npm run start`
-— прод-сервер локально.
 
 ## Ключевые паттерны кода
 

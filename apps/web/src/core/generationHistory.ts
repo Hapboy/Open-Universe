@@ -33,6 +33,27 @@ export function appendGenerationHistory(
     return { history, idx: history.length - 1, paramsHistory };
 }
 
+// Same, for a generation that produced several outputs at once (Nano Banana
+// returning multiple images for one prompt — see apps/api's runNanoBanana).
+// All of them share the one params snapshot that produced them, and `idx`
+// lands on the last, so the slider opens on the newest variant. Folding
+// appendGenerationHistory rather than reimplementing keeps the cap and the
+// paramsHistory pruning in one place.
+export function appendGenerationHistoryMany(
+    current: Partial<GenerationHistoryState> | undefined,
+    refs: string[],
+    paramsSnapshot?: Record<string, unknown>,
+): GenerationHistoryState {
+    return refs.reduce<GenerationHistoryState>(
+        (acc, ref) => appendGenerationHistory(acc, ref, paramsSnapshot),
+        {
+            history: current?.history ?? [],
+            idx: clampHistoryIdx(current),
+            paramsHistory: current?.paramsHistory ?? {},
+        },
+    );
+}
+
 // Removes one entry, clamping idx back into range and dropping its
 // paramsHistory snapshot.
 export function removeFromGenerationHistory(

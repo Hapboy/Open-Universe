@@ -3,10 +3,10 @@ import type { Dispatch, SetStateAction } from "react";
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeType } from "@hayverse/shared";
 import type { GenerationHistoryState, NodeParams, NodeRef } from "@/types.ts";
-import type { SceneOutput } from "@/core/graph.ts";
+import type { MultiOutputs, SceneOutput } from "@/core/graph.ts";
 import { putGeneratedBlob } from "@/core/mediaRef.ts";
 import { edgeInput } from "@/core/graph.ts";
-import { appendGenerationHistory } from "@/core/generationHistory.ts";
+import { appendGenerationHistoryMany } from "@/core/generationHistory.ts";
 
 type ShowToast = (msg: string) => void;
 
@@ -99,8 +99,14 @@ export function useGraphExecution({
     // dedups against repeated "Прогнать граф" clicks: a node whose output
     // didn't change since the last persist is skipped.
     const persistedOutputRef = useRef<Map<string, string>>(new Map());
-    const appendGeneratedRef = useCallback(
-        (nodeId: string, ref: string, paramsSnapshot: Record<string, unknown>) => {
+    // Extra images from a single Nano Banana run (see graph.ts's MultiOutputs)
+    // — filled during the run, drained by persistGeneratedOutputs below.
+    const multiOutputsRef = useRef<MultiOutputs>(new Map());
+    // One store write per generation, however many refs it produced: appending
+    // them one at a time would render each intermediate history state and race
+    // on the `generation` object each call reads.
+    const appendGeneratedRefs = useCallback(
+        (nodeId: string, refs: string[], paramsSnapshot: Record<string, unknown>) => {
             setNodes((ns) =>
                 ns.map((n) => {
                     if (n.id !== nodeId) return n;
@@ -108,9 +114,9 @@ export function useGraphExecution({
                         ...n,
                         data: {
                             ...n.data,
-                            generation: appendGenerationHistory(
+                            generation: appendGenerationHistoryMany(
                                 n.data.generation as GenerationHistoryState | undefined,
-                                ref,
+                                refs,
                                 paramsSnapshot,
                             ),
                         },
@@ -148,17 +154,26 @@ export function useGraphExecution({
                     if (fieldInput.wired) paramsSnapshot[field.paramKey] = fieldInput.value;
                 }
                 if (kind === "text") {
-                    appendGeneratedRef(node.id, value as string, paramsSnapshot);
+                    appendGeneratedRefs(node.id, [value as string], paramsSnapshot);
                     continue;
                 }
-                fetch(value as string)
-                    .then((r) => r.blob())
-                    .then(putGeneratedBlob)
-                    .then((ref) => appendGeneratedRef(node.id, ref, paramsSnapshot))
+                // A run that returned several images stashed them all under
+                // this node's id; `value` (the pin's value) is the first of
+                // them, so the map takes precedence over it when present.
+                const dataUrls = multiOutputsRef.current.get(node.id) ?? [value as string];
+                multiOutputsRef.current.delete(node.id);
+                Promise.all(
+                    dataUrls.map((dataUrl) =>
+                        fetch(dataUrl)
+                            .then((r) => r.blob())
+                            .then(putGeneratedBlob),
+                    ),
+                )
+                    .then((refs) => appendGeneratedRefs(node.id, refs, paramsSnapshot))
                     .catch(console.error);
             }
         },
-        [appendGeneratedRef, edges],
+        [appendGeneratedRefs, edges],
     );
 
     const executeGraph = useCallback(async () => {
@@ -168,7 +183,9 @@ export function useGraphExecution({
         const seededNodes = withEnsuredSeeds(nodes);
         if (seededNodes !== nodes) setNodes(seededNodes);
         resolvedRef.current = {};
-        const output = await runGraph(seededNodes, edges, resolvedRef.current, showToast);
+        const output = await runGraph(seededNodes, edges, resolvedRef.current, showToast, {
+            multiOutputs: multiOutputsRef.current,
+        });
         setResolved({ ...resolvedRef.current });
         persistGeneratedOutputs(seededNodes, resolvedRef.current);
         cacheSceneOutput(sceneId, output);
@@ -209,6 +226,7 @@ export function useGraphExecution({
                     setResolved({ ...resolvedRef.current });
                     persistGeneratedOutputs(runNodes, resolvedRef.current);
                 },
+                multiOutputsRef.current,
             );
             cacheSceneOutput(sceneId, output);
         },

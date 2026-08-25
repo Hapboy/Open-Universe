@@ -60,7 +60,37 @@ export interface GenerateImageFromRefsRequest {
     imageSize?: string;
     seed?: number;
 }
-export type GenerateImageFromRefsResponse = string | null;
+
+// Builds that request from a host's stored params slice (see
+// nanoBananaSliceDefaults in schemas/gemini/geminiNanoBanana.schema.ts). All
+// three hosts — the standalone node, output_scene's Картинка stage and a
+// character's photo generation — keep the same field shape but hold it in
+// different places and obtain prompt/reference images differently, so only
+// those two travel as arguments. Lives next to the request type it constructs:
+// a new Nano Banana param is added here once instead of in each caller.
+//
+// `seed` is an explicit argument rather than read from the slice because every
+// caller resolves it first (reroll's +10000, or self-generating one when the
+// field is blank — see core/seed.ts); it falls back to the slice's own value.
+export function nanoBananaRequestFromSlice(
+    slice: Record<string, unknown>,
+    { prompt, imageUrls, seed }: { prompt: string; imageUrls: string[]; seed?: number },
+): GenerateImageFromRefsRequest {
+    const sliceSeed = slice.seed === "" || slice.seed == null ? undefined : Number(slice.seed);
+    return {
+        prompt,
+        imageUrls,
+        model: slice.model as string,
+        aspectRatio: slice.aspectRatio as string,
+        imageSize: slice.imageSize as string,
+        seed: seed ?? sliceSeed,
+    };
+}
+// Every image the model returned (Nano Banana can emit several inlineData
+// parts for a prompt asking for variations), or null when the call failed /
+// the provider isn't configured. Never an empty array — callers only need to
+// distinguish "nothing came back" once.
+export type GenerateImageFromRefsResponse = string[] | null;
 
 // Lyria — generates music via generateContent + responseModalities: ["AUDIO"].
 export interface GenerateAudioRequest {

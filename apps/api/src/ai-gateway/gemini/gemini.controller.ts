@@ -108,16 +108,20 @@ export class GeminiController {
   @ApiOperation({
     summary: 'Generate an image from reference images (Nano Banana)',
   })
+  // `dataUrl` (the first image) is kept alongside the full `dataUrls` list on
+  // purpose: apps/web auto-deploys on push to main while apps/api ships by a
+  // manual `railway up`, so both shapes have to be valid while only one side
+  // has rolled out. The frontend client reads `dataUrls ?? [dataUrl]`.
   async nanoBanana(@Body() dto: GenerateNanoBananaDto) {
     const key = this.requireKey();
     try {
-      const dataUrl = await this.gemini.runNanoBanana(
+      const dataUrls = await this.gemini.runNanoBanana(
         dto.prompt,
         dto.imageBase64List,
         dto.options as unknown as NanoBananaOptions,
         key,
       );
-      return { dataUrl };
+      return { dataUrl: dataUrls[0], dataUrls };
     } catch (e) {
       throw new BadGatewayException(GeminiController.asError(e));
     }

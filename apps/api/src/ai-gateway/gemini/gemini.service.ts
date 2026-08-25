@@ -199,12 +199,17 @@ export class GeminiService {
     throw new Error('no video uri or bytes');
   }
 
+  // Returns every image the model produced, not just the first: Nano Banana
+  // has no numberOfImages-style config field, so multi-image output is
+  // prompt-driven (a prompt asking for several variations) and arrives as
+  // several inlineData parts in the same candidate. Callers keep them all in
+  // their generation history - see apps/web's graphExecution.ts.
   async runNanoBanana(
     prompt: string,
     imageBase64List: string[],
     options: NanoBananaOptions,
     key: string,
-  ): Promise<string> {
+  ): Promise<string[]> {
     const contents = imageBase64List.length
       ? [
           {
@@ -230,9 +235,14 @@ export class GeminiService {
         seed: options.seed,
       },
     });
-    const part = res.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
-    if (!part?.inlineData?.data) throw new Error('no image in response');
-    return `data:${part.inlineData.mimeType ?? 'image/png'};base64,${part.inlineData.data}`;
+    const dataUrls = (res.candidates?.[0]?.content?.parts ?? [])
+      .filter((p) => p.inlineData?.data)
+      .map(
+        (p) =>
+          `data:${p.inlineData?.mimeType ?? 'image/png'};base64,${p.inlineData?.data}`,
+      );
+    if (dataUrls.length === 0) throw new Error('no image in response');
+    return dataUrls;
   }
 
   async runLyria(

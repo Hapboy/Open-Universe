@@ -16,31 +16,18 @@
 git-подобным процессом (форк → PR → модерация → merge в `main`); непринятое
 живёт в мультивселенной. Это отдельный проект, **не** связан с PROUN-игрой.
 
-## Структура монорепо
-
-```
-open-universe/
-├── apps/
-│   ├── web/            Next.js 16 + React 19 фронтенд — см. apps/web/CLAUDE.md
-│   └── api/             NestJS + Bun бэкенд — см. apps/api/CLAUDE.md
-├── packages/
-│   ├── shared/          @hayverse/shared — общие типы/enum'ы (src/enums.ts)
-│   └── api-client/       @hayverse/api-client — типизированный клиент apps/api
-├── docs/                 DESIGN.md, DECISIONS.md, backend-bootstrap.md, frontend-todo.md, api-testing-guide.md
-├── package.json           workspaces: ["apps/web", "packages/*"] (apps/api на Bun, вне npm workspaces)
-└── tsconfig.base.json
-```
+## Соглашения репозитория
 
 - Бренд внутри UI — «Hayverse»; имя репозитория — `open-universe`.
 - `apps/web/public/prototypes/` — устаревшие HTML-прототипы, игнорировать.
+- Специфика приложений — в `apps/web/CLAUDE.md` и `apps/api/CLAUDE.md`.
 
 ## Запуск
 
-Корневые скрипты делегируют в `apps/web`: `npm run dev` (→
-`next dev -p 4174`), `npm run build`, `npm run typecheck`, `npm run lint` /
-`npm run format` (эти два — по всему репозиторию). Бэкенд запускается
-отдельно из `apps/api/` (`bun run start:dev`) — Bun намеренно не входит в
-npm workspaces.
+Корневые скрипты делегируют в `apps/web`; исключение — `lint` / `format`,
+они прогоняются по всему репозиторию. Бэкенд запускается отдельно из
+`apps/api/` (`bun run start:dev`) — Bun намеренно не входит в npm workspaces,
+поэтому корневые команды его не покрывают.
 
 ## Кросс-app конвенции
 

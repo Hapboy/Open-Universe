@@ -64,6 +64,30 @@ export type HiggsfieldJobStatus = (typeof HIGGSFIELD_JOB_STATUSES)[number];
 
 // ── Entity domain ───────────────────────────────────────────────────────────
 
+// What one of an entity's reference photos actually shows — carried per photo
+// (see schemaHelpers.ts's photoEntrySchema) and published on the entity's JSON
+// output pin, so a composed prompt can say which reference is the face and
+// which is the outfit. Values are English, unlike the Russian-valued enums
+// below: these reach the model, and PHOTO_ROLE_LABELS covers the UI side.
+export const PHOTO_ROLES = [
+    "face",
+    "full_body",
+    "profile",
+    "clothing",
+    "detail",
+    "environment",
+] as const;
+export type PhotoRole = (typeof PHOTO_ROLES)[number];
+
+export const PHOTO_ROLE_LABELS: Record<PhotoRole, string> = {
+    face: "Лицо",
+    full_body: "В полный рост",
+    profile: "Профиль",
+    clothing: "Одежда",
+    detail: "Деталь",
+    environment: "Окружение",
+};
+
 // types.ts's LocationNodeParams.interiorExterior
 export const INTERIOR_EXTERIOR = ["Интерьер", "Экстерьер"] as const;
 export type InteriorExterior = (typeof INTERIOR_EXTERIOR)[number];

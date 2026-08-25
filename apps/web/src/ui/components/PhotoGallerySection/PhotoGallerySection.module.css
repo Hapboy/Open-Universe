@@ -21,6 +21,7 @@
 }
 
 .thumbCell {
+    position: relative;
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -30,11 +31,49 @@
     cursor: pointer;
     transition:
         transform 0.2s,
-        border-color 0.2s;
+        border-color 0.2s,
+        opacity 0.2s;
 }
 
 .thumbCell:hover {
     transform: scale(1.08);
+}
+
+/* Excluded from the entity's JSON output and any prompt composed from it —
+   still uploadable/wirable, just dimmed here. */
+.thumbCell.thumbCellExcluded {
+    opacity: 0.35;
+    filter: grayscale(1);
+}
+
+.thumbToggle {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.thumbCell:hover .thumbToggle,
+.thumbCellExcluded .thumbToggle {
+    opacity: 1;
+}
+
+.thumbToggle:hover {
+    color: var(--color-text-primary);
 }
 
 .thumbCell.thumbCellActive {
