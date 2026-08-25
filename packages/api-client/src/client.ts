@@ -92,8 +92,14 @@ export class HayverseApiClient {
             const text = await res.text().catch(() => "");
             throw new ApiError(res.status, method, path, text);
         }
-        if (res.status === 204) return undefined as T;
-        return (await res.json()) as T;
+        // Not just 204: NestJS sends 200 with an empty body for handlers
+        // that return void/undefined too (e.g. every `remove` endpoint)
+        // unless the controller opts into @HttpCode(204) explicitly - so
+        // an empty body has to be handled regardless of status code, or
+        // res.json() throws on the empty string and every caller's delete
+        // looks like it failed even though it went through.
+        const text = await res.text();
+        return (text ? JSON.parse(text) : undefined) as T;
     }
 
     readonly auth = {
