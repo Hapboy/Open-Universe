@@ -168,7 +168,7 @@ export function usePresetDatabase(
     params: Record<string, unknown>,
     updateNodeParams: NodeParamsProps["updateNodeParams"],
 ) {
-    const { library, isLoading, addPreset } = usePresetLibraryContext();
+    const { library, isLoading, addPreset, removePreset } = usePresetLibraryContext();
     const entityType = node.data.nodeType;
     const rawPresets = library[entityType];
     const presets = rawPresets ?? {};
@@ -224,6 +224,8 @@ export function usePresetDatabase(
         updateNodeParams(node.id, { selectedItem: snapshot.name as string });
     };
 
+    const onDelete = (id: string) => removePreset(entityType, id);
+
     // Only meaningful while there's an actual saved id to confirm — a brand
     // new node with no `presetId` yet has nothing to resolve, so it should
     // never show a spinner just because the library hasn't loaded.
@@ -233,6 +235,7 @@ export function usePresetDatabase(
         db,
         onSelect,
         onSave,
+        onDelete,
         hasUnsavedChanges,
         missingSaveFields: missingSaveFieldsList,
         isResolving,

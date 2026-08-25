@@ -34,6 +34,7 @@ interface PresetLibraryCtx {
     // this to show "still checking" instead of wrongly claiming "no match".
     isLoading: boolean;
     addPreset: (entityType: string, presetId: string, snapshot: Record<string, unknown>) => void;
+    removePreset: (entityType: string, presetId: string) => void;
 }
 
 const Ctx = createContext<PresetLibraryCtx>(null!);
@@ -84,7 +85,20 @@ export function PresetLibraryProvider({ children }: { children: React.ReactNode 
         [showToast],
     );
 
-    const ctx: PresetLibraryCtx = { library, isLoading, addPreset };
+    const removePreset = useCallback(
+        (entityType: string, presetId: string) => {
+            setLibrary((lib) => {
+                const { [presetId]: _removed, ...rest } = lib[entityType] ?? {};
+                return { ...lib, [entityType]: rest };
+            });
+            hayverseApiClient.presets
+                .remove(presetId)
+                .catch(() => showToast("Не удалось удалить пресет на сервере"));
+        },
+        [showToast],
+    );
+
+    const ctx: PresetLibraryCtx = { library, isLoading, addPreset, removePreset };
 
     return <Ctx.Provider value={ctx}>{children}</Ctx.Provider>;
 }

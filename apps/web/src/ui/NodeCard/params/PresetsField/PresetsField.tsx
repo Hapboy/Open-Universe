@@ -22,6 +22,7 @@ export function PresetsField({
     selected,
     onSelect,
     onSave,
+    onDelete,
     hasUnsavedChanges,
     missingSaveFields,
     isResolving = false,
@@ -31,6 +32,7 @@ export function PresetsField({
     selected: string;
     onSelect: (v: string) => void;
     onSave: () => void;
+    onDelete: (v: string) => void;
     hasUnsavedChanges: boolean;
     missingSaveFields: readonly string[];
     // True while the saved `presetId` hasn't been checked against the loaded
@@ -99,6 +101,7 @@ export function PresetsField({
                             onSelect(v);
                             setOpen(false);
                         }}
+                        onDelete={onDelete}
                         onClose={() => setOpen(false)}
                     />,
                     document.body,
@@ -113,6 +116,7 @@ function PresetsModal({
     thumbs,
     selected,
     onSelect,
+    onDelete,
     onClose,
 }: {
     label: string;
@@ -120,6 +124,7 @@ function PresetsModal({
     thumbs: (string | undefined)[];
     selected: string;
     onSelect: (v: string) => void;
+    onDelete: (v: string) => void;
     onClose: () => void;
 }) {
     return (
@@ -139,29 +144,42 @@ function PresetsModal({
                     ) : (
                         <div className={styles.grid}>
                             {items.map((item, i) => (
-                                <button
-                                    type="button"
+                                <div
                                     key={item.value}
                                     className={cn(
                                         styles.card,
                                         item.value === selected && styles.cardActive,
-                                    )}
-                                    onClick={() => onSelect(item.value)}
-                                    title={item.label}>
-                                    <span
-                                        className={styles.cardThumb}
-                                        style={
-                                            thumbs[i]
-                                                ? { backgroundImage: `url(${thumbs[i]})` }
-                                                : undefined
-                                        }>
-                                        {!thumbs[i] && <i className="ti ti-photo-off" />}
-                                    </span>
-                                    <span className={styles.cardLabel}>{item.label}</span>
-                                    {item.value === selected && (
-                                        <i className={cn("ti ti-check", styles.cardCheck)} />
-                                    )}
-                                </button>
+                                    )}>
+                                    <button
+                                        type="button"
+                                        className={styles.cardDelete}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(item.value);
+                                        }}
+                                        title="Удалить пресет">
+                                        <i className="ti ti-trash" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={styles.cardSelect}
+                                        onClick={() => onSelect(item.value)}
+                                        title={item.label}>
+                                        <span
+                                            className={styles.cardThumb}
+                                            style={
+                                                thumbs[i]
+                                                    ? { backgroundImage: `url(${thumbs[i]})` }
+                                                    : undefined
+                                            }>
+                                            {!thumbs[i] && <i className="ti ti-photo-off" />}
+                                        </span>
+                                        <span className={styles.cardLabel}>{item.label}</span>
+                                        {item.value === selected && (
+                                            <i className={cn("ti ti-check", styles.cardCheck)} />
+                                        )}
+                                    </button>
+                                </div>
                             ))}
                         </div>
                     )}
