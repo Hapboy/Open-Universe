@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Edge } from "@xyflow/react";
 import type { NodeParams, NodeRef, TimelineScene } from "@/types.ts";
 import { usePresetLibraryContext } from "@/store/contexts/PresetLibraryContext.tsx";
@@ -236,6 +236,52 @@ export function usePresetDatabase(
         hasUnsavedChanges,
         missingSaveFields: missingSaveFieldsList,
         isResolving,
+    };
+}
+
+export interface CategoryDef {
+    key: string;
+    label: string;
+}
+
+// Shared by every params panel with a category-tag filter strip + search
+// (CharacterParams, LocationParams, OutputParams) — was independently
+// duplicated in each. Starts with every tag off (not "general: true") since
+// this state isn't persisted anywhere (not in node.data, not in
+// localStorage) — a fresh mount has nothing to remember, so it shouldn't
+// pretend a tag is already selected.
+export function useCategoryTags(categories: readonly CategoryDef[]) {
+    const [activeTags, setActiveTags] = useState<Record<string, boolean>>(() =>
+        Object.fromEntries(categories.map((c) => [c.key, false])),
+    );
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const isAllActive = categories.every((c) => activeTags[c.key]);
+
+    const toggleTag = (tag: string) => {
+        setActiveTags((prev) => ({ ...prev, [tag]: !prev[tag] }));
+    };
+
+    const toggleAll = () => {
+        const nextVal = !isAllActive;
+        setActiveTags(Object.fromEntries(categories.map((c) => [c.key, nextVal])));
+    };
+
+    // Filters a field by its own category tag and the search query.
+    const shouldShow = (category: string, label: string) => {
+        if (!activeTags[category]) return false;
+        if (!searchQuery) return true;
+        return label.toLowerCase().includes(searchQuery.toLowerCase());
+    };
+
+    return {
+        activeTags,
+        searchQuery,
+        setSearchQuery,
+        isAllActive,
+        toggleTag,
+        toggleAll,
+        shouldShow,
     };
 }
 

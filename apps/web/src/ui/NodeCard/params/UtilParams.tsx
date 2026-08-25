@@ -1,6 +1,11 @@
 import { useRef, useState } from "react";
 import cn from "classnames";
-import { WirableTextField, type EEP, type NodeParamsProps } from "@/ui/NodeCard/params/shared.tsx";
+import {
+    WirableTextField,
+    useCategoryTags,
+    type EEP,
+    type NodeParamsProps,
+} from "@/ui/NodeCard/params/shared.tsx";
 import type { SceneNarrativeSettings } from "@/store/contexts/NarrativeContext.tsx";
 import type { GenerationHistoryState } from "@/types.ts";
 import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
@@ -99,13 +104,15 @@ export function OutputParams({
     // SceneNarrativeSettings into output_scene's params and retiring
     // NarrativeContext entirely.
     const { getSceneNarrativeSettings, updateNarrativeSettings } = useNarrativeContext();
-    const [activeTags, setActiveTags] = useState<Record<string, boolean>>({
-        general: true,
-        entities: false,
-        generation: false,
-        arc: false,
-    });
-    const [searchQuery, setSearchQuery] = useState("");
+    const {
+        activeTags,
+        searchQuery,
+        setSearchQuery,
+        isAllActive,
+        toggleTag,
+        toggleAll,
+        shouldShow,
+    } = useCategoryTags(OUTPUT_SCENE_CATEGORIES);
     const resolvedCoverUrl = useResolvedMediaUrl(params.coverUrl as string | undefined);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
@@ -168,18 +175,6 @@ export function OutputParams({
     // mounted output_scene node always belongs to the active scene.
     if (!activeSceneId) return null;
     const arc = getSceneNarrativeSettings(activeSceneId);
-
-    const isAllActive =
-        activeTags.general && activeTags.entities && activeTags.generation && activeTags.arc;
-
-    const toggleTag = (tag: string) => {
-        setActiveTags((prev) => ({ ...prev, [tag]: !prev[tag] }));
-    };
-
-    const toggleAll = () => {
-        const nextVal = !isAllActive;
-        setActiveTags({ general: nextVal, entities: nextVal, generation: nextVal, arc: nextVal });
-    };
 
     const updateImageParam = (key: string, value: unknown) =>
         updateNodeParams(node.id, { image: { ...imageParams, [key]: value } });
@@ -291,13 +286,6 @@ export function OutputParams({
         } finally {
             setIsGeneratingVideo(false);
         }
-    };
-
-    // Filter fields by active tab tag and search label queries
-    const shouldShow = (category: string, label: string) => {
-        if (!activeTags[category as keyof typeof activeTags]) return false;
-        if (!searchQuery) return true;
-        return label.toLowerCase().includes(searchQuery.toLowerCase());
     };
 
     // Switching track snaps this scene's start to align with whatever scene is
@@ -549,7 +537,7 @@ export function OutputParams({
                                         <IconButton
                                             icon="wand"
                                             loading={isGeneratingImage}
-                                            onClick={handleGenerateImage}
+                                            onClick={() => void handleGenerateImage()}
                                             title="Сгенерировать"
                                         />
                                         <MediaPickerButton

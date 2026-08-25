@@ -1,7 +1,6 @@
-import { useState } from "react";
 import cn from "classnames";
 import { Controller, useController } from "react-hook-form";
-import { InFrameToggle, usePresetDatabase } from "@/ui/NodeCard/params/shared.tsx";
+import { InFrameToggle, usePresetDatabase, useCategoryTags } from "@/ui/NodeCard/params/shared.tsx";
 import type { EP } from "@/ui/NodeCard/params/shared.tsx";
 import { useNodeParamsForm } from "@/ui/NodeCard/params/useNodeParamsForm.ts";
 import {
@@ -213,36 +212,15 @@ export function CharacterParams({
     const acceptedAlready =
         !!photoHist.currentRef && photos.some((p) => p.ref === photoHist.currentRef);
 
-    // Toggle Category Tags and Search State
-    const [activeTags, setActiveTags] = useState<Record<string, boolean>>({
-        general: true,
-        birth: false,
-        arc: false,
-        styling: false,
-        generation: false,
-    });
-    const [searchQuery, setSearchQuery] = useState("");
-
-    const isAllActive = CHARACTER_CATEGORIES.every((c) => activeTags[c.key]);
-
-    const toggleTag = (tag: string) => {
-        setActiveTags((prev) => ({
-            ...prev,
-            [tag]: !prev[tag],
-        }));
-    };
-
-    const toggleAll = () => {
-        const nextVal = !isAllActive;
-        setActiveTags(Object.fromEntries(CHARACTER_CATEGORIES.map((c) => [c.key, nextVal])));
-    };
-
-    // Filter components by active tab tag and search label queries
-    const shouldShow = (category: string, label: string) => {
-        if (!activeTags[category as keyof typeof activeTags]) return false;
-        if (!searchQuery) return true;
-        return label.toLowerCase().includes(searchQuery.toLowerCase());
-    };
+    const {
+        activeTags,
+        searchQuery,
+        setSearchQuery,
+        isAllActive,
+        toggleTag,
+        toggleAll,
+        shouldShow,
+    } = useCategoryTags(CHARACTER_CATEGORIES);
 
     return (
         <>
@@ -706,32 +684,15 @@ export function LocationParams({
         usePresetDatabase(node, params, updateNodeParams);
     const { control, isFieldValid } = useNodeParamsForm(locationParamsSchema, params);
 
-    // Toggle Category Tags and Search State
-    const [activeTags, setActiveTags] = useState<Record<string, boolean>>({
-        general: true,
-        atmosphere: false,
-    });
-    const [searchQuery, setSearchQuery] = useState("");
-
-    const isAllActive = activeTags.general && activeTags.atmosphere;
-
-    const toggleTag = (tag: string) => {
-        setActiveTags((prev) => ({
-            ...prev,
-            [tag]: !prev[tag],
-        }));
-    };
-
-    const toggleAll = () => {
-        const nextVal = !isAllActive;
-        setActiveTags({ general: nextVal, atmosphere: nextVal });
-    };
-
-    const shouldShow = (category: string, label: string) => {
-        if (!activeTags[category as keyof typeof activeTags]) return false;
-        if (!searchQuery) return true;
-        return label.toLowerCase().includes(searchQuery.toLowerCase());
-    };
+    const {
+        activeTags,
+        searchQuery,
+        setSearchQuery,
+        isAllActive,
+        toggleTag,
+        toggleAll,
+        shouldShow,
+    } = useCategoryTags(LOCATION_CATEGORIES);
 
     return (
         <>
