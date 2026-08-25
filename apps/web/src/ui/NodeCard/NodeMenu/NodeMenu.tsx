@@ -14,6 +14,11 @@ export function NodeMenu({
 }) {
     return (
         <Popover
+            side="right"
+            align="start"
+            alignOffset={-5}
+            gap={23}
+            arrow
             trigger={({ toggle }) => (
                 <button
                     className={styles.menuBtn}

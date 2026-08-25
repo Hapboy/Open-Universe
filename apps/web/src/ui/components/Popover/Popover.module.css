@@ -1,13 +1,10 @@
 .wrap {
-    position: relative;
     display: inline-flex;
 }
 
 .panel {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    z-index: 10;
+    position: fixed;
+    z-index: 150;
     min-width: 160px;
     padding: 4px;
     background: var(--color-bg-card);
@@ -16,7 +13,73 @@
     box-shadow: var(--shadow-md);
 }
 
-.panel.alignLeft {
-    right: auto;
+/* Arrow: a small diamond (rotated square), clipped by an overflow:hidden
+   wrapper so only the tip pointing at the trigger shows through — the
+   classic CSS "speech bubble" caret. The wrapper sits just outside the
+   panel's own box (negative offset), so it never gets clipped by the panel
+   itself (which has no overflow:hidden). See usePopoverPosition's
+   `arrowOffset` for how it tracks the trigger along the edge. */
+.arrowWrap {
+    position: absolute;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.arrowWrap.sideBottom,
+.arrowWrap.sideTop {
+    width: 13px;
+    height: 7px;
+    transform: translateX(-50%);
+}
+
+.arrowWrap.sideLeft,
+.arrowWrap.sideRight {
+    width: 7px;
+    height: 13px;
+    transform: translateY(-50%);
+}
+
+.arrowWrap.sideBottom {
+    top: -7px;
+}
+
+.arrowWrap.sideTop {
+    bottom: -7px;
+}
+
+.arrowWrap.sideRight {
+    left: -7px;
+}
+
+.arrowWrap.sideLeft {
+    right: -7px;
+}
+
+.arrow {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.arrowWrap.sideBottom .arrow {
+    top: 7px;
+    left: 6.5px;
+}
+
+.arrowWrap.sideTop .arrow {
+    top: 0;
+    left: 6.5px;
+}
+
+.arrowWrap.sideRight .arrow {
+    left: 7px;
+    top: 6.5px;
+}
+
+.arrowWrap.sideLeft .arrow {
     left: 0;
+    top: 6.5px;
 }

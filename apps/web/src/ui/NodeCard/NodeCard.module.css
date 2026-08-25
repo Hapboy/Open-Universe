@@ -193,6 +193,17 @@
     right: -1.5px;
 }
 
+button.addEntityPin {
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+button.addEntityPin:hover {
+    border-color: var(--color-border-active);
+}
+
 .middleRow {
     display: flex;
     align-items: flex-start;

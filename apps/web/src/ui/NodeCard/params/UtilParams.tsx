@@ -7,9 +7,10 @@ import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
 import { useNarrativeContext } from "@/store/contexts/NarrativeContext.tsx";
 import { useToastContext } from "@/store/contexts/ToastContext.tsx";
 import { edgeInput } from "@/core/graph.ts";
-import { appendGenerationHistory } from "@/core/generationHistory.ts";
+import { appendGenerationHistory, appendGenerationHistoryMany } from "@/core/generationHistory.ts";
 import { generateSeed } from "@/core/seed.ts";
 import { useGenerationHistory } from "@/ui/hooks/useGenerationHistory.ts";
+import { useRequireAuth } from "@/ui/hooks/useRequireAuth.ts";
 import { SelectField } from "@/ui/components/SelectField/SelectField.tsx";
 import { TextField } from "@/ui/components/TextField/TextField.tsx";
 import { NumberField } from "@/ui/components/NumberField/NumberField.tsx";
@@ -31,23 +32,14 @@ import { MediaSlider } from "@/ui/NodeCard/MediaSlider/MediaSlider.tsx";
 import { Button } from "@/ui/components/Button/Button.tsx";
 import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
 import { geminiApiClient } from "@/core/api/index.ts";
+import { nanoBananaRequestFromSlice } from "@/core/api/gemini/dto.ts";
 import { NanoBananaModelFields, VeoModelFields } from "@/ui/NodeCard/params/GeminiParams.tsx";
 import {
     collectConnectedEntities,
     collectReferenceImageUrls,
     composeScenePrompt,
 } from "@/core/scenePrompt.ts";
-import { ENTITY_NODE_TYPES, NODE_TEMPLATES } from "@/data/nodes.ts";
 import styles from "@/ui/NodeCard/params/UtilParams.module.css";
-
-// Every entity kind output_scene can take an input pin from — the "+ <Kind>"
-// buttons in its Сущности tab, one per addEntityInput call. Order follows
-// ENTITY_NODE_TYPES' own insertion order (data/nodes.ts).
-const ENTITY_KIND_OPTIONS = Array.from(ENTITY_NODE_TYPES).map((type) => ({
-    type,
-    label: NODE_TEMPLATES[type].label,
-    icon: NODE_TEMPLATES[type].icon,
-}));
 
 // output_scene's own per-stage generation shape — the shared
 // GenerationHistoryState fields plus the composed prompt (see types.ts's
@@ -56,7 +48,6 @@ type OutputStageGeneration = GenerationHistoryState & { lastComposedPrompt?: str
 
 const OUTPUT_SCENE_CATEGORIES = [
     { key: "general", label: "Общие" },
-    { key: "entities", label: "Сущности" },
     { key: "generation", label: "Генерация" },
     { key: "arc", label: "Арка" },
 ];
@@ -92,16 +83,15 @@ export function OutputParams({
     updateNodeParam,
     updateNodeParams,
     setNodeField,
-    addEntityInput,
 }: EEP & {
     scenes: NodeParamsProps["scenes"];
     updateNodeParams: NodeParamsProps["updateNodeParams"];
     setNodeField: NodeParamsProps["setNodeField"];
-    addEntityInput: NodeParamsProps["addEntityInput"];
 }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { activeSceneId } = useGraphContext();
     const { showToast } = useToastContext();
+    const requireAuth = useRequireAuth();
     // Scene-arc fields below still live in NarrativeContext, keyed by scene
     // id, separate from this node's own `params`. Only the active scene's
     // graph is ever mounted, so this node's activeSceneId is always its own
@@ -206,6 +196,7 @@ export function OutputParams({
     // never echoes back a randomly-picked seed, so leaving it unset would
     // make it unrecoverable after the fact (see core/seed.ts).
     const handleGenerateImage = async (seedOverride?: number) => {
+        if (!requireAuth()) return;
         setIsGeneratingImage(true);
         try {
             const entities = collectConnectedEntities(node.data, edges, resolved);
@@ -222,22 +213,21 @@ export function OutputParams({
                 seedOverride ?? (imageParams.seed ? Number(imageParams.seed) : generateSeed());
             const seedStr = String(seed);
             if (imageParams.seed !== seedStr) updateImageParam("seed", seedStr);
-            const dataUrl = await geminiApiClient.generateImageFromRefs(
-                {
-                    prompt,
-                    imageUrls,
-                    model: imageParams.model as string,
-                    aspectRatio: imageParams.aspectRatio as string,
-                    imageSize: imageParams.imageSize as string,
-                    seed,
-                },
+            const dataUrls = await geminiApiClient.generateImageFromRefs(
+                nanoBananaRequestFromSlice(imageParams, { prompt, imageUrls, seed }),
                 showToast,
             );
-            if (!dataUrl) return;
-            const blob = await (await fetch(dataUrl)).blob();
-            const ref = await putGeneratedBlob(blob);
+            if (!dataUrls) return;
+            // Nano Banana can answer one prompt with several images — all of
+            // them join this stage's history under the same snapshot, with the
+            // slider parked on the newest (see appendGenerationHistoryMany).
+            const refs = await Promise.all(
+                dataUrls.map(async (dataUrl) =>
+                    putGeneratedBlob(await (await fetch(dataUrl)).blob()),
+                ),
+            );
             setImageGeneration({
-                ...appendGenerationHistory(imageGeneration, ref, {
+                ...appendGenerationHistoryMany(imageGeneration, refs, {
                     ...imageParams,
                     seed: seedStr,
                     lastComposedPrompt: prompt,
@@ -257,6 +247,7 @@ export function OutputParams({
     };
 
     const handleGenerateVideo = async () => {
+        if (!requireAuth()) return;
         const refImage = imageHist.currentRef;
         if (!refImage) {
             showToast("Сначала выберите или сгенерируйте кадр во вкладке «Картинка»");
@@ -428,23 +419,6 @@ export function OutputParams({
                 </div>
             )}
 
-            {shouldShow("entities", "Сущности") && (
-                <div className={styles.fld}>
-                    <span>Добавить сущность</span>
-                    <div className={styles.entityChips}>
-                        {ENTITY_KIND_OPTIONS.map((opt) => (
-                            <BareButton
-                                key={opt.type}
-                                className={styles.entityChip}
-                                onClick={() => addEntityInput(node.id, opt.type, opt.label)}>
-                                <i className={`ti ${opt.icon}`} />
-                                {opt.label}
-                            </BareButton>
-                        ))}
-                    </div>
-                </div>
-            )}
-
             {(shouldShow("arc", "Угол тренда") || shouldShow("arc", "Форма кривой")) && (
                 <>
                     <EmotionalCurvePreview
@@ -530,7 +504,7 @@ export function OutputParams({
                 <>
                     <Switch
                         label="Составлять промпт через LLM"
-                        value={(params.promptComposition ?? "llm") === "llm"}
+                        value={params.promptComposition === "llm"}
                         onChange={(v) =>
                             updateNodeParam(node.id, "promptComposition", v ? "llm" : "raw")
                         }

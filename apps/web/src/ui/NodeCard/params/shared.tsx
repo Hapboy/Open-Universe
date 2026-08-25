@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import type { Edge } from "@xyflow/react";
-import type { NodeType } from "@hayverse/shared";
 import type { NodeParams, NodeRef, TimelineScene } from "@/types.ts";
 import { usePresetLibraryContext } from "@/store/contexts/PresetLibraryContext.tsx";
 import { Switch } from "@/ui/components/Switch/Switch.tsx";
 import { Textarea } from "@/ui/components/Textarea/Textarea.tsx";
 import { ENTITY_PARAM_SCHEMAS } from "@/schemas/entities/schemas.ts";
+import { paramReaches } from "@/schemas/entities/schemaHelpers.ts";
+import type { EntityPhoto } from "@/schemas/entities/schemaHelpers.ts";
 import styles from "@/styles/shared.module.css";
 
 export interface NodeParamsProps {
@@ -19,11 +20,10 @@ export interface NodeParamsProps {
         patch: Record<string, unknown>,
         opts?: { skipHistory?: boolean },
     ) => void;
-    setNodePhotos: (id: string, photos: string[], coverPhotoIndex: number) => void;
+    setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
     setNodeField: (id: string, patch: Partial<NodeParams>) => void;
     addImageInput: (id: string) => void;
     addTextInput: (id: string) => void;
-    addEntityInput: (id: string, entityType: NodeType, entityLabel: string) => void;
     removePinInput: (id: string, portId: string) => void;
     loadPinterestBoards: (node: NodeRef) => Promise<void>;
     loadPinterestPins: (node: NodeRef, boardId: string) => Promise<void>;
@@ -100,18 +100,18 @@ export function WirableTextField({
     );
 }
 
-// `selectedItem` records which preset a node currently has selected — saving
-// that into the preset's own snapshot would be circular, so it's always
-// excluded. (`_presets`/`photoIdx` used to be stripped here too, for rows
-// saved before presets became a shared library / before FixPresetPhotoIdxKey
-// — both cleaned up by a one-time DB migration 2026-08-08, see
+// What of a node's params a saved preset carries — everything except the keys
+// PARAM_AUDIENCE marks `preset: false` (schemaHelpers.ts), i.e. `selectedItem`
+// (which preset is loaded: circular inside the snapshot) and `presetId` (the
+// snapshot is already stored under it). Unlike the JSON payload, generation
+// config and `coverPhotoIndex` *do* belong here — a preset should reproduce
+// how the entity was set up, cover photo included.
+// (`_presets`/`photoIdx` used to be stripped here too, for rows saved before
+// presets became a shared library / before FixPresetPhotoIdxKey — both cleaned
+// up by a one-time DB migration 2026-08-08, see
 // MoveGenerationBookkeepingToSiblingField/StripLegacyPresetKeys.)
-const BOOKKEEPING_KEYS = ["selectedItem"];
-
 function buildPresetSnapshot(params: Record<string, unknown>) {
-    return Object.fromEntries(
-        Object.entries(params).filter(([k]) => !BOOKKEEPING_KEYS.includes(k)),
-    );
+    return Object.fromEntries(Object.entries(params).filter(([k]) => paramReaches(k, "preset")));
 }
 
 // Manages an entity type's shared preset library (global, one per entity
@@ -173,18 +173,22 @@ export function usePresetDatabase(
     const rawPresets = library[entityType];
     const presets = rawPresets ?? {};
     const db: PresetCardItem[] = Object.entries(presets).map(([id, snap]) => {
-        const photos = snap.photos as string[] | undefined;
+        const photos = snap.photos as EntityPhoto[] | undefined;
         const coverPhotoIndex = (snap.coverPhotoIndex as number | undefined) ?? 0;
         return {
             value: id,
             label: (snap.name as string) || id,
-            photo: photos?.[coverPhotoIndex],
+            photo: photos?.[coverPhotoIndex]?.ref,
         };
     });
     const currentPresetId = params.presetId as string | undefined;
     const storedSnapshot = currentPresetId ? presets[currentPresetId] : undefined;
     const snapshot = buildPresetSnapshot(params);
-    const missingSaveFieldsList = missingSaveFields(entityType, snapshot);
+    // Validated against the node's live params, not the snapshot: the snapshot
+    // deliberately omits identity keys the schema still requires
+    // (`presetId`/`selectedItem`, see PARAM_AUDIENCE), so parsing it would
+    // report them as "not filled in" in the save tooltip.
+    const missingSaveFieldsList = missingSaveFields(entityType, params);
     const hasUnsavedChanges =
         !storedSnapshot || JSON.stringify(snapshot) !== JSON.stringify(storedSnapshot);
 

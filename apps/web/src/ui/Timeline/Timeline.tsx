@@ -7,6 +7,7 @@ import { SceneTrackView } from "@/ui/Timeline/SceneTrackView/SceneTrackView.tsx"
 import { SynapsesCanvas } from "@/ui/Timeline/SynapsesCanvas/SynapsesCanvas.tsx";
 import { SceneArcSettings } from "@/ui/Timeline/SceneArcSettings/SceneArcSettings.tsx";
 import { DurationEditor } from "@/ui/Timeline/DurationEditor/DurationEditor.tsx";
+import { Popover } from "@/ui/components/Popover/Popover.tsx";
 import styles from "@/ui/Timeline/Timeline.module.css";
 
 export function Timeline() {
@@ -48,7 +49,6 @@ export function Timeline() {
     const [volume, setVolume] = useState<number>(80); // 0 to 100
     const [isMuted, setIsMuted] = useState<boolean>(false);
     const [isAutoMontage, setIsAutoMontage] = useState<boolean>(false);
-    const [showVolumeSlider, setShowVolumeSlider] = useState<boolean>(false);
 
     // Camera toggle state — ephemeral per-session UI state, not a node param.
     // Untouched scenes (including newly added ones) default to camera-active.
@@ -95,6 +95,12 @@ export function Timeline() {
 
     // Mute toggle
     const toggleMute = () => setIsMuted(!isMuted);
+    const volumeIconClass =
+        isMuted || volume === 0
+            ? "ti ti-volume-off"
+            : volume > 50
+              ? "ti ti-volume"
+              : "ti ti-volume-2";
 
     // Toggle camera active for parallel scenes
     const toggleCamera = (sceneId: string, e: React.MouseEvent) => {
@@ -262,30 +268,31 @@ export function Timeline() {
                     </button>
                 </div>
 
-                {/* Volume popover adjustment */}
-                <div
-                    className={styles.volumeWrapper}
-                    onMouseEnter={() => setShowVolumeSlider(true)}
-                    onMouseLeave={() => setShowVolumeSlider(false)}>
-                    <button
-                        className={cn(
-                            styles.tbBtn,
-                            (isMuted || volume === 0) && styles.tbBtnActive,
-                        )}
-                        onClick={toggleMute}
-                        title={isMuted ? "Включить звук" : "Выключить звук"}>
-                        <i
+                {/* Volume popover — click to open, matching every other Popover */}
+                <Popover
+                    side="top"
+                    align="center"
+                    gap={14}
+                    arrow
+                    trigger={({ toggle }) => (
+                        <button
                             className={cn(
-                                isMuted || volume === 0
-                                    ? "ti ti-volume-off"
-                                    : volume > 50
-                                      ? "ti ti-volume"
-                                      : "ti ti-volume-2",
+                                styles.tbBtn,
+                                (isMuted || volume === 0) && styles.tbBtnActive,
                             )}
-                        />
-                    </button>
-                    {showVolumeSlider && (
+                            onClick={toggle}
+                            title="Громкость">
+                            <i className={volumeIconClass} />
+                        </button>
+                    )}>
+                    {() => (
                         <div className={styles.volumePopover}>
+                            <button
+                                className={styles.tbBtn}
+                                onClick={toggleMute}
+                                title={isMuted ? "Включить звук" : "Выключить звук"}>
+                                <i className={volumeIconClass} />
+                            </button>
                             <input
                                 type="range"
                                 min="0"
@@ -299,7 +306,7 @@ export function Timeline() {
                             />
                         </div>
                     )}
-                </div>
+                </Popover>
 
                 <button
                     className={cn(styles.tbBtn, collapseEmptySpace && styles.tbBtnActive)}

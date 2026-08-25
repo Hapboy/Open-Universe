@@ -48,7 +48,6 @@ export function NodeParamsPanel({
     setNodeField,
     addImageInput,
     addTextInput,
-    addEntityInput,
     loadPinterestBoards,
     loadPinterestPins,
     executeGraph,
@@ -122,7 +121,6 @@ export function NodeParamsPanel({
                     updateNodeParams={updateNodeParams}
                     executeGraph={executeGraph}
                     setNodeField={setNodeField}
-                    addEntityInput={addEntityInput}
                 />
             )}
             {nodeType === "text_prompt" && (
@@ -204,6 +202,7 @@ export function NodeParamsPanel({
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
                     setNodePhotos={setNodePhotos}
+                    setNodeField={setNodeField}
                 />
             )}
             {nodeType === "location" && (

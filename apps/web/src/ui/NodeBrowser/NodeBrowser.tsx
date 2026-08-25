@@ -4,6 +4,7 @@ import { NODE_TEMPLATES, NODE_BROWSER_GROUPS } from "@/data/nodes.ts";
 import type { NodeType } from "@hayverse/shared";
 import { CategoryTagGroup } from "@/ui/components/CategoryTagGroup/CategoryTagGroup.tsx";
 import { SearchField } from "@/ui/components/SearchField/SearchField.tsx";
+import { useClickOutside } from "@/ui/hooks/useClickOutside.ts";
 import styles from "@/ui/NodeBrowser/NodeBrowser.module.css";
 
 const POPUP_WIDTH = 300;
@@ -55,10 +56,13 @@ export function NodeBrowser({
         setHighlight(0);
     };
 
+    // Closes on click, React Flow canvas drag-pan, or wheel-zoom outside the
+    // popup — same capture-phase dismissal as the shared Popover component
+    // (see useClickOutside for why capture phase specifically).
+    const outsideRefs = useMemo(() => [ref], [ref]);
+    useClickOutside(outsideRefs, onClose);
+
     useEffect(() => {
-        const onPointerDown = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-        };
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
                 onClose();
@@ -73,12 +77,8 @@ export function NodeBrowser({
                 if (picked) onSelect(picked.type);
             }
         };
-        window.addEventListener("mousedown", onPointerDown);
         window.addEventListener("keydown", onKeyDown);
-        return () => {
-            window.removeEventListener("mousedown", onPointerDown);
-            window.removeEventListener("keydown", onKeyDown);
-        };
+        return () => window.removeEventListener("keydown", onKeyDown);
     }, [items, highlight, onSelect, onClose]);
 
     const left = Math.min(screenPos.x, window.innerWidth - POPUP_WIDTH - 12);

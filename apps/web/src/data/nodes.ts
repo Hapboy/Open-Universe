@@ -1,7 +1,7 @@
 import { DEFAULT_PINS } from "@/data/presets.ts";
 import type { Port } from "@/types.ts";
 import { PORT_TYPES, type NodeType } from "@hayverse/shared";
-import { geminiNanoBananaDefaults } from "@/schemas/gemini/geminiNanoBanana.schema.ts";
+import { nanoBananaSliceDefaults } from "@/schemas/gemini/geminiNanoBanana.schema.ts";
 import { geminiVeoDefaults } from "@/schemas/gemini/geminiVeo.schema.ts";
 
 // Node types that call a paid AI generation service (GeminiService /
@@ -40,6 +40,16 @@ export const RICH_ENTITY_NODE_TYPES: Set<NodeType> = new Set([
     "location",
     "mise_en_scene",
 ]);
+
+// Entity node types that can generate their own reference photo (Nano Banana,
+// prompted from the entity itself — see EntityParams.tsx's CharacterParams and
+// core/scenePrompt.ts's entityFromNode). They keep a generation history in
+// node.data.generation like the standalone Gemini nodes, but drive it from
+// their own params panel rather than a run button, and their variants only
+// enter `params.photos` when the user accepts one. Character-only for now; the
+// pieces (photoGen slice, visual keys, accept-into-photos) are per-type, so
+// adding another means registering it here plus in ENTITY_VISUAL_KEYS.
+export const ENTITY_GENERATION_NODE_TYPES: Set<NodeType> = new Set(["character"]);
 
 // All entity node types with a preset (`PresetsField`) picker — the
 // shared source of truth for both the "selectedItem passthrough" fallback
@@ -222,9 +232,12 @@ export const NODE_TEMPLATES = {
             activeOutput: "video",
             // "llm" runs a text-model pass over the connected entities' JSON
             // to write a natural-language prompt; "raw" sends their
-            // serialized JSON straight through as the prompt — a dev toggle
-            // to compare both, see core/scenePrompt.ts.
-            promptComposition: "llm",
+            // serialized JSON straight through as the prompt — see
+            // core/scenePrompt.ts. Off ("raw") by default everywhere, so the
+            // toggle starts unchecked and no extra model call happens until
+            // it's asked for; the character node's own switch defaults the
+            // same way (character.schema.ts).
+            promptComposition: "raw",
             // Free-text, user-authored addition to the composed prompt — same
             // role as character/location's additionalDescription (see
             // EntityParams.tsx), edited via the same promptPanelOpen side
@@ -241,13 +254,10 @@ export const NODE_TEMPLATES = {
             // node.data.generation.image/.video instead — absent until this
             // node's first generation, same as every other node's
             // data.generation (see types.ts's doc comment).
-            image: {
-                model: geminiNanoBananaDefaults.model,
-                aspectRatio: geminiNanoBananaDefaults.aspectRatio,
-                imageSize: geminiNanoBananaDefaults.imageSize,
-                seed: geminiNanoBananaDefaults.seed,
-                personGeneration: geminiNanoBananaDefaults.personGeneration,
-            },
+            // Spread wholesale from the shared slice defaults rather than
+            // re-listing fields: a new Nano Banana param then reaches this
+            // stage (and the character node's photoGen) for free.
+            image: { ...nanoBananaSliceDefaults },
             video: {
                 model: geminiVeoDefaults.model,
                 aspectRatio: geminiVeoDefaults.aspectRatio,
@@ -410,6 +420,14 @@ export const NODE_TEMPLATES = {
         ],
     },
 } satisfies Record<NodeType, NodeTemplate>;
+
+// Every entity kind output_scene can take an input pin from — one option per
+// addEntityInput call. Order follows ENTITY_NODE_TYPES' own insertion order.
+export const ENTITY_KIND_OPTIONS = Array.from(ENTITY_NODE_TYPES).map((type) => ({
+    type,
+    label: NODE_TEMPLATES[type].label,
+    icon: NODE_TEMPLATES[type].icon,
+}));
 
 // Ordered list for NodeBrowser display
 export const NODE_BROWSER_GROUPS: { label: string; types: NodeType[] }[] = [

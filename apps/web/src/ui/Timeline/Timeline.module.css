@@ -163,28 +163,13 @@
     background: var(--color-border);
 }
 
-/* Volume control popover */
-.volumeWrapper {
-    position: relative;
-    display: inline-block;
-}
-
+/* Volume control popover content — positioning/background/border/shadow
+   come from the shared Popover's own panel, this just lays out its content */
 .volumePopover {
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--color-bg-card);
-    border: 1px solid var(--color-border);
-    padding: 6px 10px;
-    border-radius: var(--radius-sm);
-    margin-bottom: 6px;
-    z-index: 110;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 90px;
+    gap: 8px;
+    width: 140px;
 }
 
 .volumeInput {

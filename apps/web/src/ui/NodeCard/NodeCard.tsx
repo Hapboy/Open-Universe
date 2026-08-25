@@ -1,9 +1,12 @@
 import { memo, useEffect, useState } from "react";
 import cn from "classnames";
 import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/react";
+import type { NodeType } from "@hayverse/shared";
 import type { GenerationHistoryState, NodeParams, Port, PortType } from "@/types.ts";
 import {
     AI_MODEL_NODE_TYPES,
+    ENTITY_GENERATION_NODE_TYPES,
+    ENTITY_KIND_OPTIONS,
     HISTORY_NODE_TYPES,
     NODE_TEMPLATES,
     RICH_ENTITY_NODE_TYPES,
@@ -11,14 +14,18 @@ import {
 import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
 import { useNarrativeContext } from "@/store/contexts/NarrativeContext.tsx";
 import { useGenerationHistory } from "@/ui/hooks/useGenerationHistory.ts";
-import { collectConnectedEntities, composeRawPrompt } from "@/core/scenePrompt.ts";
+import { useRequireAuth } from "@/ui/hooks/useRequireAuth.ts";
+import { collectConnectedEntities, composeRawPrompt, entityFromNode } from "@/core/scenePrompt.ts";
+import { currentHistoryRef } from "@/core/generationHistory.ts";
 import { CircleLoader } from "@/ui/components/CircleLoader/CircleLoader.tsx";
 import { TextAreaField } from "@/ui/components/TextAreaField/TextAreaField.tsx";
 import { MediaSlider } from "@/ui/NodeCard/MediaSlider/MediaSlider.tsx";
 import { HistoryNav } from "@/ui/NodeCard/HistoryNav/HistoryNav.tsx";
-import { filledEntityParams } from "@/schemas/entities/schemas.ts";
+import { entityJsonPayload } from "@/schemas/entities/schemas.ts";
 import { NodeParamsPanel } from "@/ui/NodeCard/params/NodeParamsPanel.tsx";
 import { NodeMenu } from "@/ui/NodeCard/NodeMenu/NodeMenu.tsx";
+import { Popover } from "@/ui/components/Popover/Popover.tsx";
+import { PopoverList } from "@/ui/components/Popover/PopoverList.tsx";
 import styles from "@/ui/NodeCard/NodeCard.module.css";
 
 // entityKind takes priority over the plain-type colors below — it's set on
@@ -69,6 +76,7 @@ export const NodeCard = memo(function NodeCard({
         selectNode,
     } = useGraphContext();
     const { getSceneNarrativeSettings } = useNarrativeContext();
+    const requireAuth = useRequireAuth();
 
     const [editingLabel, setEditingLabel] = useState(false);
     const [hoveredInputId, setHoveredInputId] = useState<string | null>(null);
@@ -160,7 +168,7 @@ export const NodeCard = memo(function NodeCard({
                     id,
                     nodeType: data.nodeType,
                     label: data.label,
-                    ...filledEntityParams(data.nodeType, data.params),
+                    ...entityJsonPayload(data.nodeType, data.params),
                 },
                 null,
                 2,
@@ -176,6 +184,27 @@ export const NodeCard = memo(function NodeCard({
     // (composeRawPrompt, core/scenePrompt.ts) — recomputed live from
     // whatever's currently wired, same "pure derivation" spirit as the JSON
     // preview above, so it doesn't wait for a Generate click either.
+    // An entity node that can generate its own photo (character today) shows
+    // the prompt that generation uses, same two modes as output_scene below:
+    // "raw" is pure and recomputed live from current params, while "llm" can
+    // only show what the last Generate click actually sent — captured in that
+    // variant's own params snapshot (see CharacterParams' appendMany), so
+    // scrubbing the variant slider also scrubs the prompt.
+    const generatesOwnPhoto = ENTITY_GENERATION_NODE_TYPES.has(data.nodeType);
+    const entityGeneration = generatesOwnPhoto
+        ? (data.generation as GenerationHistoryState | undefined)
+        : undefined;
+    const entityPrompt = !generatesOwnPhoto
+        ? undefined
+        : data.params.promptComposition === "raw"
+          ? composeRawPrompt(
+                [entityFromNode(data)],
+                undefined,
+                data.params.additionalDescription as string | undefined,
+            )
+          : (entityGeneration?.paramsHistory?.[currentHistoryRef(entityGeneration) ?? ""]
+                ?.lastComposedPrompt as string | undefined);
+
     const outputSceneStage = data.outputSceneStage ?? "image";
     const outputScenePrompt =
         data.nodeType === "output_scene"
@@ -233,6 +262,7 @@ export const NodeCard = memo(function NodeCard({
                         title="Запустить генерацию"
                         onClick={(e) => {
                             e.stopPropagation();
+                            if (!requireAuth()) return;
                             void runNode(id);
                         }}>
                         {isRunning ? (
@@ -339,6 +369,50 @@ export const NodeCard = memo(function NodeCard({
                             </div>
                         );
                     })}
+                    {data.nodeType === "output_scene" && (
+                        <div className={styles.pinRow}>
+                            <Popover
+                                side="left"
+                                align="center"
+                                gap={20}
+                                arrow
+                                trigger={({ toggle }) => (
+                                    <button
+                                        className={cn(
+                                            "react-flow__handle react-flow__handle-left nodrag",
+                                            styles.handle,
+                                            styles.handleLeft,
+                                            styles.addEntityPin,
+                                        )}
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggle();
+                                        }}
+                                        title="Добавить сущность"
+                                    />
+                                )}>
+                                {(close) => (
+                                    <PopoverList
+                                        items={ENTITY_KIND_OPTIONS.map((opt) => ({
+                                            id: opt.type,
+                                            label: opt.label,
+                                            icon: opt.icon.replace(/^ti-/, ""),
+                                        }))}
+                                        value={null}
+                                        onChange={(type) =>
+                                            addEntityInput(
+                                                id,
+                                                type as NodeType,
+                                                NODE_TEMPLATES[type as NodeType].label,
+                                            )
+                                        }
+                                        onRequestClose={close}
+                                    />
+                                )}
+                            </Popover>
+                        </div>
+                    )}
                 </div>
 
                 <div className={styles.paramsCol}>
@@ -403,7 +477,6 @@ export const NodeCard = memo(function NodeCard({
                                 setNodeField={setNodeField}
                                 addImageInput={addImageInput}
                                 addTextInput={addTextInput}
-                                addEntityInput={addEntityInput}
                                 removePinInput={removePinInput}
                                 loadPinterestBoards={loadPinterestBoards}
                                 loadPinterestPins={loadPinterestPins}
@@ -414,12 +487,22 @@ export const NodeCard = memo(function NodeCard({
                             <div className={styles.promptCol}>
                                 <TextAreaField
                                     label="Дополнительное описание"
-                                    rows={12}
+                                    rows={generatesOwnPhoto ? 4 : 12}
                                     value={(data.params.additionalDescription as string) ?? ""}
                                     onChange={(v) =>
                                         updateNodeParam(id, "additionalDescription", v)
                                     }
                                 />
+                                {generatesOwnPhoto && (
+                                    <TextAreaField
+                                        label="Промпт генерации фото"
+                                        rows={12}
+                                        readOnly
+                                        value={
+                                            entityPrompt || "Промпт появится здесь после генерации"
+                                        }
+                                    />
+                                )}
                             </div>
                         )}
                         {data.nodeType === "output_scene" && data.promptPanelOpen && (
