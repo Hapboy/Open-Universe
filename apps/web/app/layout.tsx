@@ -3,6 +3,10 @@ import type { Metadata, Viewport } from "next";
 import "@tabler/icons-webfont/dist/tabler-icons.min.css";
 import "../src/styles/global.css";
 
+// Nothing is cached by default; opt individual fetches back in with an
+// explicit `cache` option once caching is actually needed.
+export const fetchCache = "default-no-store";
+
 export const metadata: Metadata = {
     title: "Open Universe — нодовая студия",
     icons: {
