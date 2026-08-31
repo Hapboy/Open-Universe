@@ -1,29 +1,33 @@
 import { useState } from "react";
 import { Input } from "@/ui/components/Input/Input.tsx";
 import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
+import { Switch } from "@/ui/components/Switch/Switch.tsx";
 import sharedStyles from "@/styles/shared.module.css";
 
 // The "Сид (seed)" field shared by every Gemini provider's params — plain
-// text input plus two inline icon actions: copy (always, whatever's
-// currently in the field) and reroll (only where seed is actually
-// functional — Nano Banana/Lyria; Imagen/Veo's field stays disabled and
-// gets no `onReroll`, see core/seed.ts's SEED_CAPABLE_NODE_TYPES). Reroll
-// bumps by a fixed +10000 and re-runs generation in one click (see the
-// title text below and each caller's handleRerollSeed) — see the callers
-// for what "re-run" means in each context (a standalone node's runNode vs
-// output_scene's own handleGenerateImage).
+// text input plus a copy action (always, whatever's currently in the
+// field) and, where seed is actually functional (Nano Banana/Lyria;
+// Imagen/Veo's field stays disabled, see core/seed.ts's
+// SEED_CAPABLE_NODE_TYPES), a "Случайный" toggle. The reroll button itself
+// now lives on the generation-history slider next to delete (NodeCard.tsx/
+// UtilParams.tsx/EntityParams.tsx), not here — this field only controls
+// whether plain Generate keeps reusing the stored seed (off) or mints a
+// fresh one every time (on, the default — see core/seed.ts's
+// resolvedSeedPatch).
 export function SeedField({
     value,
     onChange,
     onBlur,
-    onReroll,
+    randomize,
+    onRandomizeChange,
     disabled,
     title,
 }: {
     value: string;
     onChange?: (value: string) => void;
     onBlur?: (value: string) => void;
-    onReroll?: () => void;
+    randomize?: boolean;
+    onRandomizeChange?: (value: boolean) => void;
     disabled?: boolean;
     title?: string;
 }) {
@@ -56,12 +60,13 @@ export function SeedField({
                     disabled={!value}
                     title="Скопировать сид"
                 />
-                {onReroll && (
-                    <IconButton
-                        icon="dice-5"
-                        onClick={onReroll}
+                {onRandomizeChange && (
+                    <Switch
+                        label="Случайный"
+                        value={randomize ?? true}
+                        onChange={onRandomizeChange}
                         disabled={disabled}
-                        title="Немного изменить (сид +10000) и перегенерировать"
+                        title="При генерации всегда подбирать новый сид, даже если он уже задан"
                     />
                 )}
             </div>

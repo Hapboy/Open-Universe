@@ -12,6 +12,8 @@ export const geminiLyriaParamsSchema = z.object({
     prompt: z.string(),
     model: z.enum(LYRIA_MODEL_IDS),
     seed: z.string(),
+    // See geminiNanoBanana.schema.ts's randomizeSeed doc comment.
+    randomizeSeed: z.boolean(),
 });
 
 export type GeminiLyriaFormValues = z.infer<typeof geminiLyriaParamsSchema>;
@@ -20,4 +22,5 @@ export const geminiLyriaDefaults: GeminiLyriaFormValues = {
     prompt: "",
     model: LYRIA_MODELS[0].id,
     seed: "",
+    randomizeSeed: true,
 };

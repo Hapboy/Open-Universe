@@ -22,11 +22,23 @@ export function generateSeed(): number {
 // shape, request-only). Leaving it unset would make the actual seed
 // unrecoverable after the fact, so every generation resolves and persists a
 // concrete seed instead — the field always shows the real value that
-// produced the current result, and a "reroll" (seed + 10000, see SeedField)
-// always has a real previous value to bump from.
+// produced the current result, and a "reroll" (seed + 10000, see MediaSlider/
+// HistoryNav's onReroll) always has a real previous value to bump from.
+//
+// `randomizeSeed` (SeedField's "Случайный" toggle, default true/missing)
+// controls whether a *plain* generate (no explicit override) reuses the
+// stored seed or always mints a fresh one — before reroll existed, the seed
+// was always server-picked, so plain Generate produced a different photo
+// every click; once a concrete seed started getting persisted, that
+// stopped being true unless the toggle is on. Explicit overrides (reroll's
+// own seed+10000) are merged in by the caller after this patch, so they
+// always win regardless of the toggle — see withNodeOverrides below.
 function resolvedSeedPatch(params: Record<string, unknown>): Record<string, unknown> | null {
     const current = params.seed;
-    if (current !== "" && current != null) return null;
+    if (params.randomizeSeed === false) {
+        if (current !== "" && current != null) return null;
+        return { seed: String(generateSeed()) };
+    }
     return { seed: String(generateSeed()) };
 }
 

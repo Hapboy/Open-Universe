@@ -12,13 +12,17 @@ export function HistoryNav({
     count,
     onIndexChange,
     onDelete,
+    onReroll,
 }: {
     index: number;
     count: number;
     onIndexChange: (i: number) => void;
     onDelete?: () => void;
+    // Same "regenerate a close variant" affordance as MediaSlider's onReroll —
+    // only Lyria reaches this component with one (audio kind).
+    onReroll?: () => void;
 }) {
-    if (count <= 1 && !onDelete) return null;
+    if (count <= 1 && !onDelete && !onReroll) return null;
     return (
         <div className={styles.bar}>
             {count > 1 && (
@@ -47,6 +51,18 @@ export function HistoryNav({
                 </>
             )}
             <div className={sharedStyles.spacer} />
+            {onReroll && (
+                <button
+                    className={sharedStyles.iconBtn}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onReroll();
+                    }}
+                    title="Немного изменить и перегенерировать">
+                    <i className="ti ti-refresh" />
+                </button>
+            )}
             {onDelete && (
                 <button
                     className={cn(sharedStyles.iconBtn, styles.del)}

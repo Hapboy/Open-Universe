@@ -204,8 +204,14 @@ export function OutputParams({
             );
             setImageGeneration({ lastComposedPrompt: prompt });
             const imageUrls = collectReferenceImageUrls(entities);
+            // "Случайный" (imageParams.randomizeSeed, default true/missing):
+            // off means reuse the stored seed, matching resolvedSeedPatch's
+            // logic in core/seed.ts for the standalone node.
             const seed =
-                seedOverride ?? (imageParams.seed ? Number(imageParams.seed) : generateSeed());
+                seedOverride ??
+                (imageParams.randomizeSeed === false && imageParams.seed
+                    ? Number(imageParams.seed)
+                    : generateSeed());
             const seedStr = String(seed);
             if (imageParams.seed !== seedStr) updateImageParam("seed", seedStr);
             const dataUrls = await geminiApiClient.generateImageFromRefs(
@@ -531,7 +537,6 @@ export function OutputParams({
                                     <NanoBananaModelFields
                                         paramsSlice={imageParams}
                                         onFieldChange={updateImageParam}
-                                        onReroll={handleRerollImageSeed}
                                     />
                                     <div className={styles.generateRow}>
                                         <IconButton
@@ -555,6 +560,7 @@ export function OutputParams({
                                                 index={imageHist.idx}
                                                 onIndexChange={imageHist.onIndexChange}
                                                 onDelete={imageHist.onDelete}
+                                                onReroll={handleRerollImageSeed}
                                             />
                                         </div>
                                     )}

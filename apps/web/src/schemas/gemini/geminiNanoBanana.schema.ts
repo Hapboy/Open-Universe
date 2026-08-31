@@ -15,6 +15,11 @@ export const geminiNanoBananaParamsSchema = z.object({
     aspectRatio: z.string(),
     imageSize: z.string(),
     seed: z.string(),
+    // Whether plain Generate mints a fresh seed every click (true, the
+    // default — restores the pre-reroll "always different" behavior) or
+    // keeps reusing whatever's stored (false) — see core/seed.ts's
+    // resolvedSeedPatch. Reroll itself always bumps +10000 regardless.
+    randomizeSeed: z.boolean(),
     // Vertex/Enterprise-only — see comment on GeminiNanoBananaParams in
     // GeminiParams.tsx.
     personGeneration: z.string(),
@@ -28,6 +33,7 @@ export const geminiNanoBananaDefaults: GeminiNanoBananaFormValues = {
     aspectRatio: "16:9",
     imageSize: "1K",
     seed: "",
+    randomizeSeed: true,
     personGeneration: "ALLOW_ADULT",
 };
 

@@ -13,11 +13,17 @@ export function MediaSlider({
     index = 0,
     onIndexChange,
     onDelete,
+    onReroll,
 }: {
     items: MediaItem[];
     index?: number;
     onIndexChange?: (i: number) => void;
     onDelete?: (i: number) => void;
+    // Regenerate a close variant of the currently-shown item — seed+10000 for
+    // Nano Banana/Lyria, a guidanceScale nudge for Imagen (see NodeCard.tsx's
+    // handleReroll). Omitted entirely for node types that aren't reroll-capable
+    // (Veo), same conditional-render shape as onDelete below.
+    onReroll?: () => void;
 }) {
     const [ratios, setRatios] = useState<Record<string, number>>({});
     const [fullscreen, setFullscreen] = useState(false);
@@ -90,6 +96,18 @@ export function MediaSlider({
                         {activeIndex + 1}/{items.length}
                     </span>
                 </>
+            )}
+            {onReroll && (
+                <button
+                    className={styles.reroll}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onReroll();
+                    }}
+                    title="Немного изменить и перегенерировать">
+                    <i className="ti ti-refresh" />
+                </button>
             )}
             {onDelete && (
                 <button

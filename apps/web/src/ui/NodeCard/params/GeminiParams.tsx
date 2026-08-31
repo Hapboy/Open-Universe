@@ -4,8 +4,6 @@ import { edgeInput } from "@/core/graph.ts";
 import type { GenerationHistoryState } from "@/types.ts";
 import { geminiApiClient } from "@/core/api/index.ts";
 import type { GeminiModel } from "@/core/api/gemini/dto.ts";
-import { generateSeed } from "@/core/seed.ts";
-import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
 import { WirableTextField, type EEP } from "@/ui/NodeCard/params/shared.tsx";
 import { useNodeParamsForm } from "@/ui/NodeCard/params/useNodeParamsForm.ts";
 import { geminiTextParamsSchema } from "@/schemas/gemini/geminiText.schema.ts";
@@ -671,15 +669,10 @@ export function NanoBananaModelFields({
     paramsSlice,
     onFieldChange,
     modelRowAction,
-    onReroll,
 }: {
     paramsSlice: Record<string, unknown>;
     onFieldChange: (key: string, value: unknown) => void;
     modelRowAction?: React.ReactNode;
-    // Bumps seed by 10000 and re-runs generation — what "re-run" means
-    // differs per caller (a standalone node's runNode vs output_scene's own
-    // handleGenerateImage), so it's supplied rather than computed here.
-    onReroll?: () => void;
 }) {
     const RATIOS = ["16:9", "1:1", "9:16", "3:2", "2:3", "4:3", "21:9"];
     const SIZES = ["1K", "2K", "4K"];
@@ -750,7 +743,8 @@ export function NanoBananaModelFields({
                             field.onBlur();
                             if (isFieldValid("seed", v)) onFieldChange("seed", v);
                         }}
-                        onReroll={onReroll}
+                        randomize={paramsSlice.randomizeSeed !== false}
+                        onRandomizeChange={(v) => onFieldChange("randomizeSeed", v)}
                     />
                 )}
             />
@@ -786,13 +780,6 @@ export function GeminiNanoBananaParams({
     const imageCount = node.data.inputs.length - 1;
     const atLimit = imageCount >= MAX_NANO_BANANA_REFERENCE_IMAGES;
     const { control } = useNodeParamsForm(geminiNanoBananaParamsSchema, params);
-    const { runNode } = useGraphContext();
-    const handleRerollSeed = () => {
-        const current = params.seed ? Number(params.seed) : undefined;
-        const next =
-            current !== undefined && !Number.isNaN(current) ? current + 10000 : generateSeed();
-        void runNode(node.id, { seed: String(next) });
-    };
     return (
         <>
             <Controller
@@ -819,7 +806,6 @@ export function GeminiNanoBananaParams({
             <NanoBananaModelFields
                 paramsSlice={params}
                 onFieldChange={(key, value) => updateNodeParam(node.id, key, value)}
-                onReroll={handleRerollSeed}
                 modelRowAction={
                     <IconButton
                         icon="plus"
@@ -840,13 +826,6 @@ export function GeminiNanoBananaParams({
 export function GeminiLyriaParams({ node, params, edges, resolved, updateNodeParam }: EEP) {
     const prompt = edgeInput(node.data, edges, resolved, 0);
     const { control, isFieldValid } = useNodeParamsForm(geminiLyriaParamsSchema, params);
-    const { runNode } = useGraphContext();
-    const handleRerollSeed = () => {
-        const current = params.seed ? Number(params.seed) : undefined;
-        const next =
-            current !== undefined && !Number.isNaN(current) ? current + 10000 : generateSeed();
-        void runNode(node.id, { seed: String(next) });
-    };
     return (
         <>
             <Controller
@@ -892,11 +871,12 @@ export function GeminiLyriaParams({ node, params, edges, resolved, updateNodePar
                     <SeedField
                         value={field.value}
                         onChange={field.onChange}
-                        onReroll={handleRerollSeed}
                         onBlur={(v) => {
                             field.onBlur();
                             if (isFieldValid("seed", v)) updateNodeParam(node.id, "seed", v);
                         }}
+                        randomize={params.randomizeSeed !== false}
+                        onRandomizeChange={(v) => updateNodeParam(node.id, "randomizeSeed", v)}
                     />
                 )}
             />

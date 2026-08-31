@@ -173,7 +173,14 @@ export function CharacterParams({
             params.additionalDescription,
             "entity",
         );
-        const seed = seedOverride ?? (photoGen.seed ? Number(photoGen.seed) : generateSeed());
+        // "Случайный" (photoGen.randomizeSeed, default true/missing): off
+        // means reuse the stored seed, matching resolvedSeedPatch's logic in
+        // core/seed.ts for the standalone node.
+        const seed =
+            seedOverride ??
+            (photoGen.randomizeSeed === false && photoGen.seed
+                ? Number(photoGen.seed)
+                : generateSeed());
         const seedStr = String(seed);
         if (photoGen.seed !== seedStr) updatePhotoGen("seed", seedStr);
         const refs = await generate((toast) =>
@@ -308,11 +315,7 @@ export function CharacterParams({
                     />
 
                     <hr className={styles.divider} />
-                    <NanoBananaModelFields
-                        paramsSlice={photoGen}
-                        onFieldChange={updatePhotoGen}
-                        onReroll={handleRerollPhotoSeed}
-                    />
+                    <NanoBananaModelFields paramsSlice={photoGen} onFieldChange={updatePhotoGen} />
                     <div className={styles.generateRow}>
                         <IconButton
                             icon="wand"
@@ -346,6 +349,7 @@ export function CharacterParams({
                             index={photoHist.idx}
                             onIndexChange={photoHist.onIndexChange}
                             onDelete={photoHist.onDelete}
+                            onReroll={handleRerollPhotoSeed}
                         />
                     )}
                 </>

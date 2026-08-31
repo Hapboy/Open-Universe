@@ -17,6 +17,7 @@ import { useGenerationHistory } from "@/ui/hooks/useGenerationHistory.ts";
 import { useRequireAuth } from "@/ui/hooks/useRequireAuth.ts";
 import { collectConnectedEntities, composeRawPrompt, entityFromNode } from "@/core/scenePrompt.ts";
 import { currentHistoryRef } from "@/core/generationHistory.ts";
+import { generateSeed } from "@/core/seed.ts";
 import { CircleLoader } from "@/ui/components/CircleLoader/CircleLoader.tsx";
 import { TextAreaField } from "@/ui/components/TextAreaField/TextAreaField.tsx";
 import { MediaSlider } from "@/ui/NodeCard/MediaSlider/MediaSlider.tsx";
@@ -46,6 +47,14 @@ function portColor(port: Port): string {
 function portTypeLabel(type: PortType): string {
     return type;
 }
+
+// Imagen's guidanceScale has no documented range on the Gemini Developer API
+// (a Google forum thread never got a straight answer, and testing showed no
+// clear visual effect) — these are placeholder numbers, not a sourced
+// default/step, picked only so the Imagen reroll button does something
+// deterministic. Easy to retune in one place once real behavior is known.
+const GUIDANCE_BASE = 7;
+const GUIDANCE_NUDGE = 1;
 
 export const NodeCard = memo(function NodeCard({
     id,
@@ -155,6 +164,38 @@ export const NodeCard = memo(function NodeCard({
         : liveOutput
           ? [liveOutput]
           : [];
+    // Regenerate a close variant of whichever slide the slider is currently
+    // parked on — seed+10000 for Nano Banana/Lyria (the only two providers
+    // that actually forward seed, see core/seed.ts's SEED_CAPABLE_NODE_TYPES),
+    // a guidanceScale nudge for Imagen (the only provider with a real,
+    // documented-as-wired guidance param — see gemini.service.ts). No default
+    // value is ever written for guidanceScale outside of this handler: a
+    // plain run passes no overrides, so withNodeOverrides never touches it —
+    // it only ever appears in a request because reroll was clicked.
+    // Undefined (no button rendered) for gemini_veo/text/vision, which are
+    // neither seed- nor guidance-capable.
+    const handleReroll =
+        data.nodeType === "gemini_nanobanana" || data.nodeType === "gemini_lyria"
+            ? () => {
+                  const current = data.params.seed ? Number(data.params.seed) : undefined;
+                  const next =
+                      current !== undefined && !Number.isNaN(current)
+                          ? current + 10000
+                          : generateSeed();
+                  void runNode(id, { seed: String(next) });
+              }
+            : data.nodeType === "gemini_imagen"
+              ? () => {
+                    const current = data.params.guidanceScale
+                        ? Number(data.params.guidanceScale)
+                        : undefined;
+                    const next =
+                        current !== undefined && !Number.isNaN(current)
+                            ? current + GUIDANCE_NUDGE
+                            : GUIDANCE_BASE;
+                    void runNode(id, { guidanceScale: String(next) });
+                }
+              : undefined;
     // Which node types offer the "show JSON" menu toggle: rich entities show
     // their own params (computed inline below, for instant live-typing
     // feedback). output_scene no longer has one — its own "inspect internal
@@ -423,6 +464,7 @@ export const NodeCard = memo(function NodeCard({
                                 index={generatedIdx}
                                 onIndexChange={onHistoryIndexChange}
                                 onDelete={onHistoryDelete}
+                                onReroll={handleReroll}
                             />
                         )}
 
@@ -433,6 +475,7 @@ export const NodeCard = memo(function NodeCard({
                                 count={generatedValues.length}
                                 onIndexChange={onHistoryIndexChange}
                                 onDelete={() => onHistoryDelete(generatedIdx)}
+                                onReroll={handleReroll}
                             />
                             <audio
                                 src={generatedValues[generatedIdx]}
