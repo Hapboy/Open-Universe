@@ -132,28 +132,39 @@ export function MediaLibraryModalShell({
 
 // Trigger button + portal-rendered library, single-pick-per-open: clicking a
 // card calls onPick and closes immediately (matches PresetsField's
-// trigger+portal shape). Callers needing multiple photos (PhotoGallerySection)
-// just re-open the picker; there's no multi-checkbox grid mode.
+// trigger+portal shape). Callers needing multiple photos (PhotoPreview) just
+// re-open the picker; there's no multi-checkbox grid mode.
 export function MediaPickerButton({
     onPick,
     disabled,
     title = "Выбрать из медиатеки",
+    trigger,
 }: {
     onPick: (ref: string, asset: MediaAsset) => void;
     disabled?: boolean;
     title?: string;
+    // Same render-prop shape as Popover's `trigger` — lets MediaSlider supply
+    // its own overlay-styled button instead of the default IconButton, while
+    // the logged-out guard and modal plumbing stay in one place.
+    trigger?: (props: { open: () => void; disabled: boolean; title: string }) => React.ReactNode;
 }) {
     const [open, setOpen] = useState(false);
     const { currentUser } = useUserContext();
+    const isDisabled = !!disabled || !currentUser;
+    const resolvedTitle = !currentUser ? "Войдите, чтобы открыть медиатеку" : title;
 
     return (
         <>
-            <IconButton
-                icon="photo-plus"
-                onClick={() => setOpen(true)}
-                disabled={disabled || !currentUser}
-                title={!currentUser ? "Войдите, чтобы открыть медиатеку" : title}
-            />
+            {trigger ? (
+                trigger({ open: () => setOpen(true), disabled: isDisabled, title: resolvedTitle })
+            ) : (
+                <IconButton
+                    icon="photo-plus"
+                    onClick={() => setOpen(true)}
+                    disabled={isDisabled}
+                    title={resolvedTitle}
+                />
+            )}
             {open &&
                 createPortal(
                     <MediaLibraryModalShell

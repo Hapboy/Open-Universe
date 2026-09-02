@@ -26,21 +26,16 @@
     composes: row2 from "../../../styles/shared.module.css";
 }
 
+.mediaBlock {
+    composes: mediaBlock from "../../../styles/shared.module.css";
+}
+
 .divider {
     composes: divider from "../../../styles/shared.module.css";
 }
 
 .hint {
     composes: hint from "../../../styles/shared.module.css";
-}
-
-.generateRow {
-    composes: presetRow from "../../../styles/shared.module.css";
-    margin-bottom: 10px;
-}
-
-.previewWrap {
-    margin-bottom: 10px;
 }
 
 /* Mirrors CategoryTagGroup.module.css's chip button — not composed

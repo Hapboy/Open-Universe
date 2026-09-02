@@ -1,12 +1,5 @@
-.fld {
-    composes: fld from "../../../styles/shared.module.css";
-}
-
-.photoActions {
-    display: flex;
-    gap: 6px;
-    margin-top: 6px;
-    align-items: center;
+.mediaBlock {
+    composes: mediaBlock from "../../../styles/shared.module.css";
 }
 
 .thumbnailsList {

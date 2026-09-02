@@ -14,6 +14,8 @@ import {
 import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
 import { useNarrativeContext } from "@/store/contexts/NarrativeContext.tsx";
 import { useGenerationHistory } from "@/ui/hooks/useGenerationHistory.ts";
+import { useOutputSceneGeneration } from "@/ui/hooks/useOutputSceneGeneration.ts";
+import { useEntityPhotoGeneration } from "@/ui/hooks/useEntityPhotoGeneration.ts";
 import { useRequireAuth } from "@/ui/hooks/useRequireAuth.ts";
 import { collectConnectedEntities, composeRawPrompt, entityFromNode } from "@/core/scenePrompt.ts";
 import { currentHistoryRef } from "@/core/generationHistory.ts";
@@ -107,6 +109,44 @@ export const NodeCard = memo(function NodeCard({
     const isAiModel = AI_MODEL_NODE_TYPES.includes(data.nodeType);
     const isRunning = runningNodeIds.has(id);
     const outputId = data.outputs[0]?.id;
+
+    // output_scene and character generate through their own code paths rather
+    // than graphExecution's runNode, but their Generate button belongs in the
+    // same header slot as every AI node's. Both hooks are called for every node
+    // type (rules-of-hooks) and are inert for the rest, same as the
+    // useGenerationHistory call below with an undefined generation.
+    const outputSceneGen = useOutputSceneGeneration({
+        node: { id, data },
+        edges,
+        resolved,
+        activeSceneId,
+        updateNodeParams,
+        setNodeField,
+    });
+    const entityPhotoGen = useEntityPhotoGeneration({
+        node: { id, data },
+        updateNodeParams,
+        setNodePhotos,
+        setNodeField,
+    });
+    const generatesOwnPhoto = ENTITY_GENERATION_NODE_TYPES.has(data.nodeType);
+    const headerGenerate =
+        data.nodeType === "output_scene"
+            ? {
+                  run: () =>
+                      outputSceneGen.stage === "image"
+                          ? void outputSceneGen.generateImage()
+                          : void outputSceneGen.generateVideo(),
+                  loading: outputSceneGen.isGenerating,
+                  disabled: outputSceneGen.generateDisabled,
+              }
+            : generatesOwnPhoto
+              ? {
+                    run: () => void entityPhotoGen.generatePhoto(),
+                    loading: entityPhotoGen.isGenerating,
+                    disabled: false,
+                }
+              : undefined;
 
     // Which of the 6 HISTORY_NODE_TYPES this is, for choosing how to render
     // its history below — image/video reuse MediaSlider's overlay chrome,
@@ -231,7 +271,6 @@ export const NodeCard = memo(function NodeCard({
     // only show what the last Generate click actually sent — captured in that
     // variant's own params snapshot (see CharacterParams' appendMany), so
     // scrubbing the variant slider also scrubs the prompt.
-    const generatesOwnPhoto = ENTITY_GENERATION_NODE_TYPES.has(data.nodeType);
     const entityGeneration = generatesOwnPhoto
         ? (data.generation as GenerationHistoryState | undefined)
         : undefined;
@@ -307,6 +346,23 @@ export const NodeCard = memo(function NodeCard({
                             void runNode(id);
                         }}>
                         {isRunning ? (
+                            <CircleLoader className={styles.runBtnLoader} />
+                        ) : (
+                            <i className="ti ti-player-play" />
+                        )}
+                    </button>
+                )}
+                {headerGenerate && (
+                    <button
+                        className={styles.runBtn}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        disabled={headerGenerate.loading || headerGenerate.disabled}
+                        title="Запустить генерацию"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            headerGenerate.run();
+                        }}>
+                        {headerGenerate.loading ? (
                             <CircleLoader className={styles.runBtnLoader} />
                         ) : (
                             <i className="ti ti-player-play" />
@@ -460,7 +516,10 @@ export const NodeCard = memo(function NodeCard({
                     {(outputKind === "image" || outputKind === "video") &&
                         generatedValues.length > 0 && (
                             <MediaSlider
-                                items={generatedValues.map((url) => ({ url, type: outputKind }))}
+                                items={generatedValues.map((url) => ({
+                                    url,
+                                    type: outputKind,
+                                }))}
                                 index={generatedIdx}
                                 onIndexChange={onHistoryIndexChange}
                                 onDelete={onHistoryDelete}
@@ -524,6 +583,8 @@ export const NodeCard = memo(function NodeCard({
                                 loadPinterestBoards={loadPinterestBoards}
                                 loadPinterestPins={loadPinterestPins}
                                 executeGraph={executeGraph}
+                                outputSceneGen={outputSceneGen}
+                                entityPhotoGen={entityPhotoGen}
                             />
                         </div>
                         {RICH_ENTITY_NODE_TYPES.has(data.nodeType) && data.promptPanelOpen && (

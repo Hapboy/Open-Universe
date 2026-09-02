@@ -58,10 +58,3 @@
     border-color: var(--color-bg-accent);
     box-shadow: 0 0 6px var(--color-bg-accent);
 }
-
-/* Wand + "accept into photos" pair under the character generation fields —
-   same row treatment as output_scene's generate row (UtilParams.module.css). */
-.generateRow {
-    composes: presetRow from "../../../../styles/shared.module.css";
-    margin-bottom: 10px;
-}

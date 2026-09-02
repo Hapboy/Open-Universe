@@ -67,7 +67,7 @@ lose track of things between sessions.
 
 - **Generation is character-only among entity types — for now.** The intent
   is that the «Генерация» section eventually exists **everywhere photos can be
-  uploaded or picked**: every entity node rendering `PhotoGallerySection`
+  uploaded or picked**: every entity node rendering `PhotoPreview`
   (location, clothing, building, furniture, art, transport, …) should get the
   same block — nano-banana fields, own history, «Принять в фото» — not just
   character. The pieces are per-type by design (`photoGen` slice +
@@ -83,7 +83,7 @@ lose track of things between sessions.
   consumes tags, and they need autocomplete UI to be usable.
 
 - **The thumbnail strip doesn't scroll a newly added photo into view.**
-  `PhotoGallerySection.module.css`'s `.thumbnailsList` is
+  `PhotoPreview.module.css`'s `.thumbnailsList` is
   `max-height: 100px; overflow-y: auto`, so past ~2 rows a freshly added photo
   lands out of sight even though the cover/preview does update.
 

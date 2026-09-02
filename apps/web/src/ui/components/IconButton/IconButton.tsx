@@ -4,8 +4,8 @@ import styles from "@/ui/components/IconButton/IconButton.module.css";
 
 // Collapses the disabled/title plumbing + "swap the icon for CircleLoader
 // while busy" pattern that used to be hand-rolled at every icon-only button
-// (PhotoGallerySection's generate button, MediaPickerButton, PresetsField's
-// save button, ...). `icon` is a Tabler Icons suffix, e.g. "wand" for
+// (MediaPickerButton, PresetsField's save button, output_scene's cover
+// upload, ...). `icon` is a Tabler Icons suffix, e.g. "wand" for
 // `ti ti-wand`.
 export function IconButton({
     icon,

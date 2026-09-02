@@ -27,6 +27,17 @@
     margin-bottom: 6px;
 }
 
+/* Wrapper for a MediaSlider sitting in the params flow (output_scene's stage
+   preview, an entity's photo gallery) rather than flush under the node header
+   the way NodeCard's standalone AI nodes render it. The slider itself carries
+   no bottom margin — by design, since the flush usage butts straight against
+   .paramsWrap — so without this it collides with whatever follows it, usually
+   the search field. Collapses with a following .fld/.thumbnailsList margin, so
+   the gap stays 10px rather than stacking. */
+.mediaBlock {
+    margin-bottom: 10px;
+}
+
 .fld > span {
     display: block;
     font-size: 11px;

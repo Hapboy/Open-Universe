@@ -40,58 +40,43 @@
 .nav.next {
     right: 5px;
 }
-.del {
+.overlayBtn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0.85;
+}
+.overlayBtn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+/* Top-right action stack — grows with however many of upload/pick/accept/
+   reroll/delete a call site enables, instead of each button hardcoding its
+   own `right` offset. */
+.overlayRow {
     position: absolute;
     top: 5px;
     right: 5px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(180, 40, 40, 0.7);
-    color: #fff;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    cursor: pointer;
-    padding: 0;
+    gap: 5px;
 }
-.reroll {
-    position: absolute;
-    top: 5px;
-    right: 32px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    cursor: pointer;
-    padding: 0;
-    opacity: 0.85;
+.del {
+    background: rgba(180, 40, 40, 0.7);
 }
 .expand {
+    composes: overlayBtn;
     position: absolute;
     top: 5px;
     left: 5px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    cursor: pointer;
-    padding: 0;
-    opacity: 0.85;
 }
 .count {
     position: absolute;
@@ -104,4 +89,33 @@
     padding: 1px 6px;
     border-radius: 8px;
     pointer-events: none;
+}
+.placeholder {
+    border: 1px dashed var(--color-border);
+    background: var(--color-bg-tertiary);
+}
+.placeholderBtn {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    color: var(--color-text-tertiary);
+    font-size: 11px;
+    text-align: center;
+    cursor: pointer;
+}
+.placeholderBtn i {
+    font-size: 20px;
+}
+.placeholderBtn:disabled {
+    cursor: default;
+    opacity: 0.6;
 }

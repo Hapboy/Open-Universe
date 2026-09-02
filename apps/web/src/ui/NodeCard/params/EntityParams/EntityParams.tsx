@@ -5,7 +5,6 @@ import type { EP } from "@/ui/NodeCard/params/shared.tsx";
 import { useNodeParamsForm } from "@/ui/NodeCard/params/useNodeParamsForm.ts";
 import {
     characterParamsSchema,
-    characterPhotoGenDefaults,
     type CharacterNodeParams,
 } from "@/schemas/entities/character.schema.ts";
 import {
@@ -40,26 +39,13 @@ import {
     type TransportNodeParams,
 } from "@/schemas/entities/transport.schema.ts";
 import { PresetsField } from "@/ui/NodeCard/params/PresetsField/PresetsField.tsx";
-import {
-    newPhotoEntry,
-    PhotoGallerySection,
-    PhotoPreview,
-} from "@/ui/components/PhotoGallerySection/PhotoGallerySection.tsx";
-import { useImageGeneration } from "@/ui/hooks/useImageGeneration.ts";
-import { useGenerationHistory } from "@/ui/hooks/useGenerationHistory.ts";
-import { useRequireAuth } from "@/ui/hooks/useRequireAuth.ts";
-import { geminiApiClient } from "@/core/api/index.ts";
-import { nanoBananaRequestFromSlice } from "@/core/api/gemini/dto.ts";
-import { composeScenePrompt, entityFromNode } from "@/core/scenePrompt.ts";
-import { generateSeed } from "@/core/seed.ts";
-import { useToastContext } from "@/store/contexts/ToastContext.tsx";
+import { newPhotoEntry, PhotoPreview } from "@/ui/components/PhotoPreview/PhotoPreview.tsx";
+import type { useEntityPhotoGeneration } from "@/ui/hooks/useEntityPhotoGeneration.ts";
 import { MAX_ENTITY_PHOTOS } from "@/schemas/entities/schemaHelpers.ts";
 import type { EntityPhoto } from "@/schemas/entities/schemaHelpers.ts";
-import type { GenerationHistoryState, NodeParams } from "@/types.ts";
 import { NanoBananaModelFields } from "@/ui/NodeCard/params/GeminiParams.tsx";
 import { Switch } from "@/ui/components/Switch/Switch.tsx";
 import { MediaSlider } from "@/ui/NodeCard/MediaSlider/MediaSlider.tsx";
-import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
 import { SelectField } from "@/ui/components/SelectField/SelectField.tsx";
 import { RangeField } from "@/ui/components/RangeField/RangeField.tsx";
 import { NumberField } from "@/ui/components/NumberField/NumberField.tsx";
@@ -91,6 +77,8 @@ import {
 } from "@hayverse/shared";
 import styles from "@/ui/NodeCard/params/EntityParams/EntityParams.module.css";
 
+type EntityPhotoGeneration = ReturnType<typeof useEntityPhotoGeneration>;
+
 const CHARACTER_CATEGORIES = [
     { key: "general", label: "Общие" },
     { key: "birth", label: "Рождение" },
@@ -110,114 +98,28 @@ export function CharacterParams({
     updateNodeParam,
     updateNodeParams,
     setNodePhotos,
-    setNodeField,
+    gen,
 }: EP<CharacterNodeParams> & {
     setNodePhotos: (id: string, photos: EntityPhoto[], coverPhotoIndex: number) => void;
-    setNodeField: (id: string, patch: Partial<NodeParams>) => void;
+    // The photo-generation stream lives in NodeCard so the node header's run
+    // button can drive it — see useEntityPhotoGeneration.
+    gen: EntityPhotoGeneration;
 }) {
     const { db, onSelect, onSave, onDelete, hasUnsavedChanges, missingSaveFields, isResolving } =
         usePresetDatabase(node, params, updateNodeParams);
-    const { generate, isGenerating } = useImageGeneration();
-    const { showToast } = useToastContext();
-    const requireAuth = useRequireAuth();
     const { control, isFieldValid } = useNodeParamsForm(characterParamsSchema, params);
     const lifetimeFrom = useController({ control, name: "lifetimeFrom" });
     const lifetimeTo = useController({ control, name: "lifetimeTo" });
 
-    const photos = params.photos || [];
-    // Absent on characters created before the generation block existed (the
-    // field is `.optional()` for exactly that reason, see character.schema.ts).
-    const photoGen = { ...characterPhotoGenDefaults, ...(params.photoGen ?? {}) };
-    const updatePhotoGen = (key: string, value: unknown) =>
-        updateNodeParams(node.id, { photoGen: { ...photoGen, [key]: value } });
-
-    // Generated variants live in their own history stream rather than going
-    // straight into `photos`: one prompt can return several images, and a
-    // gallery capped at MAX_ENTITY_PHOTOS shouldn't fill up with rejects. The
-    // user promotes the one they want with «Принять в фото» below. Flat
-    // GenerationHistoryState (not output_scene's per-stage shape) — a character
-    // has exactly one stream.
-    const photoHist = useGenerationHistory(
-        node.data.generation as GenerationHistoryState | undefined,
-        (patch) =>
-            setNodeField(node.id, {
-                generation: {
-                    ...(node.data.generation as GenerationHistoryState | undefined),
-                    ...patch,
-                } as GenerationHistoryState,
-            }),
-        // Scrubbing back to a variant restores the config that produced it.
-        // `lastComposedPrompt` rides along in the same snapshot but isn't
-        // config — it's read straight from paramsHistory where the prompt panel
-        // needs it (see NodeCard.tsx), so it's dropped here rather than written
-        // into photoGen.
-        (snapshot) => {
-            const { lastComposedPrompt: _prompt, ...configSnapshot } = snapshot;
-            updateNodeParams(node.id, { photoGen: { ...photoGen, ...configSnapshot } });
-        },
-    );
-
-    // `seedOverride` comes from the reroll button, which computes seed+10000
-    // itself — a separate updateNodeParams-then-generate would read the stale
-    // value (see core/seed.ts's withNodeOverrides). An empty seed field
-    // self-generates one here so it stays recoverable afterwards: the Gemini
-    // Developer API never echoes back a seed it picked itself.
-    const handleGeneratePhoto = async (seedOverride?: number) => {
-        if (!requireAuth()) return;
-        const self = entityFromNode(node.data);
-        const prompt = await composeScenePrompt(
-            params.promptComposition,
-            [self],
-            undefined,
-            showToast,
-            params.additionalDescription,
-            "entity",
-        );
-        // "Случайный" (photoGen.randomizeSeed, default true/missing): off
-        // means reuse the stored seed, matching resolvedSeedPatch's logic in
-        // core/seed.ts for the standalone node.
-        const seed =
-            seedOverride ??
-            (photoGen.randomizeSeed === false && photoGen.seed
-                ? Number(photoGen.seed)
-                : generateSeed());
-        const seedStr = String(seed);
-        if (photoGen.seed !== seedStr) updatePhotoGen("seed", seedStr);
-        const refs = await generate((toast) =>
-            geminiApiClient.generateImageFromRefs(
-                nanoBananaRequestFromSlice(photoGen, {
-                    prompt,
-                    imageUrls: self.photoUrls,
-                    seed,
-                }),
-                toast,
-            ),
-        );
-        if (refs.length > 0)
-            photoHist.appendMany(refs, { ...photoGen, seed: seedStr, lastComposedPrompt: prompt });
-    };
-
-    const handleRerollPhotoSeed = () => {
-        const current = photoGen.seed ? Number(photoGen.seed) : undefined;
-        const next =
-            current !== undefined && !Number.isNaN(current) ? current + 10000 : generateSeed();
-        void handleGeneratePhoto(next);
-    };
-
-    // Promotes the variant the slider is parked on into the real gallery. The
-    // cover is left alone unless there was nothing to cover yet — a generated
-    // variant shouldn't silently replace the photo representing this character.
-    const acceptGeneratedPhoto = () => {
-        const ref = photoHist.currentRef;
-        if (!ref) return;
-        setNodePhotos(
-            node.id,
-            [...photos, newPhotoEntry(ref)],
-            photos.length === 0 ? 0 : (params.coverPhotoIndex ?? 0),
-        );
-    };
-    const acceptedAlready =
-        !!photoHist.currentRef && photos.some((p) => p.ref === photoHist.currentRef);
+    const {
+        photoGen,
+        updatePhotoGen,
+        photoHist,
+        rerollPhoto,
+        acceptGeneratedPhoto,
+        acceptedAlready,
+        galleryFull,
+    } = gen;
 
     const {
         activeTags,
@@ -239,6 +141,37 @@ export function CharacterParams({
                 updateNodeParam={updateNodeParam}
                 setNodePhotos={setNodePhotos}
             />
+
+            {/* Generated variants sit outside the "Генерация" tag (off by
+                default) for the same reason the gallery above does: with the
+                slider gated, generating from the node header produced media the
+                user couldn't see. ✓ promotes the shown variant into the gallery
+                above. */}
+            {photoHist.resolvedUrls.length > 0 && (
+                <div className={styles.fld}>
+                    <span>Варианты генерации</span>
+                    <MediaSlider
+                        items={photoHist.resolvedUrls.map((url) => ({
+                            url,
+                            type: "image" as const,
+                        }))}
+                        index={photoHist.idx}
+                        onIndexChange={photoHist.onIndexChange}
+                        onDelete={photoHist.onDelete}
+                        onReroll={rerollPhoto}
+                        onPick={(ref) => photoHist.append(ref)}
+                        onAccept={acceptGeneratedPhoto}
+                        acceptDisabled={acceptedAlready || galleryFull}
+                        acceptTitle={
+                            acceptedAlready
+                                ? "Уже в фото персонажа"
+                                : galleryFull
+                                  ? `Достигнут лимит — ${MAX_ENTITY_PHOTOS} фото`
+                                  : "Принять в фото"
+                        }
+                    />
+                </div>
+            )}
 
             {/* Category selector tags and Search input */}
             <div className={styles.searchContainer}>
@@ -286,15 +219,6 @@ export function CharacterParams({
                 />
             )}
 
-            {shouldShow("general", "Фото Персонажа") && (
-                <PhotoGallerySection
-                    node={node}
-                    label="Фото персонажа"
-                    photos={photos}
-                    setNodePhotos={setNodePhotos}
-                />
-            )}
-
             {/* GENERATION CATEGORY — its own tag rather than living inside
                 "Общие", mirroring output_scene's Генерация tab. Gated on the tag
                 alone (not `shouldShow`) so the block stays whole: it's one
@@ -316,42 +240,6 @@ export function CharacterParams({
 
                     <hr className={styles.divider} />
                     <NanoBananaModelFields paramsSlice={photoGen} onFieldChange={updatePhotoGen} />
-                    <div className={styles.generateRow}>
-                        <IconButton
-                            icon="wand"
-                            loading={isGenerating}
-                            onClick={() => void handleGeneratePhoto()}
-                            title="Сгенерировать фото"
-                        />
-                        <IconButton
-                            icon="check"
-                            disabled={
-                                !photoHist.currentRef ||
-                                acceptedAlready ||
-                                photos.length >= MAX_ENTITY_PHOTOS
-                            }
-                            onClick={acceptGeneratedPhoto}
-                            title={
-                                acceptedAlready
-                                    ? "Уже в фото персонажа"
-                                    : photos.length >= MAX_ENTITY_PHOTOS
-                                      ? `Достигнут лимит — ${MAX_ENTITY_PHOTOS} фото`
-                                      : "Принять в фото"
-                            }
-                        />
-                    </div>
-                    {photoHist.resolvedUrls.length > 0 && (
-                        <MediaSlider
-                            items={photoHist.resolvedUrls.map((url) => ({
-                                url,
-                                type: "image" as const,
-                            }))}
-                            index={photoHist.idx}
-                            onIndexChange={photoHist.onIndexChange}
-                            onDelete={photoHist.onDelete}
-                            onReroll={handleRerollPhotoSeed}
-                        />
-                    )}
                 </>
             )}
 
@@ -755,15 +643,6 @@ export function LocationParams({
                 />
             )}
 
-            {shouldShow("general", "Фото Локации") && (
-                <PhotoGallerySection
-                    node={node}
-                    label="Фото локации"
-                    photos={params.photos || []}
-                    setNodePhotos={setNodePhotos}
-                />
-            )}
-
             {shouldShow("general", "Координаты") && (
                 <Controller
                     control={control}
@@ -954,12 +833,6 @@ export function MiseEnSceneParams({
                     />
                 )}
             />
-            <PhotoGallerySection
-                node={node}
-                label="Фото мизансцены"
-                photos={params.photos || []}
-                setNodePhotos={setNodePhotos}
-            />
             <Controller
                 control={control}
                 name="peopleCount"
@@ -1068,12 +941,6 @@ export function BuildingParams({
                     />
                 )}
             />
-            <PhotoGallerySection
-                node={node}
-                label="Фото здания"
-                photos={params.photos || []}
-                setNodePhotos={setNodePhotos}
-            />
             <Controller
                 control={control}
                 name="floor"
@@ -1155,12 +1022,6 @@ export function ClothingParams({
                         error={fieldState.error?.message}
                     />
                 )}
-            />
-            <PhotoGallerySection
-                node={node}
-                label="Фото одежды"
-                photos={params.photos || []}
-                setNodePhotos={setNodePhotos}
             />
             <Controller
                 control={control}
@@ -1246,12 +1107,6 @@ export function ArtworkParams({
                     />
                 )}
             />
-            <PhotoGallerySection
-                node={node}
-                label="Фото произведения"
-                photos={params.photos || []}
-                setNodePhotos={setNodePhotos}
-            />
             <Controller
                 control={control}
                 name="scale"
@@ -1333,12 +1188,6 @@ export function FurnitureParams({
                         error={fieldState.error?.message}
                     />
                 )}
-            />
-            <PhotoGallerySection
-                node={node}
-                label="Фото мебели"
-                photos={params.photos || []}
-                setNodePhotos={setNodePhotos}
             />
             <Controller
                 control={control}
@@ -1422,12 +1271,6 @@ export function MusicParams({
                     />
                 )}
             />
-            <PhotoGallerySection
-                node={node}
-                label="Фото трека"
-                photos={params.photos || []}
-                setNodePhotos={setNodePhotos}
-            />
             <Controller
                 control={control}
                 name="mood"
@@ -1494,12 +1337,6 @@ export function ScriptParams({
                         error={fieldState.error?.message}
                     />
                 )}
-            />
-            <PhotoGallerySection
-                node={node}
-                label="Фото сценария"
-                photos={params.photos || []}
-                setNodePhotos={setNodePhotos}
             />
             <Controller
                 control={control}
@@ -1626,12 +1463,6 @@ export function TransportParams({
                         error={fieldState.error?.message}
                     />
                 )}
-            />
-            <PhotoGallerySection
-                node={node}
-                label="Фото транспорта"
-                photos={params.photos || []}
-                setNodePhotos={setNodePhotos}
             />
             <Controller
                 control={control}

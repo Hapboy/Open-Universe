@@ -25,6 +25,8 @@ import {
     TransportParams,
 } from "@/ui/NodeCard/params/EntityParams/EntityParams.tsx";
 import { OutputParams, TextParams } from "@/ui/NodeCard/params/UtilParams.tsx";
+import type { useOutputSceneGeneration } from "@/ui/hooks/useOutputSceneGeneration.ts";
+import type { useEntityPhotoGeneration } from "@/ui/hooks/useEntityPhotoGeneration.ts";
 import type { CharacterNodeParams } from "@/schemas/entities/character.schema.ts";
 import type { LocationNodeParams } from "@/schemas/entities/location.schema.ts";
 import type { MiseEnSceneNodeParams } from "@/schemas/entities/miseEnScene.schema.ts";
@@ -51,7 +53,14 @@ export function NodeParamsPanel({
     loadPinterestBoards,
     loadPinterestPins,
     executeGraph,
-}: NodeParamsProps) {
+    outputSceneGen,
+    entityPhotoGen,
+}: NodeParamsProps & {
+    // Generation state for output_scene/character lives in NodeCard so the node
+    // header's run button can drive it — see useOutputSceneGeneration.
+    outputSceneGen: ReturnType<typeof useOutputSceneGeneration>;
+    entityPhotoGen: ReturnType<typeof useEntityPhotoGeneration>;
+}) {
     const { nodeType, params } = node.data;
     const loadedRef = useRef(false);
     const { currentUser, hydrated, pinterestStatus } = useUserContext();
@@ -114,13 +123,11 @@ export function NodeParamsPanel({
                 <OutputParams
                     node={node}
                     params={params}
-                    edges={edges}
-                    resolved={resolved}
                     scenes={scenes}
                     updateNodeParam={updateNodeParam}
-                    updateNodeParams={updateNodeParams}
                     executeGraph={executeGraph}
                     setNodeField={setNodeField}
+                    gen={outputSceneGen}
                 />
             )}
             {nodeType === "text_prompt" && (
@@ -202,7 +209,7 @@ export function NodeParamsPanel({
                     updateNodeParam={updateNodeParam}
                     updateNodeParams={updateNodeParams}
                     setNodePhotos={setNodePhotos}
-                    setNodeField={setNodeField}
+                    gen={entityPhotoGen}
                 />
             )}
             {nodeType === "location" && (

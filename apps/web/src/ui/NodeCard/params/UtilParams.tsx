@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import cn from "classnames";
 import {
     WirableTextField,
@@ -7,15 +7,10 @@ import {
     type NodeParamsProps,
 } from "@/ui/NodeCard/params/shared.tsx";
 import type { SceneNarrativeSettings } from "@/store/contexts/NarrativeContext.tsx";
-import type { GenerationHistoryState } from "@/types.ts";
 import { useGraphContext } from "@/store/contexts/GraphContext.tsx";
 import { useNarrativeContext } from "@/store/contexts/NarrativeContext.tsx";
-import { useToastContext } from "@/store/contexts/ToastContext.tsx";
 import { edgeInput } from "@/core/graph.ts";
-import { appendGenerationHistory, appendGenerationHistoryMany } from "@/core/generationHistory.ts";
-import { generateSeed } from "@/core/seed.ts";
-import { useGenerationHistory } from "@/ui/hooks/useGenerationHistory.ts";
-import { useRequireAuth } from "@/ui/hooks/useRequireAuth.ts";
+import type { useOutputSceneGeneration } from "@/ui/hooks/useOutputSceneGeneration.ts";
 import { SelectField } from "@/ui/components/SelectField/SelectField.tsx";
 import { TextField } from "@/ui/components/TextField/TextField.tsx";
 import { NumberField } from "@/ui/components/NumberField/NumberField.tsx";
@@ -26,30 +21,15 @@ import { EmotionalCurvePreview } from "@/ui/components/EmotionalCurvePreview/Emo
 import { StoryPhaseBeats } from "@/ui/components/StoryPhaseBeats/StoryPhaseBeats.tsx";
 import { Switch } from "@/ui/components/Switch/Switch.tsx";
 import { BareButton } from "@/ui/components/BareButton/BareButton.tsx";
-import {
-    putBlob,
-    putGeneratedBlob,
-    resolveMediaRef,
-    useResolvedMediaUrl,
-} from "@/core/mediaRef.ts";
+import { putBlob, useResolvedMediaUrl } from "@/core/mediaRef.ts";
 import { MediaPickerButton } from "@/ui/components/MediaLibrary/MediaLibrary.tsx";
 import { MediaSlider } from "@/ui/NodeCard/MediaSlider/MediaSlider.tsx";
 import { Button } from "@/ui/components/Button/Button.tsx";
 import { IconButton } from "@/ui/components/IconButton/IconButton.tsx";
-import { geminiApiClient } from "@/core/api/index.ts";
-import { nanoBananaRequestFromSlice } from "@/core/api/gemini/dto.ts";
 import { NanoBananaModelFields, VeoModelFields } from "@/ui/NodeCard/params/GeminiParams.tsx";
-import {
-    collectConnectedEntities,
-    collectReferenceImageUrls,
-    composeScenePrompt,
-} from "@/core/scenePrompt.ts";
 import styles from "@/ui/NodeCard/params/UtilParams.module.css";
 
-// output_scene's own per-stage generation shape — the shared
-// GenerationHistoryState fields plus the composed prompt (see types.ts's
-// `generation` doc comment for why this doesn't live in `params`).
-type OutputStageGeneration = GenerationHistoryState & { lastComposedPrompt?: string };
+type OutputSceneGeneration = ReturnType<typeof useOutputSceneGeneration>;
 
 const OUTPUT_SCENE_CATEGORIES = [
     { key: "general", label: "Общие" },
@@ -82,21 +62,19 @@ const getTensionColor = (level: number) => {
 export function OutputParams({
     node,
     params,
-    edges,
-    resolved,
     scenes,
     updateNodeParam,
-    updateNodeParams,
     setNodeField,
-}: EEP & {
+    gen,
+}: Omit<EEP, "edges" | "resolved"> & {
     scenes: NodeParamsProps["scenes"];
-    updateNodeParams: NodeParamsProps["updateNodeParams"];
     setNodeField: NodeParamsProps["setNodeField"];
+    // Both generation streams live in NodeCard so the node header's run button
+    // can drive them — see useOutputSceneGeneration.
+    gen: OutputSceneGeneration;
 }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { activeSceneId } = useGraphContext();
-    const { showToast } = useToastContext();
-    const requireAuth = useRequireAuth();
     // Scene-arc fields below still live in NarrativeContext, keyed by scene
     // id, separate from this node's own `params`. Only the active scene's
     // graph is ever mounted, so this node's activeSceneId is always its own
@@ -114,185 +92,28 @@ export function OutputParams({
         shouldShow,
     } = useCategoryTags(OUTPUT_SCENE_CATEGORIES);
     const resolvedCoverUrl = useResolvedMediaUrl(params.coverUrl as string | undefined);
-    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-    const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
 
+    const {
+        stage,
+        imageParams,
+        videoParams,
+        imageHist,
+        videoHist,
+        updateImageParam,
+        updateVideoParam,
+        visualRenderWired,
+        motionRenderWired,
+        rerollImage,
+    } = gen;
     const track = (params.track as number) ?? 1;
-    const stage = node.data.outputSceneStage ?? "image";
-    const imageParams = (params.image as Record<string, unknown>) ?? {};
-    const videoParams = (params.video as Record<string, unknown>) ?? {};
-    const visualRenderWired = edges.some((e) => e.targetHandle === node.data.inputs[0]?.id);
-    const motionRenderWired = edges.some((e) => e.targetHandle === node.data.inputs[1]?.id);
-    // node.data.generation.image/.video — this node's own two independent
-    // generation-history streams, sibling to `params` (see types.ts's
-    // `generation` doc comment for why this data doesn't live in params).
-    const currentGeneration =
-        (node.data.generation as
-            Partial<Record<"image" | "video", OutputStageGeneration>> | undefined) ?? {};
-    const imageGeneration = currentGeneration.image;
-    const videoGeneration = currentGeneration.video;
     const isFinalImage = (params.activeOutput ?? "video") === "image";
     const isFinalVideo = (params.activeOutput ?? "video") === "video";
-
-    const setImageGeneration = (next: Partial<OutputStageGeneration>) =>
-        setNodeField(node.id, {
-            generation: { ...currentGeneration, image: { ...imageGeneration, ...next } },
-        });
-    const setVideoGeneration = (next: Partial<OutputStageGeneration>) =>
-        setNodeField(node.id, {
-            generation: { ...currentGeneration, video: { ...videoGeneration, ...next } },
-        });
-
-    // Scrubbing the slider restores that generation's own params (model,
-    // aspectRatio, seed, ...) into the form below — same "history nav = time
-    // travel through your settings too" behavior as the standalone Gemini
-    // nodes (NodeCard.tsx's onHistoryIndexChange), via useNodeParamsForm's
-    // store-resync — plus the composed prompt, restored separately since it
-    // lives in data.generation rather than params (see types.ts). A pick
-    // with no recorded snapshot (media-library pick) just leaves both as
-    // they were. Called unconditionally, above the activeSceneId early
-    // return below — these are hooks (rules-of-hooks).
-    const imageHist = useGenerationHistory<OutputStageGeneration>(
-        imageGeneration,
-        setImageGeneration,
-        (snapshot) => {
-            const { lastComposedPrompt, ...configSnapshot } = snapshot;
-            updateNodeParams(node.id, { image: { ...imageParams, ...configSnapshot } });
-            return { lastComposedPrompt: lastComposedPrompt as string | undefined };
-        },
-    );
-    const videoHist = useGenerationHistory<OutputStageGeneration>(
-        videoGeneration,
-        setVideoGeneration,
-        (snapshot) => {
-            const { lastComposedPrompt, ...configSnapshot } = snapshot;
-            updateNodeParams(node.id, { video: { ...videoParams, ...configSnapshot } });
-            return { lastComposedPrompt: lastComposedPrompt as string | undefined };
-        },
-    );
+    const stageHist = stage === "image" ? imageHist : videoHist;
 
     // Defensive: activeSceneId is nullable in GraphContext's types, but a
     // mounted output_scene node always belongs to the active scene.
     if (!activeSceneId) return null;
     const arc = getSceneNarrativeSettings(activeSceneId);
-
-    const updateImageParam = (key: string, value: unknown) =>
-        updateNodeParams(node.id, { image: { ...imageParams, [key]: value } });
-    const updateVideoParam = (key: string, value: unknown) =>
-        updateNodeParams(node.id, { video: { ...videoParams, [key]: value } });
-
-    // `seedOverride` lets the reroll button (SeedField) supply an exact
-    // seed+10000 value rather than whatever's currently in imageParams —
-    // computed locally by the caller and passed straight through, since a
-    // separate updateImageParam-then-generate would hit the same
-    // stale-closure gap core/seed.ts's withNodeOverrides doc comment
-    // describes. Absent a seedOverride, an empty seed field self-generates
-    // one here rather than leaving it undefined — the Gemini Developer API
-    // never echoes back a randomly-picked seed, so leaving it unset would
-    // make it unrecoverable after the fact (see core/seed.ts).
-    const handleGenerateImage = async (seedOverride?: number) => {
-        if (!requireAuth()) return;
-        setIsGeneratingImage(true);
-        try {
-            const entities = collectConnectedEntities(node.data, edges, resolved);
-            const prompt = await composeScenePrompt(
-                params.promptComposition,
-                entities,
-                arc,
-                showToast,
-                params.additionalDescription as string | undefined,
-            );
-            setImageGeneration({ lastComposedPrompt: prompt });
-            const imageUrls = collectReferenceImageUrls(entities);
-            // "Случайный" (imageParams.randomizeSeed, default true/missing):
-            // off means reuse the stored seed, matching resolvedSeedPatch's
-            // logic in core/seed.ts for the standalone node.
-            const seed =
-                seedOverride ??
-                (imageParams.randomizeSeed === false && imageParams.seed
-                    ? Number(imageParams.seed)
-                    : generateSeed());
-            const seedStr = String(seed);
-            if (imageParams.seed !== seedStr) updateImageParam("seed", seedStr);
-            const dataUrls = await geminiApiClient.generateImageFromRefs(
-                nanoBananaRequestFromSlice(imageParams, { prompt, imageUrls, seed }),
-                showToast,
-            );
-            if (!dataUrls) return;
-            // Nano Banana can answer one prompt with several images — all of
-            // them join this stage's history under the same snapshot, with the
-            // slider parked on the newest (see appendGenerationHistoryMany).
-            const refs = await Promise.all(
-                dataUrls.map(async (dataUrl) =>
-                    putGeneratedBlob(await (await fetch(dataUrl)).blob()),
-                ),
-            );
-            setImageGeneration({
-                ...appendGenerationHistoryMany(imageGeneration, refs, {
-                    ...imageParams,
-                    seed: seedStr,
-                    lastComposedPrompt: prompt,
-                }),
-                lastComposedPrompt: prompt,
-            });
-        } finally {
-            setIsGeneratingImage(false);
-        }
-    };
-
-    const handleRerollImageSeed = () => {
-        const current = imageParams.seed ? Number(imageParams.seed) : undefined;
-        const next =
-            current !== undefined && !Number.isNaN(current) ? current + 10000 : generateSeed();
-        void handleGenerateImage(next);
-    };
-
-    const handleGenerateVideo = async () => {
-        if (!requireAuth()) return;
-        const refImage = imageHist.currentRef;
-        if (!refImage) {
-            showToast("Сначала выберите или сгенерируйте кадр во вкладке «Картинка»");
-            return;
-        }
-        setIsGeneratingVideo(true);
-        try {
-            const entities = collectConnectedEntities(node.data, edges, resolved);
-            const prompt = await composeScenePrompt(
-                params.promptComposition,
-                entities,
-                arc,
-                showToast,
-                params.additionalDescription as string | undefined,
-            );
-            setVideoGeneration({ lastComposedPrompt: prompt });
-            const dataUrl = await geminiApiClient.generateVideo(
-                {
-                    prompt,
-                    imageUrl: resolveMediaRef(refImage),
-                    model: videoParams.model as string,
-                    aspectRatio: videoParams.aspectRatio as string,
-                    resolution: videoParams.resolution as string,
-                    durationSeconds: videoParams.durationSeconds as number,
-                    negativePrompt: (videoParams.negativePrompt as string) || undefined,
-                    personGeneration: videoParams.personGeneration as string,
-                    enhancePrompt: videoParams.enhancePrompt as boolean,
-                },
-                showToast,
-            );
-            if (!dataUrl) return;
-            const blob = await (await fetch(dataUrl)).blob();
-            const ref = await putGeneratedBlob(blob);
-            setVideoGeneration({
-                ...appendGenerationHistory(videoGeneration, ref, {
-                    ...videoParams,
-                    lastComposedPrompt: prompt,
-                }),
-                lastComposedPrompt: prompt,
-            });
-        } finally {
-            setIsGeneratingVideo(false);
-        }
-    };
 
     // Switching track snaps this scene's start to align with whatever scene is
     // currently last on the target track — recreates the old "parallel scene"
@@ -323,6 +144,42 @@ export function OutputParams({
 
     return (
         <>
+            {/* Stage toggle + slider are pinned above the search field, outside
+                every category gate — same placement as entity nodes'
+                PhotoPreview. With them inside the "Генерация" tag (off by
+                default) a scene with generated media looked empty on load, and
+                the toggle has to come along or the second stream would be
+                unreachable while that tag is off. */}
+            <div className={styles.fld}>
+                <div className={styles.segBtn}>
+                    <BareButton
+                        className={cn(stage === "image" && styles.isOn)}
+                        onClick={() => setNodeField(node.id, { outputSceneStage: "image" })}>
+                        <i className="ti ti-photo" /> Картинка
+                    </BareButton>
+                    <BareButton
+                        className={cn(stage === "video" && styles.isOn)}
+                        onClick={() => setNodeField(node.id, { outputSceneStage: "video" })}>
+                        <i className="ti ti-video" /> Видео
+                    </BareButton>
+                </div>
+            </div>
+            <div className={styles.mediaBlock}>
+                <MediaSlider
+                    items={stageHist.resolvedUrls.map((url) => ({ url, type: stage }))}
+                    index={stageHist.idx}
+                    onIndexChange={stageHist.onIndexChange}
+                    onDelete={stageHist.onDelete}
+                    onReroll={stage === "image" ? rerollImage : undefined}
+                    onPick={(ref) => stageHist.append(ref)}
+                    emptyHint={
+                        stage === "image"
+                            ? "Нет кадров — сгенерируйте или выберите из медиатеки"
+                            : "Нет видео — сгенерируйте или выберите из медиатеки"
+                    }
+                />
+            </div>
+
             <div className={styles.searchContainer}>
                 <SearchField value={searchQuery} onChange={setSearchQuery} />
                 <CategoryTagGroup
@@ -505,24 +362,6 @@ export function OutputParams({
                     />
 
                     <hr className={styles.divider} />
-                    <div className={styles.fld}>
-                        <div className={styles.segBtn}>
-                            <BareButton
-                                className={cn(stage === "image" && styles.isOn)}
-                                onClick={() =>
-                                    setNodeField(node.id, { outputSceneStage: "image" })
-                                }>
-                                <i className="ti ti-photo" /> Картинка
-                            </BareButton>
-                            <BareButton
-                                className={cn(stage === "video" && styles.isOn)}
-                                onClick={() =>
-                                    setNodeField(node.id, { outputSceneStage: "video" })
-                                }>
-                                <i className="ti ti-video" /> Видео
-                            </BareButton>
-                        </div>
-                    </div>
 
                     {stage === "image" && (
                         <>
@@ -533,38 +372,10 @@ export function OutputParams({
                                     отключена.
                                 </p>
                             ) : (
-                                <>
-                                    <NanoBananaModelFields
-                                        paramsSlice={imageParams}
-                                        onFieldChange={updateImageParam}
-                                    />
-                                    <div className={styles.generateRow}>
-                                        <IconButton
-                                            icon="wand"
-                                            loading={isGeneratingImage}
-                                            onClick={() => void handleGenerateImage()}
-                                            title="Сгенерировать"
-                                        />
-                                        <MediaPickerButton
-                                            onPick={(ref) => imageHist.append(ref)}
-                                            title="Выбрать кадр из медиатеки"
-                                        />
-                                    </div>
-                                    {imageHist.resolvedUrls.length > 0 && (
-                                        <div className={styles.previewWrap}>
-                                            <MediaSlider
-                                                items={imageHist.resolvedUrls.map((url) => ({
-                                                    url,
-                                                    type: "image",
-                                                }))}
-                                                index={imageHist.idx}
-                                                onIndexChange={imageHist.onIndexChange}
-                                                onDelete={imageHist.onDelete}
-                                                onReroll={handleRerollImageSeed}
-                                            />
-                                        </div>
-                                    )}
-                                </>
+                                <NanoBananaModelFields
+                                    paramsSlice={imageParams}
+                                    onFieldChange={updateImageParam}
+                                />
                             )}
                             <Button
                                 icon={isFinalImage ? "flag-filled" : "flag"}
@@ -598,32 +409,6 @@ export function OutputParams({
                                         paramsSlice={videoParams}
                                         onFieldChange={updateVideoParam}
                                     />
-                                    <div className={styles.generateRow}>
-                                        <IconButton
-                                            icon="wand"
-                                            loading={isGeneratingVideo}
-                                            disabled={!imageHist.currentRef}
-                                            onClick={handleGenerateVideo}
-                                            title="Сгенерировать"
-                                        />
-                                        <MediaPickerButton
-                                            onPick={(ref) => videoHist.append(ref)}
-                                            title="Выбрать видео из медиатеки"
-                                        />
-                                    </div>
-                                    {videoHist.resolvedUrls.length > 0 && (
-                                        <div className={styles.previewWrap}>
-                                            <MediaSlider
-                                                items={videoHist.resolvedUrls.map((url) => ({
-                                                    url,
-                                                    type: "video",
-                                                }))}
-                                                index={videoHist.idx}
-                                                onIndexChange={videoHist.onIndexChange}
-                                                onDelete={videoHist.onDelete}
-                                            />
-                                        </div>
-                                    )}
                                 </>
                             )}
                             <Button
