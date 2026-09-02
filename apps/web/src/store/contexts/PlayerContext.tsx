@@ -15,6 +15,15 @@ interface PlayerCtx {
     collapseEmptySpace: boolean;
     setCollapseEmptySpace: (v: boolean) => void;
 
+    // Monitor audio, 0..100. Lives here rather than in the Timeline toolbar
+    // that renders the slider, because the element that actually plays the
+    // sound (the Montage Monitor) isn't a descendant of that toolbar.
+    volume: number;
+    setVolume: (v: number) => void;
+    isMuted: boolean;
+    setIsMuted: (v: boolean) => void;
+    toggleMute: () => void;
+
     uniqueStarts: number[];
     packedStarts: Record<number, number>;
     totalPackedDuration: number;
@@ -45,6 +54,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const [playSpeed, setPlaySpeed] = useState<number>(1.0);
     const [collapseEmptySpace, setCollapseEmptySpace] = useState<boolean>(false);
     const [editorFollowsPlayback, setEditorFollowsPlayback] = useState<boolean>(false);
+    const [volume, setVolume] = useState<number>(80); // 0 to 100
+    const [isMuted, setIsMuted] = useState<boolean>(false);
 
     const { uniqueStarts, packedStarts, totalPackedDuration } = useMemo(() => {
         const uniqueStarts = Array.from(new Set(scenes.map((s) => s.start))).sort((a, b) => a - b);
@@ -89,6 +100,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         frameId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(frameId);
     }, [isPlaying, playSpeed, collapseEmptySpace, totalDuration, totalPackedDuration]);
+
+    const toggleMute = useCallback(() => setIsMuted((m) => !m), []);
 
     const togglePlay = useCallback(() => setIsPlaying((p) => !p), []);
     const stopPlay = useCallback(() => {
@@ -148,6 +161,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         cycleSpeed,
         collapseEmptySpace,
         setCollapseEmptySpace,
+        volume,
+        setVolume,
+        isMuted,
+        setIsMuted,
+        toggleMute,
         uniqueStarts,
         packedStarts,
         totalPackedDuration,

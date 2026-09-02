@@ -36,6 +36,11 @@ export function Timeline() {
         cycleSpeed,
         collapseEmptySpace,
         setCollapseEmptySpace,
+        volume,
+        setVolume,
+        isMuted,
+        setIsMuted,
+        toggleMute,
         uniqueStarts,
         packedStarts,
         totalPackedDuration,
@@ -46,8 +51,6 @@ export function Timeline() {
     // Tab State
     const [activeTab, setActiveTab] = useState<"scenes" | "synapses" | "settings">("scenes");
 
-    const [volume, setVolume] = useState<number>(80); // 0 to 100
-    const [isMuted, setIsMuted] = useState<boolean>(false);
     const [isAutoMontage, setIsAutoMontage] = useState<boolean>(false);
 
     // Camera toggle state — ephemeral per-session UI state, not a node param.
@@ -93,8 +96,6 @@ export function Timeline() {
         }
     };
 
-    // Mute toggle
-    const toggleMute = () => setIsMuted(!isMuted);
     const volumeIconClass =
         isMuted || volume === 0
             ? "ti ti-volume-off"

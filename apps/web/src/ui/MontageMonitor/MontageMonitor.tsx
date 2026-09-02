@@ -6,7 +6,8 @@ import styles from "@/ui/MontageMonitor/MontageMonitor.module.css";
 
 export function MontageMonitor() {
     const { scenes, sceneOutputs, showMontageMonitor, setShowMontageMonitor } = useGraphContext();
-    const { playingSceneId, playingSceneRelativeTime, isPlaying } = usePlayerContext();
+    const { playingSceneId, playingSceneRelativeTime, isPlaying, playSpeed, volume, isMuted } =
+        usePlayerContext();
 
     const [position, setPosition] = useState(() => ({
         x: typeof window !== "undefined" ? window.innerWidth - 460 : 0,
@@ -105,6 +106,17 @@ export function MontageMonitor() {
         else el.pause();
     }, [isPlaying]);
 
+    // Volume and rate are element properties, not attributes, so they have to
+    // be assigned imperatively. `media.url` is a dependency because the
+    // <video> is keyed on it — a new scene means a fresh element back at the
+    // defaults (volume 1, rate 1).
+    useEffect(() => {
+        const el = videoRef.current;
+        if (!el) return;
+        el.volume = volume / 100;
+        el.playbackRate = playSpeed;
+    }, [volume, playSpeed, media?.url]);
+
     // While paused, keep the video's frame in sync as the user scrubs (and
     // land on the right frame the instant a pause happens), so resuming
     // continues from here instead of restarting.
@@ -150,7 +162,7 @@ export function MontageMonitor() {
                             src={media.url}
                             className={styles.mediaOutput}
                             loop
-                            muted
+                            muted={isMuted}
                             playsInline
                             onLoadedMetadata={() => {
                                 const el = videoRef.current;
