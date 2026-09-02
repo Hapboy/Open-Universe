@@ -115,7 +115,7 @@ function inferEntityKind(pinName: string): NodeType | undefined {
 // instead of an output pin, but nodes saved before that change still carry
 // it verbatim in their own persisted `outputs` array (nothing else
 // retroactively syncs a node's ports to its template). output_scene never
-// gets dynamic output pins (unlike entity nodes' Description/JSON), so
+// gets dynamic output pins (unlike entity nodes' Description/entity pins), so
 // forcing it back to the template's `outputs: []` is always correct, not
 // just a one-time migration.
 //
@@ -128,10 +128,16 @@ function inferEntityKind(pinName: string): NodeType | undefined {
 // showing the old color forever, on both its own left-border accent and any
 // wire leaving it (NodeEditor.tsx's edge coloring).
 //
-// And backfills `entityKind` on entity nodes' own "JSON" output port —
-// added to the template so NodeCard.tsx's portColor can color it by entity
-// instead of the generic Text color, same reasoning as the entity input pin
-// backfill above. Always the node's own type, so no inference needed.
+// And re-syncs entity nodes' own entity-payload output port, which used to be
+// named "JSON" and is now named after the entity type itself ("Мизансцена"),
+// so it reads as the same thing as the output_scene input pin it feeds
+// ("Мизансцена 1"). Both its `name` and its `entityKind` are forced from the
+// node's own type — `entityKind` because NodeCard.tsx's portColor needs it to
+// color the pin by entity instead of the generic Text color (same reasoning as
+// the entity input pin backfill above), `name` because it's persisted per node
+// and nothing else resyncs a saved scene's ports to its template. Matched by
+// either marker so nodes saved at any point along that history get fixed;
+// no other entity output carries `entityKind` or was ever called "JSON".
 function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
     if (!Array.isArray(nodes)) return [];
     return nodes.map((n) => ({
@@ -147,8 +153,12 @@ function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
                     ? []
                     : ENTITY_NODE_TYPES.has(n?.data?.nodeType)
                       ? n.data.outputs.map((p) =>
-                            p.name === "JSON" && !p.entityKind
-                                ? { ...p, entityKind: n.data.nodeType }
+                            p.name === "JSON" || p.entityKind
+                                ? {
+                                      ...p,
+                                      name: NODE_TEMPLATES[n.data.nodeType].label,
+                                      entityKind: n.data.nodeType,
+                                  }
                                 : p,
                         )
                       : n.data.outputs,

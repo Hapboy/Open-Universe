@@ -33,8 +33,8 @@ export const HISTORY_NODE_TYPES: Set<NodeType> = new Set([
 ]);
 
 // Entity node types with the "rich" editing UI: a toggleable prompt column
-// for additionalDescription, and Description/JSON output pins (instead of a
-// plain selectedItem passthrough).
+// for additionalDescription, and Description + entity-payload output pins
+// (instead of a plain selectedItem passthrough).
 export const RICH_ENTITY_NODE_TYPES: Set<NodeType> = new Set([
     "character",
     "location",
@@ -293,7 +293,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "character" },
+            { name: "Персонаж", type: PORT_TYPES.TEXT, entityKind: "character" },
         ],
     },
 
@@ -305,7 +305,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "location" },
+            { name: "Локация", type: PORT_TYPES.TEXT, entityKind: "location" },
         ],
     },
 
@@ -317,7 +317,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "mise_en_scene" },
+            { name: "Мизансцена", type: PORT_TYPES.TEXT, entityKind: "mise_en_scene" },
         ],
     },
 
@@ -329,7 +329,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "building" },
+            { name: "Здание", type: PORT_TYPES.TEXT, entityKind: "building" },
         ],
     },
 
@@ -341,7 +341,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "clothing" },
+            { name: "Одежда", type: PORT_TYPES.TEXT, entityKind: "clothing" },
         ],
     },
 
@@ -353,7 +353,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "artwork" },
+            { name: "Искусство", type: PORT_TYPES.TEXT, entityKind: "artwork" },
         ],
     },
 
@@ -365,7 +365,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "furniture" },
+            { name: "Мебель", type: PORT_TYPES.TEXT, entityKind: "furniture" },
         ],
     },
 
@@ -378,7 +378,7 @@ export const NODE_TEMPLATES = {
         outputs: [
             { name: "Audio Out", type: PORT_TYPES.AUDIO },
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "music" },
+            { name: "Музыка", type: PORT_TYPES.TEXT, entityKind: "music" },
         ],
     },
 
@@ -391,7 +391,7 @@ export const NODE_TEMPLATES = {
         outputs: [
             { name: "Text Out", type: PORT_TYPES.TEXT },
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "script" },
+            { name: "Сценарий", type: PORT_TYPES.TEXT, entityKind: "script" },
         ],
     },
 
@@ -404,7 +404,7 @@ export const NODE_TEMPLATES = {
         outputs: [
             { name: "Image Out", type: PORT_TYPES.IMAGE },
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "storyboard" },
+            { name: "Раскадровка", type: PORT_TYPES.TEXT, entityKind: "storyboard" },
         ],
     },
 
@@ -416,7 +416,7 @@ export const NODE_TEMPLATES = {
         inputs: [],
         outputs: [
             { name: "Description", type: PORT_TYPES.TEXT },
-            { name: "JSON", type: PORT_TYPES.TEXT, entityKind: "transport" },
+            { name: "Транспорт", type: PORT_TYPES.TEXT, entityKind: "transport" },
         ],
     },
 } satisfies Record<NodeType, NodeTemplate>;

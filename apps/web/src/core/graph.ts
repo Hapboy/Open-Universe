@@ -37,7 +37,7 @@ export function edgeInput(
 // Deliberately not a switch/exhaustive over NodeType: entity types
 // (character, building, clothing, ...) have no AI computation of their own
 // and are meant to fall through to `return undefined` — their real payload
-// (Description/JSON, one per photo) is filled separately by
+// (Description, the entity payload pin, one per photo) is filled separately by
 // computeRichEntityExtraOutputs below, keyed by port name rather than by
 // `outputs[0]`, so it's unaffected by this function returning nothing for
 // them. That's correct behavior, not a missing case.
@@ -188,8 +188,9 @@ async function computeNodeOutput(
     return undefined;
 }
 
-// Fills an entity node's per-photo output pins, plus Description/JSON for the
-// "rich" entity types that have those ports — pure derivations of its own
+// Fills an entity node's per-photo output pins, plus Description and the
+// entity-payload pin for the "rich" entity types that have those ports —
+// pure derivations of its own
 // params, independent of edges/resolution order. Photos are stored as
 // media refs (`s3:<uuid>`), not raw data — resolve them to real URLs
 // here so downstream AI-model nodes (e.g. Nano Banana reference images) get
@@ -210,7 +211,10 @@ async function computeRichEntityExtraOutputs(
     );
     const descPort = d.outputs.find((p) => p.name === "Description");
     if (descPort) resolved[descPort.id] = d.params.additionalDescription;
-    const jsonPort = d.outputs.find((p) => p.name === "JSON");
+    // The entity-payload output pin, found by `entityKind` rather than by name:
+    // it's the only output that carries it (data/nodes.ts), and its name is the
+    // entity type's own label ("Мизансцена"), which changes per type.
+    const jsonPort = d.outputs.find((p) => p.entityKind);
     if (jsonPort) {
         resolved[jsonPort.id] = JSON.stringify(
             {

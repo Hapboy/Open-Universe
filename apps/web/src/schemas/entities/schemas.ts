@@ -88,7 +88,7 @@ export function filledEntityParams(
 
 // What an entity node actually publishes about itself: everything a user
 // filled in, minus the keys PARAM_AUDIENCE marks as editor/identity/generation
-// bookkeeping (schemaHelpers.ts). Used by core/graph.ts's "JSON" output pin —
+// bookkeeping (schemaHelpers.ts). Used by core/graph.ts's entity output pin —
 // and therefore by every prompt composed from connected entities, see
 // core/scenePrompt.ts — and by NodeCard.tsx's "show JSON" preview, which reads
 // the same function so the preview can't drift from what downstream nodes see.

@@ -32,8 +32,8 @@ import { PopoverList } from "@/ui/components/Popover/PopoverList.tsx";
 import styles from "@/ui/NodeCard/NodeCard.module.css";
 
 // entityKind takes priority over the plain-type colors below — it's set on
-// output_scene's dynamic "Character 1"/"Location 2"/... input pins
-// (addEntityInput, GraphContext.tsx) and on each entity type's own "JSON"
+// output_scene's dynamic "Персонаж 1"/"Локация 2"/... input pins
+// (addEntityInput, GraphContext.tsx) and on each entity type's own entity
 // output port (data/nodes.ts; deliberately not "Description", which stays
 // the generic Text color) since both are otherwise indistinguishable
 // Text-typed ports. Everything else colors by its plain PortType.

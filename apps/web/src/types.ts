@@ -27,10 +27,12 @@ export interface Port {
     //    GraphContext.tsx) — isValidConnection additionally requires the
     //    wired source node's own nodeType to match, so e.g. a Location's
     //    JSON can't be wired into a "Character 1" pin.
-    // 2. Each entity type's own "JSON" output port (data/nodes.ts) — set to
-    //    that same type, purely for NodeCard.tsx's portColor to color it by
-    //    entity instead of the generic Text color. Deliberately not set on
-    //    the neighboring "Description" output, which stays generic Text.
+    // 2. Each entity type's own entity-payload output port (data/nodes.ts,
+    //    named after the entity type itself, e.g. "Мизансцена") — set to that
+    //    same type, both for NodeCard.tsx's portColor to color it by entity
+    //    instead of the generic Text color and as the marker core/graph.ts
+    //    finds the pin by. Deliberately not set on the neighboring
+    //    "Description" output, which stays generic Text.
     entityKind?: NodeType;
 }
 
