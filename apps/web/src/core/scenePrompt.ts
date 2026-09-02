@@ -10,11 +10,6 @@ import type { EntityPhoto } from "@/schemas/entities/schemaHelpers.ts";
 
 type ShowToast = (msg: string) => void;
 
-// output_scene's first two input pins are the fixed Visual Render/Motion
-// Render override pins (see data/nodes.ts) — everything after them is a
-// dynamic entity pin added via addEntityInput (GraphContext.tsx).
-const FIXED_PIN_COUNT = 2;
-
 export interface ConnectedEntity {
     // The pin's own label (e.g. "Character 2") — doubles as a stand-in for
     // the entity's kind when its JSON didn't parse.
@@ -30,20 +25,20 @@ export interface ConnectedEntity {
     photoUrls: string[];
 }
 
-// Walks output_scene's entity input pins and resolves whatever's wired into
-// each of them. Pure read of `resolved`/`edges` — doesn't itself trigger any
-// graph computation. Takes the node's `data` directly (not a full react-flow
-// `Node`), matching edgeInput's own convention and what NodeRef callers
-// (e.g. OutputParams) actually have on hand.
+// Walks output_scene's input pins — all of them are dynamic entity pins added
+// via addEntityInput (GraphContext.tsx), the node has no fixed ones — and
+// resolves whatever's wired into each. Pure read of `resolved`/`edges` —
+// doesn't itself trigger any graph computation. Takes the node's `data`
+// directly (not a full react-flow `Node`), matching edgeInput's own convention
+// and what NodeRef callers (e.g. OutputParams) actually have on hand.
 export function collectConnectedEntities(
     nodeData: NodeParams,
     edges: Edge[],
     resolved: Record<string, unknown>,
 ): ConnectedEntity[] {
-    const entityPins = nodeData.inputs.slice(FIXED_PIN_COUNT);
     const entities: ConnectedEntity[] = [];
-    entityPins.forEach((pin, i) => {
-        const input = edgeInput(nodeData, edges, resolved, i + FIXED_PIN_COUNT);
+    nodeData.inputs.forEach((pin, i) => {
+        const input = edgeInput(nodeData, edges, resolved, i);
         if (!input.wired || typeof input.value !== "string") return;
         let data: Record<string, unknown> | null;
         try {

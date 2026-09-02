@@ -234,62 +234,23 @@ export interface SceneOutput {
     type: SceneOutputType;
 }
 
-// A Visual/Motion Render pin wired straight to an AI generation node
-// (gemini_veo/gemini_nanobanana/gemini_imagen) only ever gets a `resolved`
-// value while that node has actually run THIS session — autoMode
-// deliberately never runs AI nodes automatically (see runGraph's autoMode
-// skip below), so right after a reload `resolved[...]` is undefined even
-// though the wired node's own last generation is safely saved in its own
-// `data.generation` history. Falls back to that node's own history ref in
-// that case; a live `resolved` value (the node actually rerun this session)
-// still wins over it.
-function wiredSourceUrl(nodes: Node<NodeParams>[], edge: Edge | undefined): string | undefined {
-    if (!edge) return undefined;
-    const sourceNode = nodes.find((n) => n.id === edge.source);
-    const ref = currentHistoryRef(
-        sourceNode?.data.generation as GenerationHistoryState | undefined,
-    );
-    return ref ? resolveMediaRef(ref) : undefined;
-}
-
-// The scene's actual output: whatever is wired into the `output_scene`
-// node's Visual Render (Image) / Motion Render (Video) input pins, picking
-// whichever the node's own `activeOutput` toggle prefers and falling back to
-// the other pin if the preferred one isn't wired/resolved yet. A wired pin
-// prefers its live `resolved` value (manual override — a rewire or param
-// change takes effect the moment it's rerun) but falls back to the wired
-// node's own saved history rather than showing nothing while unresolved;
-// when unwired, falls back to each stage's own generation history
-// (`data.generation.image`/`.video` — see types.ts's `generation` doc
-// comment), via the shared `currentHistoryRef`, resolved from a media ref to
-// a real URL. No separate "confirmed pick" field: picking a slider position
-// (via a new generation or the media picker — see UtilParams.tsx's
-// OutputParams) is the pick.
-function resolveSceneOutput(
-    nodes: Node<NodeParams>[],
-    edges: Edge[],
-    resolved: Resolved,
-): SceneOutput | null {
+// The scene's actual output: whichever of the output_scene node's own two
+// generation stages its `activeOutput` toggle prefers, falling back to the
+// other stage when the preferred one has nothing yet. Each stage's current
+// pick comes from its own generation history (`data.generation.image`/
+// `.video` — see types.ts's `generation` doc comment), via the shared
+// `currentHistoryRef`, resolved from a media ref to a real URL. No separate
+// "confirmed pick" field: picking a slider position (via a new generation or
+// the media picker — see UtilParams.tsx's OutputParams) is the pick.
+function resolveSceneOutput(nodes: Node<NodeParams>[]): SceneOutput | null {
     const outNode = nodes.find((n) => n.data.nodeType === "output_scene");
     if (!outNode) return null;
-    const vEdge = edges.find((e) => e.targetHandle === outNode.data.inputs[0]?.id);
-    const mEdge = edges.find((e) => e.targetHandle === outNode.data.inputs[1]?.id);
     const stageGeneration = outNode.data.generation as
         Partial<Record<"image" | "video", GenerationHistoryState>> | undefined;
     const imageSelectedRef = currentHistoryRef(stageGeneration?.image);
     const videoSelectedRef = currentHistoryRef(stageGeneration?.video);
-    const imageUrl = vEdge
-        ? ((resolved[vEdge.sourceHandle ?? ""] as string | undefined) ??
-          wiredSourceUrl(nodes, vEdge))
-        : imageSelectedRef
-          ? resolveMediaRef(imageSelectedRef)
-          : undefined;
-    const videoUrl = mEdge
-        ? ((resolved[mEdge.sourceHandle ?? ""] as string | undefined) ??
-          wiredSourceUrl(nodes, mEdge))
-        : videoSelectedRef
-          ? resolveMediaRef(videoSelectedRef)
-          : undefined;
+    const imageUrl = imageSelectedRef ? resolveMediaRef(imageSelectedRef) : undefined;
+    const videoUrl = videoSelectedRef ? resolveMediaRef(videoSelectedRef) : undefined;
     const wantsVideo = (outNode.data.params.activeOutput ?? "video") === "video";
     const primary: SceneOutput = wantsVideo
         ? { url: videoUrl as string, type: "video" }
@@ -344,7 +305,7 @@ export async function runGraph(
         }
     }
 
-    return resolveSceneOutput(nodes, edges, resolved);
+    return resolveSceneOutput(nodes);
 }
 
 // Computes and caches a single node's output into `resolved`, first
@@ -436,5 +397,5 @@ export async function runNodeCascade(
         }
     }
 
-    return resolveSceneOutput(nodes, edges, resolved);
+    return resolveSceneOutput(nodes);
 }

@@ -218,10 +218,12 @@ export const NODE_TEMPLATES = {
         label: "Выходная Сцена",
         icon: "ti-movie",
         color: "var(--color-node-scene)",
-        inputs: [
-            { name: "Visual Render", type: PORT_TYPES.IMAGE },
-            { name: "Motion Render", type: PORT_TYPES.VIDEO },
-        ],
+        // No fixed pins — every input pin on this node is a dynamic entity pin
+        // added via addEntityInput (GraphContext.tsx). The old Visual
+        // Render/Motion Render override pins are gone: the scene's picture and
+        // video now only ever come from this node's own two generation stages
+        // (see UtilParams.tsx's OutputParams).
+        inputs: [],
         outputs: [],
         params: {
             title: "",

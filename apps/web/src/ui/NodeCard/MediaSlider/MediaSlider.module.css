@@ -72,6 +72,17 @@
 .del {
     background: rgba(180, 40, 40, 0.7);
 }
+/* «Уже принято» state — output_scene's final-output flag stays lit on the
+   stage it points at, the overlay equivalent of the old button's primary
+   variant. */
+.acceptOn {
+    background: var(--color-bg-accent);
+    color: var(--color-bg-primary);
+    opacity: 1;
+}
+.acceptOn:disabled {
+    opacity: 0.75;
+}
 .expand {
     composes: overlayBtn;
     position: absolute;

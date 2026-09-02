@@ -18,6 +18,8 @@ export function MediaSlider({
     onAccept,
     acceptDisabled,
     acceptTitle,
+    acceptIcon = "check",
+    acceptActive,
     onPick,
     onUpload,
     addDisabled,
@@ -33,10 +35,16 @@ export function MediaSlider({
     // (Veo), same conditional-render shape as onDelete below.
     onReroll?: () => void;
     // Promote the currently-shown item somewhere permanent — character's
-    // «Принять в фото», which moves a generated variant into the entity gallery.
+    // «Принять в фото», which moves a generated variant into the entity gallery,
+    // or output_scene's «Сделать финальным выводом сцены», which flags the
+    // shown stage as the scene's output. The latter is a toggle-ish state
+    // rather than a one-way move, hence `acceptActive` for the "already the
+    // accepted one" look.
     onAccept?: () => void;
     acceptDisabled?: boolean;
     acceptTitle?: string;
+    acceptIcon?: string;
+    acceptActive?: boolean;
     // Media-library pick and local upload. The caller does the putBlob for
     // uploads — multi-file semantics differ per call site. When `items` is
     // empty and at least one of these is set, the slider renders a clickable
@@ -154,6 +162,22 @@ export function MediaSlider({
         );
     }
 
+    // Below the empty-state return on purpose — there's nothing to accept
+    // until the slider holds at least one item.
+    const acceptButton = onAccept && (
+        <button
+            className={cn(styles.overlayBtn, acceptActive && styles.acceptOn)}
+            disabled={acceptDisabled}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+                e.stopPropagation();
+                onAccept();
+            }}
+            title={acceptTitle ?? "Принять"}>
+            <i className={`ti ti-${acceptIcon}`} />
+        </button>
+    );
+
     return (
         <div className={styles.slider} style={ratio ? { aspectRatio: String(ratio) } : undefined}>
             {uploadInput}
@@ -215,19 +239,7 @@ export function MediaSlider({
             <div className={styles.overlayRow}>
                 {uploadButton}
                 {pickButton}
-                {onAccept && (
-                    <button
-                        className={styles.overlayBtn}
-                        disabled={acceptDisabled}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onAccept();
-                        }}
-                        title={acceptTitle ?? "Принять"}>
-                        <i className="ti ti-check" />
-                    </button>
-                )}
+                {acceptButton}
                 {onReroll && (
                     <button
                         className={styles.overlayBtn}

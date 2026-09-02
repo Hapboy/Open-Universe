@@ -101,14 +101,11 @@ export function OutputParams({
         videoHist,
         updateImageParam,
         updateVideoParam,
-        visualRenderWired,
-        motionRenderWired,
         rerollImage,
     } = gen;
     const track = (params.track as number) ?? 1;
-    const isFinalImage = (params.activeOutput ?? "video") === "image";
-    const isFinalVideo = (params.activeOutput ?? "video") === "video";
     const stageHist = stage === "image" ? imageHist : videoHist;
+    const isFinalStage = (params.activeOutput ?? "video") === stage;
 
     // Defensive: activeSceneId is nullable in GraphContext's types, but a
     // mounted output_scene node always belongs to the active scene.
@@ -172,6 +169,16 @@ export function OutputParams({
                     onDelete={stageHist.onDelete}
                     onReroll={stage === "image" ? rerollImage : undefined}
                     onPick={(ref) => stageHist.append(ref)}
+                    // Flagging the shown stage as the scene's final output —
+                    // same overlay slot as the entity nodes' «Принять в фото»,
+                    // acting on whichever stage the toggle above is parked on.
+                    onAccept={() => updateNodeParam(node.id, "activeOutput", stage)}
+                    acceptDisabled={isFinalStage}
+                    acceptIcon={isFinalStage ? "flag-filled" : "flag"}
+                    acceptActive={isFinalStage}
+                    acceptTitle={
+                        isFinalStage ? "Финальный вывод сцены" : "Сделать финальным выводом сцены"
+                    }
                     emptyHint={
                         stage === "image"
                             ? "Нет кадров — сгенерируйте или выберите из медиатеки"
@@ -364,62 +371,24 @@ export function OutputParams({
                     <hr className={styles.divider} />
 
                     {stage === "image" && (
-                        <>
-                            {visualRenderWired ? (
-                                <p className={styles.hint}>
-                                    <i className="ti ti-info-circle" />
-                                    Visual Render подключён вручную — внутренняя генерация
-                                    отключена.
-                                </p>
-                            ) : (
-                                <NanoBananaModelFields
-                                    paramsSlice={imageParams}
-                                    onFieldChange={updateImageParam}
-                                />
-                            )}
-                            <Button
-                                icon={isFinalImage ? "flag-filled" : "flag"}
-                                variant={isFinalImage ? "primary" : "default"}
-                                disabled={!visualRenderWired && !imageHist.currentRef}
-                                onClick={() => updateNodeParam(node.id, "activeOutput", "image")}>
-                                {isFinalImage
-                                    ? "Финальный вывод сцены"
-                                    : "Сделать финальным выводом сцены"}
-                            </Button>
-                        </>
+                        <NanoBananaModelFields
+                            paramsSlice={imageParams}
+                            onFieldChange={updateImageParam}
+                        />
                     )}
 
                     {stage === "video" && (
                         <>
-                            {motionRenderWired ? (
-                                <p className={styles.hint}>
-                                    <i className="ti ti-info-circle" />
-                                    Motion Render подключён вручную — внутренняя генерация
-                                    отключена.
-                                </p>
-                            ) : (
-                                <>
-                                    <p className={styles.hint}>
-                                        <i className="ti ti-info-circle" />
-                                        {imageHist.currentRef
-                                            ? "Референс-кадр выбран на вкладке «Картинка»."
-                                            : "Сначала сгенерируйте или выберите кадр на вкладке «Картинка»."}
-                                    </p>
-                                    <VeoModelFields
-                                        paramsSlice={videoParams}
-                                        onFieldChange={updateVideoParam}
-                                    />
-                                </>
-                            )}
-                            <Button
-                                icon={isFinalVideo ? "flag-filled" : "flag"}
-                                variant={isFinalVideo ? "primary" : "default"}
-                                disabled={!motionRenderWired && !videoHist.currentRef}
-                                onClick={() => updateNodeParam(node.id, "activeOutput", "video")}>
-                                {isFinalVideo
-                                    ? "Финальный вывод сцены"
-                                    : "Сделать финальным выводом сцены"}
-                            </Button>
+                            <p className={styles.hint}>
+                                <i className="ti ti-info-circle" />
+                                {imageHist.currentRef
+                                    ? "Референс-кадр выбран на вкладке «Картинка»."
+                                    : "Сначала сгенерируйте или выберите кадр на вкладке «Картинка»."}
+                            </p>
+                            <VeoModelFields
+                                paramsSlice={videoParams}
+                                onFieldChange={updateVideoParam}
+                            />
                         </>
                     )}
                 </>

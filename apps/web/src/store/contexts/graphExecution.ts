@@ -94,8 +94,8 @@ export function useGraphExecution({
     // for when `resolved` is empty, e.g. right after page load, before the
     // node has been re-run this session). `resolved` itself keeps holding
     // the raw value untouched — other nodes/edges consuming it (e.g. wiring
-    // this output into another Gemini call, or into output_scene's Visual
-    // Render pin) still get a directly usable value. `persistedOutputRef`
+    // this output into another Gemini call) still get a directly usable
+    // value. `persistedOutputRef`
     // dedups against repeated "Прогнать граф" clicks: a node whose output
     // didn't change since the last persist is skipped.
     const persistedOutputRef = useRef<Map<string, string>>(new Map());

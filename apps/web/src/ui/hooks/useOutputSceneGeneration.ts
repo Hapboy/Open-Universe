@@ -53,8 +53,6 @@ export function useOutputSceneGeneration({
     const stage = node.data.outputSceneStage ?? "image";
     const imageParams = (params.image as Record<string, unknown>) ?? {};
     const videoParams = (params.video as Record<string, unknown>) ?? {};
-    const visualRenderWired = edges.some((e) => e.targetHandle === node.data.inputs[0]?.id);
-    const motionRenderWired = edges.some((e) => e.targetHandle === node.data.inputs[1]?.id);
 
     // node.data.generation.image/.video — this node's own two independent
     // generation-history streams, sibling to `params` (see types.ts's
@@ -224,8 +222,9 @@ export function useOutputSceneGeneration({
     // What the node header's run button acts on: whichever stage the
     // Картинка/Видео toggle is parked on.
     const isGenerating = stage === "image" ? isGeneratingImage : isGeneratingVideo;
-    const generateDisabled =
-        stage === "image" ? visualRenderWired : motionRenderWired || !imageHist.currentRef;
+    // Видео needs a reference frame from the Картинка stage; Картинка is
+    // always runnable.
+    const generateDisabled = stage === "video" && !imageHist.currentRef;
 
     return {
         stage,
@@ -235,8 +234,6 @@ export function useOutputSceneGeneration({
         videoHist,
         updateImageParam,
         updateVideoParam,
-        visualRenderWired,
-        motionRenderWired,
         isGenerating,
         generateDisabled,
         generateImage,

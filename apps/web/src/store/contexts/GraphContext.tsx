@@ -96,10 +96,13 @@ function templateParams(type: string, overrides: Record<string, unknown> = {}) {
 // so old scenes' entity pins/handles still get their proper per-kind color
 // (NodeCard.tsx's portColor) instead of the generic Text color forever.
 // output_scene's fixed Visual Render/Motion Render pins never match any
-// entity label, so they pass through untouched.
+// entity label, so a leftover legacy pin passes through untouched (it's
+// dropped by LEGACY_OUTPUT_SCENE_PINS below anyway).
 const ENTITY_LABEL_TO_KIND = new Map(
     Array.from(ENTITY_NODE_TYPES).map((type) => [NODE_TEMPLATES[type].label, type]),
 );
+const LEGACY_OUTPUT_SCENE_PINS = new Set(["Visual Render", "Motion Render"]);
+
 function inferEntityKind(pinName: string): NodeType | undefined {
     for (const [label, type] of ENTITY_LABEL_TO_KIND) {
         if (pinName.startsWith(`${label} `)) return type;
@@ -138,9 +141,25 @@ function inferEntityKind(pinName: string): NodeType | undefined {
 // and nothing else resyncs a saved scene's ports to its template. Matched by
 // either marker so nodes saved at any point along that history get fixed;
 // no other entity output carries `entityKind` or was ever called "JSON".
-function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
-    if (!Array.isArray(nodes)) return [];
-    return nodes.map((n) => ({
+//
+// Finally, it drops output_scene's retired Visual Render/Motion Render input
+// pins (LEGACY_OUTPUT_SCENE_PINS) and every edge that still targets them —
+// hence the whole graph in and out, not just the nodes. Those pins let an
+// external render node override the scene's picture/video; the node's own two
+// generation stages replaced that path entirely, so a saved scene still
+// carrying them (nothing else resyncs persisted `inputs` to the template) is
+// normalized on load. Matched by name: entity pins are always
+// `${label} ${n}`, so neither name can collide with one.
+function withTemplateDefaults(graph: { nodes: Node<NodeParams>[]; edges: Edge[] }): {
+    nodes: Node<NodeParams>[];
+    edges: Edge[];
+} {
+    const { nodes, edges } = graph;
+    if (!Array.isArray(nodes)) return { nodes: [], edges: Array.isArray(edges) ? edges : [] };
+    // Pins dropped from output_scene's template are stripped here along with
+    // any edge still targeting them — see LEGACY_OUTPUT_SCENE_PINS.
+    const droppedPinIds = new Set<string>();
+    const nextNodes = nodes.map((n) => ({
         ...n,
         data: {
             ...n.data,
@@ -164,13 +183,25 @@ function withTemplateDefaults(nodes: Node<NodeParams>[]): Node<NodeParams>[] {
                       : n.data.outputs,
             inputs:
                 n?.data?.nodeType === "output_scene"
-                    ? n.data.inputs.map((p) => ({
-                          ...p,
-                          entityKind: p.entityKind ?? inferEntityKind(p.name),
-                      }))
+                    ? n.data.inputs
+                          .filter((p) => {
+                              if (!LEGACY_OUTPUT_SCENE_PINS.has(p.name)) return true;
+                              droppedPinIds.add(p.id);
+                              return false;
+                          })
+                          .map((p) => ({
+                              ...p,
+                              entityKind: p.entityKind ?? inferEntityKind(p.name),
+                          }))
                     : n.data.inputs,
         },
     }));
+    return {
+        nodes: nextNodes,
+        edges: Array.isArray(edges)
+            ? edges.filter((e) => !droppedPinIds.has(e.targetHandle ?? ""))
+            : [],
+    };
 }
 
 // A brand-new scene's graph is just its output node — no character/location
@@ -195,10 +226,7 @@ function createEmptySceneGraph(overrides: { title?: string; start?: number } = {
                 label: "Выходная Сцена",
                 icon: "ti-movie",
                 color: "var(--color-node-scene)",
-                inputs: [
-                    { id: `${outId}_in_0`, name: "Visual Render", type: "Image" },
-                    { id: `${outId}_in_1`, name: "Motion Render", type: "Video" },
-                ],
+                inputs: [],
                 outputs: [],
                 params: templateParams("output_scene", overrides),
             },
@@ -276,12 +304,7 @@ function seedFromPrefetched(prefetched: Scene[] | null): InitialGraphState | nul
     const sceneGraphs = sceneGraphsFrom(prefetched);
     const activeSceneId = prefetched[0].id;
     const activeGraph = sceneGraphs[activeSceneId];
-    return {
-        activeSceneId,
-        sceneGraphs,
-        nodes: withTemplateDefaults(activeGraph.nodes),
-        edges: activeGraph.edges,
-    };
+    return { activeSceneId, sceneGraphs, ...withTemplateDefaults(activeGraph) };
 }
 
 // Loads every scene from the backend (source of truth — see DECISIONS.md's
@@ -303,12 +326,7 @@ async function loadInitialGraphState(): Promise<InitialGraphState> {
     const sceneGraphs = sceneGraphsFrom(scenes);
     const activeSceneId = resolveActiveSceneId(sceneGraphs, scenes[0].id);
     const activeGraph = sceneGraphs[activeSceneId];
-    return {
-        activeSceneId,
-        sceneGraphs,
-        nodes: withTemplateDefaults(activeGraph.nodes),
-        edges: activeGraph.edges,
-    };
+    return { activeSceneId, sceneGraphs, ...withTemplateDefaults(activeGraph) };
 }
 
 function findPort(
@@ -446,8 +464,8 @@ export function GraphProvider({
         (nextId: string | null, graphs: SceneGraphs) => {
             history.flush();
             if (nextId) {
-                const nextGraph = graphs[nextId] || createEmptySceneGraph();
-                setNodes(withTemplateDefaults(nextGraph.nodes));
+                const nextGraph = withTemplateDefaults(graphs[nextId] || createEmptySceneGraph());
+                setNodes(nextGraph.nodes);
                 setEdges(nextGraph.edges);
                 writeRaw(ACTIVE_SCENE_KEY, nextId);
             } else {
@@ -927,19 +945,17 @@ export function GraphProvider({
     // → "Character 1", a second click → "Character 2"), one such group per
     // entity kind (see OutputParams's "Сущности" tab). Numbered per-kind by
     // counting existing pins whose name already starts with that label, so
-    // removing/adding one kind's pins never renumbers another kind's. Fixed
-    // pins (Visual Render/Motion Render) don't carry a kind prefix so they're
-    // naturally excluded from both the count and the cap below. Same
-    // random-suffix id scheme as addImageInput/addTextInput.
+    // removing/adding one kind's pins never renumbers another kind's. The
+    // template has no fixed pins any more, so every pin here is an entity pin
+    // and counts against the cap below. Same random-suffix id scheme as
+    // addImageInput/addTextInput.
     const addEntityInput = useCallback(
         (nodeId: string, entityType: NodeType, entityLabel: string) => {
             history.record(null);
             setNodes((ns) =>
                 ns.map((n) => {
                     if (n.id !== nodeId) return n;
-                    const fixedPinCount = NODE_TEMPLATES.output_scene.inputs.length;
-                    const entityPinCount = n.data.inputs.length - fixedPinCount;
-                    if (entityPinCount >= MAX_ENTITY_INPUTS) return n;
+                    if (n.data.inputs.length >= MAX_ENTITY_INPUTS) return n;
                     const prefix = `${entityLabel} `;
                     const existingOfKind = n.data.inputs.filter((p) =>
                         p.name.startsWith(prefix),
