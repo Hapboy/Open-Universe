@@ -4,7 +4,7 @@ import type { NodeParams, NodeRef, TimelineScene } from "@/types.ts";
 import { usePresetLibraryContext } from "@/store/contexts/PresetLibraryContext.tsx";
 import { Switch } from "@/ui/components/Switch/Switch.tsx";
 import { Textarea } from "@/ui/components/Textarea/Textarea.tsx";
-import { ENTITY_PARAM_SCHEMAS } from "@/schemas/entities/schemas.ts";
+import { ENTITY_PARAM_DEFAULTS, ENTITY_PARAM_SCHEMAS } from "@/schemas/entities/schemas.ts";
 import { paramReaches } from "@/schemas/entities/schemaHelpers.ts";
 import type { EntityPhoto } from "@/schemas/entities/schemaHelpers.ts";
 import styles from "@/styles/shared.module.css";
@@ -224,6 +224,22 @@ export function usePresetDatabase(
         updateNodeParams(node.id, { selectedItem: snapshot.name as string });
     };
 
+    // The "Новый пресет" card in PresetsModal. A node's `presetId` is minted
+    // once on mount and Save is an upsert keyed by it, so a node already
+    // showing a preset could otherwise only ever overwrite that one — this is
+    // the way to get a second preset out of it. Blanks the node back to its
+    // entity type's defaults (same registry GraphContext's templateParams
+    // seeds a freshly created node from, so "new preset" and "new node" mean
+    // the same state) and mints a fresh id, since reusing the old one would
+    // upsert straight back over the preset we just stepped away from.
+    // Deliberately a plain history-recording write, no confirm dialog: Ctrl+Z
+    // restores both the params and the previous id, and ConfirmDialog is
+    // reserved for destructive actions with no undo (see its own comment).
+    const onCreateNew = () => {
+        const defaults = ENTITY_PARAM_DEFAULTS[entityType as keyof typeof ENTITY_PARAM_DEFAULTS];
+        updateNodeParams(node.id, { ...defaults, presetId: crypto.randomUUID() });
+    };
+
     const onDelete = (id: string) => removePreset(entityType, id);
 
     // Only meaningful while there's an actual saved id to confirm — a brand
@@ -235,6 +251,7 @@ export function usePresetDatabase(
         db,
         onSelect,
         onSave,
+        onCreateNew,
         onDelete,
         hasUnsavedChanges,
         missingSaveFields: missingSaveFieldsList,

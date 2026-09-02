@@ -10,18 +10,20 @@ import styles from "@/ui/NodeCard/params/PresetsField/PresetsField.module.css";
 // Replaces the old inline `<select>`-style dropdown: a trigger button opens
 // a modal showing every saved preset for this entity type as a photo+name
 // card. Clicking a card applies it (same params.presetId-driven `onSelect`
-// as before). There's no separate "add new" flow — the Save button next to
-// the trigger is a single upsert (see `onSave` in shared.tsx): if the node
-// isn't linked to a saved preset yet, Save creates one from its current
-// params; if it is, Save overwrites it. Gated by `missingSaveFields` so a
-// preset can't be saved without the fields the entity type actually
-// requires.
+// as before). The Save button next to the trigger is a single upsert (see
+// `onSave` in shared.tsx): if the node isn't linked to a saved preset yet,
+// Save creates one from its current params; if it is, Save overwrites it.
+// Gated by `missingSaveFields` so a preset can't be saved without the fields
+// the entity type actually requires. Since Save is keyed by the node's own
+// `presetId`, getting a *second* preset out of a node that already shows one
+// goes through the modal's "Новый пресет" card instead (`onCreateNew`).
 export function PresetsField({
     label,
     items,
     selected,
     onSelect,
     onSave,
+    onCreateNew,
     onDelete,
     hasUnsavedChanges,
     missingSaveFields,
@@ -32,6 +34,7 @@ export function PresetsField({
     selected: string;
     onSelect: (v: string) => void;
     onSave: () => void;
+    onCreateNew: () => void;
     onDelete: (v: string) => void;
     hasUnsavedChanges: boolean;
     missingSaveFields: readonly string[];
@@ -101,6 +104,10 @@ export function PresetsField({
                             onSelect(v);
                             setOpen(false);
                         }}
+                        onCreateNew={() => {
+                            onCreateNew();
+                            setOpen(false);
+                        }}
                         onDelete={onDelete}
                         onClose={() => setOpen(false)}
                     />,
@@ -116,6 +123,7 @@ function PresetsModal({
     thumbs,
     selected,
     onSelect,
+    onCreateNew,
     onDelete,
     onClose,
 }: {
@@ -124,6 +132,7 @@ function PresetsModal({
     thumbs: (string | undefined)[];
     selected: string;
     onSelect: (v: string) => void;
+    onCreateNew: () => void;
     onDelete: (v: string) => void;
     onClose: () => void;
 }) {
@@ -137,51 +146,73 @@ function PresetsModal({
                     </button>
                 </div>
                 <div className={styles.sheetBody}>
-                    {items.length === 0 ? (
+                    {/* The grid renders even with nothing saved yet, so the
+                        empty-library hint sits under it rather than replacing
+                        it. The "new preset" card leads the grid, but only for
+                        a node actually linked to a saved preset (the same
+                        condition the trigger's `selectedItem` is built from):
+                        one that isn't already *is* an unsaved new preset, so
+                        the card would say nothing there — and clicking it
+                        would silently wipe whatever the user has filled in so
+                        far. */}
+                    <div className={styles.grid}>
+                        {items.some((i) => i.value === selected) && (
+                            <div className={cn(styles.card, styles.cardNew)}>
+                                <button
+                                    type="button"
+                                    className={styles.cardSelect}
+                                    onClick={onCreateNew}
+                                    title="Очистить поля и начать новый пресет">
+                                    <span className={styles.cardThumb}>
+                                        <i className="ti ti-plus" />
+                                    </span>
+                                    <span className={styles.cardLabel}>Новый пресет</span>
+                                </button>
+                            </div>
+                        )}
+                        {items.map((item, i) => (
+                            <div
+                                key={item.value}
+                                className={cn(
+                                    styles.card,
+                                    item.value === selected && styles.cardActive,
+                                )}>
+                                <button
+                                    type="button"
+                                    className={styles.cardDelete}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDelete(item.value);
+                                    }}
+                                    title="Удалить пресет">
+                                    <i className="ti ti-trash" />
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.cardSelect}
+                                    onClick={() => onSelect(item.value)}
+                                    title={item.label}>
+                                    <span
+                                        className={styles.cardThumb}
+                                        style={
+                                            thumbs[i]
+                                                ? { backgroundImage: `url(${thumbs[i]})` }
+                                                : undefined
+                                        }>
+                                        {!thumbs[i] && <i className="ti ti-photo-off" />}
+                                    </span>
+                                    <span className={styles.cardLabel}>{item.label}</span>
+                                    {item.value === selected && (
+                                        <i className={cn("ti ti-check", styles.cardCheck)} />
+                                    )}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                    {items.length === 0 && (
                         <p className={styles.emptyHint}>
                             Пока нет сохранённых пресетов — заполните поля и нажмите «Сохранить».
                         </p>
-                    ) : (
-                        <div className={styles.grid}>
-                            {items.map((item, i) => (
-                                <div
-                                    key={item.value}
-                                    className={cn(
-                                        styles.card,
-                                        item.value === selected && styles.cardActive,
-                                    )}>
-                                    <button
-                                        type="button"
-                                        className={styles.cardDelete}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDelete(item.value);
-                                        }}
-                                        title="Удалить пресет">
-                                        <i className="ti ti-trash" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={styles.cardSelect}
-                                        onClick={() => onSelect(item.value)}
-                                        title={item.label}>
-                                        <span
-                                            className={styles.cardThumb}
-                                            style={
-                                                thumbs[i]
-                                                    ? { backgroundImage: `url(${thumbs[i]})` }
-                                                    : undefined
-                                            }>
-                                            {!thumbs[i] && <i className="ti ti-photo-off" />}
-                                        </span>
-                                        <span className={styles.cardLabel}>{item.label}</span>
-                                        {item.value === selected && (
-                                            <i className={cn("ti ti-check", styles.cardCheck)} />
-                                        )}
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
                     )}
                 </div>
             </div>

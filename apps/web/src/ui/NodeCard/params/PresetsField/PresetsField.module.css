@@ -94,6 +94,22 @@
     border-color: var(--color-bg-accent);
 }
 
+/* The "start a new preset" cell — dashed so it reads as an action rather than
+   as one more saved entry sitting in the same grid. */
+.cardNew {
+    border-style: dashed;
+    background: none;
+}
+
+.cardNew .cardSelect {
+    color: var(--color-text-secondary);
+}
+
+.cardNew .cardThumb {
+    background: none;
+    font-size: 24px;
+}
+
 .cardSelect {
     display: flex;
     flex-direction: column;
@@ -170,6 +186,7 @@
 }
 
 .emptyHint {
+    margin-top: 12px;
     font-size: 12px;
     color: var(--color-text-secondary);
 }
